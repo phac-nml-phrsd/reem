@@ -1,0 +1,22 @@
+Package: rif
+Type: Package
+Title: Respiratory infections forecaster 
+Version: 1.0
+Date: 2023-05-18
+Author: David Champredon
+Maintainer: David Champredon <david.champredon@canada.ca>
+Description: More about what it does (maybe more than one line)
+License: What license is it under?
+Imports: 
+    assertthat,
+    dplyr,
+    ggplot2,
+    lubridate,
+    magrittr,
+    patchwork,
+    rjags,
+    runjags,
+    stats,
+    tibble,
+    tidyr
+RoxygenNote: 7.2.3
