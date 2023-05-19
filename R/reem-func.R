@@ -1,6 +1,18 @@
 
 
-#' Title
+
+
+reem_create <-  function(){
+  return(
+    new(Class     = 'reem', 
+        name      = 'unnamed_reem',
+        prms      = list(),
+        is.fitted = FALSE,
+        obs.cl    = data.frame(),
+        obs.ww    = data.frame()))
+}
+
+#' Simulate an epidemic with a REEM.
 #'
 #' @param deterministic 
 #' @param prms 
@@ -88,7 +100,9 @@ reem_simulate <- function(prms, deterministic) {
     wp.m[t] = sum(psi[idx] * Wd[t-idx] * exp(-kappa * idx))
   }
   Wp = wp.m
-  if(!deterministic) Wp = rnorm(n=horizon, mean = wp.m, sd = wp.m * 0.1)
+  if(!deterministic) Wp = rnorm(n=horizon, 
+                                mean = wp.m, 
+                                sd = wp.m * 0.1)
   
   # -- observed ("reported") at sampling site
   
@@ -117,4 +131,194 @@ reem_simulate <- function(prms, deterministic) {
   df = dplyr::left_join(df, tmp, by='t')
   
   return(df)  
+}
+
+
+
+#' Simulate a full epidemic with a REEM
+#' including clinical and wastewater "observations".
+#'
+#' @param variables 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+reem_simulate_epi <- function(prms, 
+                              deterministic) {
+  
+  if(is.null(prms$t.obs.ww)){
+    # generate times when ww is observed:
+    t.obs.ww  = cumsum(1 + rpois(n=prms$horizon, 
+                                 lambda= prms$freq.obs.ww-1))
+    t.obs.ww  = t.obs.ww[t.obs.ww < prms$horizon]
+    prms = c(prms, t.obs.ww = list(t.obs.ww))
+  }
+  
+  # Simulate epidemic to generate data
+  sim = reem_simulate(prms, deterministic)
+  
+  # When working with real data, 
+  # we usually are in "date mode"
+  has.date.start = !is.null(prms$date.start)
+  
+  # Build times
+  if(!has.date.start){
+    prms$date.start <- lubridate::ymd('2020-01-01')
+    # TODO: throw a warning..
+  }
+  
+  if(is.null(prms$t.obs.cl)){
+    # generate times when clinical is observed:
+    tmax = max(sim$t)
+    t.obs.cl = prms$lag * c(1:999)
+    t.obs.cl = t.obs.cl[t.obs.cl < tmax]
+  }
+  if(!is.null(prms$t.obs.cl)) t.obs.cl = prms$t.obs.cl
+  
+  sim = dplyr::mutate(sim, date = prms$date.start + t)
+  
+  # Create two dataframes of observations only:
+  #  - clinical data
+  #  - wastewater data
+  # (they may not be observed on the same schedule)
+  
+  
+  # Aggregate reports
+  a = sim$t %in% t.obs.cl 
+  aa = cumsum(a) + 1
+  
+  sim.obs.cl = sim %>% 
+    dplyr::select(t, Y) %>% 
+    arrange(t) %>% 
+    dplyr::mutate(group = aa) %>%
+    dplyr::group_by(group) %>% 
+    dplyr::summarise(obs = sum(Y), 
+              t = max(t)) %>% 
+    dplyr::mutate(date =  prms$date.start + t) %>% 
+    select(t, date, obs)
+  
+  sim.obs.ww = sim %>% 
+    dplyr::select(t, Wr) %>% 
+    dplyr::filter(t <= prms$last.obs, 
+                  !is.na(Wr)) %>% 
+    dplyr::rename(obs = Wr) %>%
+    dplyr::mutate(date = prms$date.start + t) %>%
+    select(t, date, obs)
+  
+  return(list(
+    sim    = sim, 
+    obs.cl = sim.obs.cl,
+    obs.ww = sim.obs.ww
+  ))
+}
+
+
+
+
+
+#' Calculate the distance of the 
+#' epidemic trajectory from 
+#' clinical and wastewater observations
+#' for a given set of REEM parameters.
+#'
+#' @param obs.cl 
+#' @param obs.ww 
+#' @param use.cl 
+#' @param use.ww 
+#' @param err.type 
+#' @param deterministic 
+#' @param n.sim 
+#' @param verbose 
+#' @param prms 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+reem_traj_dist_obs <- function(
+    obj,
+    use.cl, 
+    use.ww, 
+    err.type,
+    deterministic,
+    n.sim = 10, 
+    verbose = FALSE
+) {
+  
+  # LEGACY CODE: keep until sure it's really useless
+  # if('i0prop' %in% names(priors)){
+  #   prms = set_I_init(prms)
+  # }
+  # 
+  
+  
+  prms   = obj$prms
+  obs.cl = obj$obs.cl
+  obs.ww = obj$obs.ww
+  
+  if(nrow(obs.cl)==0 & nrow(obs.ww)==0) {
+    stop('The REEM object does not have any observation attached.
+         Hence, cannot calculate a distance from observation. ABORTING!')
+  }
+  
+  
+  # Adjust the epidemic start time
+  # and check if we did not create
+  # negative times inadvertently:
+  prms$date.start <- prms$date.start + prms$start.delta
+  
+  if(verbose){
+    cat('-- abc_calc_err\n')
+    cat('\nprms$N:', prms$N)
+    cat('\nprms$i0prop:', prms$i0prop)
+    cat('\nprms$I.init:', paste(prms$I.init, collapse = '; '))
+    cat('\nprms$date.start:', as.character(prms$date.start))
+  }
+  
+  if(deterministic){
+    s     = simulate_epi(prms = prms, deterministic = TRUE)
+    a.cl  = s$obs.cl
+    a.ww  = s$obs.ww
+    a.sim = s$sim
+  }
+  
+  if(!deterministic){
+    # Simulate `n.sim` times with a given set of prior parameters.
+    # The ABC distance from the observations will be computed 
+    # using the _mean_ value across the `n.sim` simualtions:
+    tmp.cl = tmp.ww = tmp.sim = list()
+    
+    for(k in 1:n.sim){
+      s            = obj$simulate_epi(deterministic = FALSE)
+      tmp.cl[[k]]  = s$obs.cl %>% mutate(iter = k)
+      tmp.ww[[k]]  = s$obs.ww %>% mutate(iter = k)
+      tmp.sim[[k]] = s$sim %>% mutate(n.sim = k)
+    }
+    a.cl  = dplyr::bind_rows(tmp.cl)
+    a.ww  = dplyr::bind_rows(tmp.ww)
+    a.sim = dplyr::bind_rows(tmp.sim)
+  }
+  
+  # only the "observed" variables are averaged (e.g., not `a.sim`)
+  # for comparison with actual observations (see further down)
+  cl.i = a.cl %>% 
+    dplyr::group_by(date) %>% 
+    dplyr::summarize(Ym = mean(obs))
+  
+  ww.i = a.ww %>% 
+    dplyr::group_by(date) %>% 
+    dplyr::summarize(Wm = mean(obs))
+  
+  # Calculate the ABC distance
+  res = err_fct(cl.i, ww.i, 
+                obs.cl, obs.ww, 
+                use.cl, use.ww,
+                err.type) 
+  return(list(
+    distance = res, 
+    sim = a.sim
+  ))
+  
+  
 }

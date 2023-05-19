@@ -8,18 +8,19 @@
 #' @return
 #' @export
 #'
-#' @examples
 #' 
 setRefClass(
   Class = 'reem', 
   fields =  list(
     name      = "character",
     prms      = "list",
+    obs.cl    = "data.frame",
+    obs.ww    = "data.frame",
     is.fitted = "logical"
   ),
   
   # - - - - - - - - - - - - - - - - - -
-  # - - - `reem` CLASS METHODS 
+  # - - - `reem` CLASS METHODS  - - - -
   # - - - - - - - - - - - - - - - - - -
   
   methods = 
@@ -37,6 +38,30 @@ setRefClass(
       simulate = function(deterministic){
         res = reem_simulate(prms, deterministic)  
         return(res)  
+      },
+      
+      simulate_epi = function(deterministic){
+        return(
+          reem_simulate_epi(prms, deterministic)
+        )
+      },
+      
+      traj_dist_obs = function(use.cl, 
+                               use.ww, 
+                               err.type,
+                               deterministic,
+                               n.sim = 10, 
+                               verbose = FALSE) {
+        return(
+          reem_traj_dist_obs(
+            obj = .self, 
+            use.cl = use.cl, use.ww = use.ww, 
+            err.type = err.type, 
+            deterministic = deterministic, 
+            n.sim = n.sim, 
+            verbose = verbose
+          )
+        )
       }
       
     ))

@@ -2,7 +2,7 @@
 % Please edit documentation in R/reem-func.R
 \name{reem_simulate}
 \alias{reem_simulate}
-\title{Title}
+\title{Simulate an epidemic with a REEM.}
 \usage{
 reem_simulate(prms, deterministic)
 }
@@ -12,5 +12,5 @@ reem_simulate(prms, deterministic)
 \item{deterministic}{}
 }
 \description{
-Title
+Simulate an epidemic with a REEM.
 }
