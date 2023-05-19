@@ -3,6 +3,7 @@
 export(get_fecalshed)
 export(get_gi)
 export(get_psi)
+export(reem_simulate)
 export(timestamp_short)
 exportClasses(reem)
 importFrom(magrittr,"%>%")

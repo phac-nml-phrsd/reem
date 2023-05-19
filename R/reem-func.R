@@ -1,81 +1,31 @@
 
 
-
-
-
-#' @title Mean incidence from the renewal equation.
+#' Title
 #'
-#' @param t Numerical. Time.
-#' @param R0 Numerical. Basic reproduction number.
-#' @param B Numerical vector. Multiplicative factor changing the contact rate.
-#' (if no change, set \code{B[t]=1} for all t)
-#' @param S Numerical for the number of susceptible.
-#' @param N Numerical. Total population size
-#' @param alpha Numerical. Parameter representing mixing heterogeneity.
-#' \code{alpha = 0} means homogeneous mixing.
-#' @param g Numerical vector representing the intrinsic generation interval distribution.
-#' @param I Numerical vector. Incidence at each time step.
+#' @param deterministic 
+#' @param prms 
 #'
 #' @return
+#' @export
 #'
 #' @examples
 #' 
-mean_inc <- function(t, R0, B, S, N, alpha, g, I) {
-  
-  #stopifnot(t>1)
-  
-  # work with existing data
-  n = sum(!is.na(I))
-  #stopifnot(n>0)
-  
-  tmp1 = R0 * B[t] * (S[t-1]/N)^(exp(alpha))  
-  
-  revI = rev(I[1:n])
-  n2   = min(n,length(g))
-  tmp2 = g[1:n2] * revI[1:n2] 
-  
-  m = tmp1 * sum(tmp2)
-  return(m)
-}
-
-calc_I <- function(lambda, deterministic){
-  res = lambda
-  if(!deterministic) res = rpois(n=1, lambda = lambda)
-  return(res)
-}
-
-calc_Y <- function(lambdaY,n, deterministic){
-  res = lambdaY
-  if(!deterministic) res = rpois(n=n, lambda = lambdaY)
-  return(res)
-}
-
-
-#' @title Simulate an epidemic based on the renewal equation.
 #' 
-#' @description
-#' Simulate an epidemic base on a renewal equation that incorporates
-#' both the clinical and wastewater data (ie fecal shedding is 
-#' explicitly taken into account).
-#'
-#' @param prm List of model parameters.
-#' @param deterministic Logical. Is the simulation deterministic. 
-OLD_reem_simulate <- function(prm, deterministic) {
-  
+reem_simulate <- function(prms, deterministic) {
   # Unpack parameters
-  R0      = prm$R0
-  B       = prm$B
-  N       = prm$N
-  alpha   = prm$alpha
-  I.init  = prm$I.init
-  horizon = prm$horizon
-  rho     = prm$rho
-  lag     = prm$lag
-  g       = prm$g
-  fec     = prm$fec
-  kappa   = prm$kappa
-  psi     = prm$psi
-  t.obs.ww = prm$t.obs.ww
+  R0      = prms$R0
+  B       = prms$B
+  N       = prms$N
+  alpha   = prms$alpha
+  I.init  = prms$I.init
+  horizon = prms$horizon
+  rho     = prms$rho
+  lag     = prms$lag
+  g       = prms$g
+  fec     = prms$fec
+  kappa   = prms$kappa
+  psi     = prms$psi
+  t.obs.ww = prms$t.obs.ww
   
   ni = length(I.init)
   
@@ -164,10 +114,7 @@ OLD_reem_simulate <- function(prm, deterministic) {
     Wd = Wd, 
     Wp = Wp)
   
-  df = left_join(df, tmp, by='t')
+  df = dplyr::left_join(df, tmp, by='t')
   
-  return(df)    
+  return(df)  
 }
-
-
-
