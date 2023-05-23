@@ -3,6 +3,7 @@
 export(get_fecalshed)
 export(get_gi)
 export(get_psi)
+export(reem_fit_abc)
 export(reem_simulate)
 export(reem_simulate_epi)
 export(reem_traj_dist_obs)

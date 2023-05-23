@@ -160,3 +160,18 @@ err_fct <- function(cl.i, ww.i,
   err =  err.cl + err.ww
   return(err)
 }
+
+
+#' Check if the parameter should be an integer
+#'
+#' @param prm.name String. Name of the parameter
+#'
+#' @return Logical
+#' 
+is_prm_integer <- function(prm.name) {
+  res = FALSE
+  namelist = c('start.delta', 'foo')
+  if(prm.name %in% namelist) 
+    res = TRUE
+  return(res)
+}

@@ -194,7 +194,7 @@ reem_simulate_epi <- function(prms,
     dplyr::mutate(group = aa) %>%
     dplyr::group_by(group) %>% 
     dplyr::summarise(obs = sum(Y), 
-              t = max(t)) %>% 
+                     t = max(t)) %>% 
     dplyr::mutate(date =  prms$date.start + t) %>% 
     select(t, date, obs)
   
@@ -251,8 +251,6 @@ reem_traj_dist_obs <- function(
   #   prms = set_I_init(prms)
   # }
   # 
-  
-  
   prms   = obj$prms
   obs.cl = obj$obs.cl
   obs.ww = obj$obs.ww
@@ -269,7 +267,7 @@ reem_traj_dist_obs <- function(
   prms$date.start <- prms$date.start + prms$start.delta
   
   if(verbose){
-    cat('-- abc_calc_err\n')
+    cat('-- Distance debug\n')
     cat('\nprms$N:', prms$N)
     cat('\nprms$i0prop:', prms$i0prop)
     cat('\nprms$I.init:', paste(prms$I.init, collapse = '; '))
@@ -277,7 +275,7 @@ reem_traj_dist_obs <- function(
   }
   
   if(deterministic){
-    s     = simulate_epi(prms = prms, deterministic = TRUE)
+    s     = obj$simulate_epi(prms = prms, deterministic = TRUE)
     a.cl  = s$obs.cl
     a.ww  = s$obs.ww
     a.sim = s$sim
@@ -320,5 +318,119 @@ reem_traj_dist_obs <- function(
     sim = a.sim
   ))
   
+  
+}
+
+
+#' Fit model to observed data using the ABC algorithm.
+#'
+#' @param obj 
+#' @param prm.abc 
+#' @param prms.to.fit 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' 
+reem_fit_abc <- function(obj,
+                         prm.abc,
+                         prms.to.fit) {
+  
+  # Unpack ABC parameters:
+  n.abc   = prm.abc$n.abc
+  n.sim   = prm.abc$n.sim
+  p.abc   = prm.abc$p.abc
+  n.cores = prm.abc$n.cores
+  
+  use.ww = prm.abc$use.ww
+  use.cl = prm.abc$use.cl
+  
+  err.type = prm.abc$err.type
+  
+  # -- Create priors distributions
+  
+  tmp = list()
+  for(i in seq_along(prms.to.fit)){
+    
+    is.int = is_prm_integer(names(prms.to.fit)[i])
+    
+    if(is.int){
+      tmp[[i]] = sample(x = prms.to.fit[[i]][1]:prms.to.fit[[i]][2], 
+                        size = n.abc,
+                        replace = TRUE)
+    }
+    if(!is.int){
+      tmp[[i]] = runif(n = n.abc, 
+                       min = prms.to.fit[[i]][1], 
+                       max = prms.to.fit[[i]][2])
+    }
+  }
+  priors = data.frame(tmp)
+  names(priors) = names(prms.to.fit)
+  head(priors)
+  
+  foo <- function(i,
+                  priors,
+                  obj,
+                  use.cl, 
+                  use.ww, 
+                  err.type,
+                  deterministic,
+                  n.sim = 10, 
+                  verbose = FALSE ) {
+    cat('ABC iteration #',i,'\n') 
+    pp = priors[i,]
+    obj$prms[names(pp)] <- pp
+    
+    x = reem_traj_dist_obs(
+      obj = obj,
+      use.cl = use.cl, 
+      use.ww = use.ww, 
+      err.type = err.type,
+      deterministic = deterministic,
+      n.sim = n.sim, 
+      verbose = verbose
+    )
+    return(x)
+  }
+  
+  snowfall::sfInit(parallel = n.cores > 1, cpus = n.cores)
+  snowfall::sfExportAll()
+  snowfall::sfLibrary(dplyr)
+  
+  z = snowfall::sfLapply(
+    x         = 1:n.abc, 
+    fun       = foo,
+    priors    = priors, 
+    obj       = obj,
+    use.cl    = use.cl, 
+    use.ww    = use.ww,
+    n.sim     = n.sim,
+    verbose   = TRUE,
+    err.type  = err.type,
+    deterministic = FALSE)
+  snowfall::sfStop()
+  
+  abc.err = sapply(z, '[[', 'distance')
+  abc.sim = lapply(z, '[[', 'sim')
+ 
+  # -- Posteriors
+  
+  df.abc = cbind(priors, abc.err) %>% 
+    mutate(abc.index = 1:nrow(priors)) %>%
+    arrange(abc.err)
+  
+  n.post = round(n.abc*p.abc)
+  df.post = df.abc[1:n.post,]
+  
+  res = list(
+    all.distances    = df.abc,
+    all.simulations  = abc.sim,
+    posteriors       = df.post,
+    post.simulations = abc.sim[df.post$abc.index]
+  ) 
+  
+  return(res)
   
 }

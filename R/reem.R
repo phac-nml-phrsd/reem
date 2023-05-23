@@ -54,17 +54,30 @@ setRefClass(
                                verbose = FALSE) {
         return(
           reem_traj_dist_obs(
-            obj = .self, 
-            use.cl = use.cl, use.ww = use.ww, 
-            err.type = err.type, 
+            obj           = .self, 
+            use.cl        = use.cl, 
+            use.ww        = use.ww, 
+            err.type      = err.type, 
             deterministic = deterministic, 
-            n.sim = n.sim, 
-            verbose = verbose
+            n.sim         = n.sim, 
+            verbose       = verbose
           )
         )
-      }
+      },
       
-    ))
+      fit_abc = function(prm.abc,
+                         prms.to.fit){
+          res = reem_fit_abc(
+            obj         = .self,
+            prm.abc     = prm.abc,
+            prms.to.fit = prms.to.fit)
+          
+          .self$is.fitted = TRUE
+          
+        return(res)
+      }
+    )
+  )
 
 
 
