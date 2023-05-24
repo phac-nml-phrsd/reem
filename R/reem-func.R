@@ -246,11 +246,6 @@ reem_traj_dist_obs <- function(
     verbose = FALSE
 ) {
   
-  # LEGACY CODE: keep until sure it's really useless
-  # if('i0prop' %in% names(priors)){
-  #   prms = set_I_init(prms)
-  # }
-  # 
   prms   = obj$prms
   obs.cl = obj$obs.cl
   obs.ww = obj$obs.ww
@@ -275,7 +270,7 @@ reem_traj_dist_obs <- function(
   }
   
   if(deterministic){
-    s     = obj$simulate_epi(prms = prms, deterministic = TRUE)
+    s     = obj$simulate_epi(deterministic = TRUE)
     a.cl  = s$obs.cl
     a.ww  = s$obs.ww
     a.sim = s$sim
@@ -322,6 +317,38 @@ reem_traj_dist_obs <- function(
 }
 
 
+# Util function for parallel computation
+calc_dist_parallel <- function(i,
+                               priors,
+                               obj,
+                               use.cl, 
+                               use.ww, 
+                               err.type,
+                               deterministic,
+                               n.sim = 10, 
+                               verbose = FALSE ) {
+  cat('ABC iteration #',i,'\n') 
+  pp = priors[i,]
+  
+  if('i0prop' %in% names(priors)){
+    obj$prms$i0prop <- pp$i0prop
+    obj$prms = set_I_init(obj$prms)
+  }
+  
+  obj$prms[names(pp)] <- pp
+  
+  x = reem_traj_dist_obs(
+    obj           = obj,
+    use.cl        = use.cl, 
+    use.ww        = use.ww, 
+    err.type      = err.type,
+    deterministic = deterministic,
+    n.sim         = n.sim, 
+    verbose       = verbose
+  )
+  return(x)
+}
+
 #' Fit model to observed data using the ABC algorithm.
 #'
 #' @param obj 
@@ -335,7 +362,8 @@ reem_traj_dist_obs <- function(
 #' 
 reem_fit_abc <- function(obj,
                          prm.abc,
-                         prms.to.fit) {
+                         prms.to.fit,
+                         verbose = FALSE) {
   
   # Unpack ABC parameters:
   n.abc   = prm.abc$n.abc
@@ -348,89 +376,48 @@ reem_fit_abc <- function(obj,
   
   err.type = prm.abc$err.type
   
-  # -- Create priors distributions
+  deterministic = ifelse(n.sim > 0, FALSE, TRUE)
   
-  tmp = list()
-  for(i in seq_along(prms.to.fit)){
-    
-    is.int = is_prm_integer(names(prms.to.fit)[i])
-    
-    if(is.int){
-      tmp[[i]] = sample(x = prms.to.fit[[i]][1]:prms.to.fit[[i]][2], 
-                        size = n.abc,
-                        replace = TRUE)
-    }
-    if(!is.int){
-      tmp[[i]] = runif(n = n.abc, 
-                       min = prms.to.fit[[i]][1], 
-                       max = prms.to.fit[[i]][2])
-    }
-  }
-  priors = data.frame(tmp)
-  names(priors) = names(prms.to.fit)
-  head(priors)
+  # Priors 
+  priors = generate_priors(prms.to.fit, n.priors = n.abc) 
   
-  foo <- function(i,
-                  priors,
-                  obj,
-                  use.cl, 
-                  use.ww, 
-                  err.type,
-                  deterministic,
-                  n.sim = 10, 
-                  verbose = FALSE ) {
-    cat('ABC iteration #',i,'\n') 
-    pp = priors[i,]
-    obj$prms[names(pp)] <- pp
-    
-    x = reem_traj_dist_obs(
-      obj = obj,
-      use.cl = use.cl, 
-      use.ww = use.ww, 
-      err.type = err.type,
-      deterministic = deterministic,
-      n.sim = n.sim, 
-      verbose = verbose
-    )
-    return(x)
-  }
-  
+  # calculate distance from observations
+  # for each parameter prior value
   snowfall::sfInit(parallel = n.cores > 1, cpus = n.cores)
   snowfall::sfExportAll()
   snowfall::sfLibrary(dplyr)
   
   z = snowfall::sfLapply(
     x         = 1:n.abc, 
-    fun       = foo,
+    fun       = calc_dist_parallel,
     priors    = priors, 
     obj       = obj,
     use.cl    = use.cl, 
     use.ww    = use.ww,
     n.sim     = n.sim,
-    verbose   = TRUE,
+    verbose   = verbose,
     err.type  = err.type,
-    deterministic = FALSE)
+    deterministic = deterministic)
   snowfall::sfStop()
   
   abc.err = sapply(z, '[[', 'distance')
   abc.sim = lapply(z, '[[', 'sim')
- 
+  
   # -- Posteriors
   
   df.abc = cbind(priors, abc.err) %>% 
     mutate(abc.index = 1:nrow(priors)) %>%
     arrange(abc.err)
   
-  n.post = round(n.abc*p.abc)
+  n.post  = round(n.abc*p.abc)
   df.post = df.abc[1:n.post,]
   
   res = list(
     all.distances    = df.abc,
     all.simulations  = abc.sim,
-    posteriors       = df.post,
+    post.prms        = df.post,
     post.simulations = abc.sim[df.post$abc.index]
   ) 
   
   return(res)
-  
 }

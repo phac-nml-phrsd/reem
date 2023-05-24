@@ -4,7 +4,7 @@
 \alias{reem_fit_abc}
 \title{Fit model to observed data using the ABC algorithm.}
 \usage{
-reem_fit_abc(obj, prm.abc, prms.to.fit)
+reem_fit_abc(obj, prm.abc, prms.to.fit, verbose = FALSE)
 }
 \arguments{
 \item{obj}{}

@@ -2,13 +2,17 @@
 % Please edit documentation in R/utils.R
 \name{set_I_init}
 \alias{set_I_init}
-\title{Title}
+\title{Translate the initial PROPORTION 
+of infected individuals into a
+NuMBER of individuals initially infected.}
 \usage{
 set_I_init(prm)
 }
 \arguments{
-\item{prm}{}
+\item{prm}{List. Model parameters.}
 }
 \description{
-Title
+Translate the initial PROPORTION 
+of infected individuals into a
+NuMBER of individuals initially infected.
 }

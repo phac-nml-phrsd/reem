@@ -19,9 +19,11 @@ timestamp_short <- function() {
 
 
 
-#' Title
+#' Translate the initial PROPORTION 
+#' of infected individuals into a
+#' NuMBER of individuals initially infected.
 #'
-#' @param prm 
+#' @param prm List. Model parameters.
 #'
 #' @return
 #'
@@ -175,3 +177,45 @@ is_prm_integer <- function(prm.name) {
     res = TRUE
   return(res)
 }
+
+
+#' Generate prior samples given 
+#' paramter names and range.
+#'
+#' @param prms.to.fit List of parameters name with their range.
+#' @param n.priors Integer. Number of sample to generate for each parameter.
+#'
+#' @return
+#' @export
+#'
+#' @examples
+generate_priors <- function(prms.to.fit,
+                            n.priors) {
+  
+  tmp = list()
+  
+  for(i in seq_along(prms.to.fit)){
+    
+    is.int = is_prm_integer(names(prms.to.fit)[i])
+   
+    lwr = prms.to.fit[[i]][1]
+    upr = prms.to.fit[[i]][2]
+    
+    if(is.int){
+      tmp[[i]] = sample( x       = lwr:upr, 
+                         size    = n.priors,
+                         replace = TRUE)
+    }
+    if(!is.int){
+      tmp[[i]] = runif(n   = n.priors, 
+                       min = lwr, 
+                       max = upr)
+    }
+  }
+  priors = data.frame(tmp)
+  names(priors) = names(prms.to.fit)
+  return(priors)
+}
+
+
+

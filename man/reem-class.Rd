@@ -10,11 +10,18 @@ Class to represent a Renewal Equation Epidemic Model.
 \section{Fields}{
 
 \describe{
-\item{\code{name}}{character.}
+\item{\code{name}}{Character for the name of the model.}
 
-\item{\code{prms}}{list.}
+\item{\code{prms}}{List of model parameters.}
 
-\item{\code{is.fitted}}{logical.}
+\item{\code{is.fitted}}{Logical. Is the model fitted to the observation
+data attached (\code{obs.cl} and/or \code{obs.ww})?}
+
+\item{\code{obs.cl}}{Dataframe representing the clinical observations. 
+Must have \code{date} and \code{obs} variables.}
+
+\item{\code{obs.ww}}{Dataframe representing the wastewater observations. 
+Must have \code{date} and \code{obs} variables.}
 }}
 
 

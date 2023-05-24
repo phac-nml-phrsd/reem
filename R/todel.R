@@ -2,6 +2,7 @@
 if(0){
   
   library(dplyr)
+  library(tidyr)
   library(ggplot2)
   library(lubridate)
   # devtools::load_all() 
@@ -9,7 +10,7 @@ if(0){
   prms = list(
     horizon = 300,  # horizon of the simulation
     last.obs = 299,  # last observation time (must be < horizon)
-    B       = rep(1,1e3), # Behavior change
+    B       = rep(1,300), # Behavior change
     freq.obs.ww = 3, # average frequency of ww observation
     t.obs.cl = seq(7,280, by = 7),
     t.obs.ww = seq(3,200, by=3),
@@ -29,9 +30,9 @@ if(0){
   )
   
   obj0 = new('reem', 
-            name = 'foo', 
-            prms = prms, 
-            is.fitted = FALSE)
+             name = 'foo', 
+             prms = prms, 
+             is.fitted = FALSE)
   
   obj0$print_prms()
   
@@ -57,14 +58,14 @@ if(0){
                         verbose = TRUE)
   
   print(a$distance)
-
+  
   
   # Tue May 23 11:31:34 2023 ------------------------------
   
   prm.abc = list(
-    n.abc = 20,
-    n.sim = 8,     # `8` should be enough
-    p.abc = 0.20,
+    n.abc = 1e3,
+    n.sim = 0,     #`0` for deterministic, else`8` should be enough
+    p.abc = 1e-2,
     n.cores = 4,  # parallel::detectCores() - 1,
     use.cl = 1, 
     use.ww = 1,
@@ -78,21 +79,42 @@ if(0){
     start.delta = c(-7,7)  
   )
   
-  foo = obj$fit_abc(prm.abc, prms.to.fit)  
+  system.time({
+    foo = obj$fit_abc(prm.abc, prms.to.fit)  
+  })
   
   obj$is.fitted 
   
-  gp = foo$posteriors %>% 
+  gg = obj$plot_fit()
+  
+  plot(gg$all)
+  
+  d = obj$fit.obj$all.distances
+  foo$all.distances
+  
+  fit.obj = obj$fit.obj
+  
+  
+  ggplot(d, aes(x=1:nrow(d), y=abc.err)) + 
+    geom_step()+
+    scale_y_log10() + 
+    theme(panel.grid.minor = element_blank())
+  
+  gp = foo$post.prms %>% 
     select(-abc.err) %>% 
-    tidyr::pivot_longer(cols = -abc.index ) %>%
+    pivot_longer(cols = -abc.index ) %>%
     ggplot(aes(x=value)) + 
     geom_histogram() + 
     facet_wrap(~name, scales = 'free')
-    
+  
   gp  
   
   
   
+  
+  
+  # - - - -  -  - - - - -  - - - - - - - - 
+  # --- other stuff
   
   g = simepi$sim %>% 
     ggplot(aes(x=t))+
@@ -105,4 +127,27 @@ if(0){
               color = 'steelblue2', alpha = 0.2)
   plot(g + scale_y_log10())
   # plot(g)
+  
+  
+  # --- by reference
+  
+  a = new('reem', 
+          name = 'foo', 
+          prms = prms, 
+          is.fitted = FALSE)
+  
+  a$is.fitted
+  
+  b = a        # copy by reference
+  q = a$copy() # copy by value
+  
+  a$is.fitted <- TRUE  
+  
+  b$is.fitted
+  q$is.fitted
+  
+  
+  a$show()
 }
+
+
