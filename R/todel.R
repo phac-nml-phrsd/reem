@@ -52,31 +52,20 @@ if(0){
              obs.ww = obs.ww,
              is.fitted = FALSE)
   
-  a = obj$traj_dist_obs(use.cl = 1, 
-                        use.ww = 1, 
-                        deterministic = FALSE,
-                        err.type = 'L2',
-                        verbose = TRUE)
-  
-  print(a$distance)
-  
-  
-  # Tue May 23 11:31:34 2023 ------------------------------
-  
   prm.abc = list(
-    n.abc = 1e3,
+    n.abc = 50,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
-    p.abc = 1e-2,
-    n.cores = 4,  # parallel::detectCores() - 1,
+    p.abc = 0.2, #1e-2,
+    n.cores = 1,  # parallel::detectCores() - 1,
     use.cl = 1, 
-    use.ww = 1,
+    use.ww = 0,
     err.type = 'L2'
   )
   
   prms.to.fit = list(
-    R0    = c(0.90, 1.99),
-    alpha = c(0, 9),
-    i0prop = c(-6,-2),
+    R0    = c(1.2, 3),
+    alpha = c(0, 2),
+    i0prop = c(-5,-2),
     start.delta = c(-7,7)  
   )
   
@@ -84,17 +73,16 @@ if(0){
     foo = obj$fit_abc(prm.abc, prms.to.fit)  
   })
   
-  obj$is.fitted 
-  
   gg = obj$plot_fit()
   
-  pdf('plot.pdf', width = 20)
+  fname = paste0('plot-',timestamp_short(),'.pdf')
+  
+  pdf(file = fname, width = 20)
   plot(gg$all)
   dev.off()
   
-  d = obj$fit.obj$all.distances
-  foo$all.distances
   
+  d = obj$fit.obj$all.distances
   fit.obj = obj$fit.obj
   
   

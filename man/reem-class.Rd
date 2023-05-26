@@ -22,6 +22,10 @@ Must have \code{date} and \code{obs} variables.}
 
 \item{\code{obs.ww}}{Dataframe representing the wastewater observations. 
 Must have \code{date} and \code{obs} variables.}
+
+\item{\code{fit.obj}}{List containing the fitted object.}
+
+\item{\code{fit.prm}}{List that defines the parameters for the fitting algorithm.}
 }}
 
 

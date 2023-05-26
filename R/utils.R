@@ -248,9 +248,11 @@ aggregate_time <- function(df, dt.aggr, var.name) {
   dt = 't'
   if(class(dt.aggr) == 'Date') dt = 'date'
   
+  # Generic variable names
   df$zzz <- df[[var.name]]
   df$dt  <- df[[dt]]
   
+  # Calculate aggregation
   a = df$dt %in% dt.aggr 
   aa = cumsum(a) + 1
   
@@ -263,6 +265,7 @@ aggregate_time <- function(df, dt.aggr, var.name) {
       aggregation = sum(zzz), 
       dt = max(dt))
   
+  # Rename appropriately
   res = dplyr::select(tmp, dt, aggregation) 
   names(res)[1] <- dt
   

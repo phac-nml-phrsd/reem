@@ -184,7 +184,7 @@ reem_simulate_epi <- function(prms,
   # (they may not be observed on the same schedule)
   
   
-  # Aggregate reports
+  # Aggregate clinical reports
   sim.obs.cl = aggregate_time(df       = sim, 
                               dt.aggr  = t.obs.cl, 
                               var.name = 'Y') %>% 
@@ -193,11 +193,11 @@ reem_simulate_epi <- function(prms,
       date = prms$date.start + t,
       obs  = aggregation) 
   
-  
+  # Extract wastewater observations
   sim.obs.ww = sim %>% 
     dplyr::select(t, Wr) %>% 
     dplyr::filter(t <= prms$last.obs, 
-                  !is.na(Wr)) %>% 
+                  !is.na(Wr)) %>%   # filtering out NA keeps observed times only.
     dplyr::rename(obs = Wr) %>%
     dplyr::mutate(date = prms$date.start + t) %>%
     select(t, date, obs)
