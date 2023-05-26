@@ -90,33 +90,44 @@ setRefClass(
       
       plot_fit = function(){
         
+        # Prepare dataframes for plotting
         
+        ps = fit.obj$post.simulations 
         
-        ps = fit.obj$post.simulations %>% 
+        ps.cl = lapply(ps, aggregate_time, 
+                   dt.aggr = obs.cl$date, 
+                   # `Y` is the aggregated clinical reports
+                   var.name = 'Y') %>% 
           dplyr::bind_rows() %>% 
           dplyr::group_by(date) %>%
-          # `Y` is the aggregated clinical reports
+          dplyr::summarise(Y.m = mean(aggregation),
+                           Y.lo = min(aggregation),
+                           Y.hi = max(aggregation))
+        
+        ps.ww = ps %>% 
+          dplyr::bind_rows() %>% 
+          tidyr::drop_na(Wr) %>%
+          dplyr::group_by(date) %>%
           # `Wr` is the reported wastewater concentration
-          dplyr::summarise(Y.m = mean(Y),
-                           Y.lo = min(Y),
-                           Y.hi = max(Y),
-                           Wr.m = mean(Wr),
+          dplyr::summarise(Wr.m = mean(Wr),
                            Wr.lo = min(Wr),
                            Wr.hi = max(Wr))
+        
         
         ggplot2::theme_set(ggplot2::theme_bw())
         
         # ---- Trajectories
         
-        g.cl = ps %>% 
+        g.cl = ps.cl %>% 
           ggplot2::ggplot(ggplot2::aes(x=date)) + 
           ggplot2::geom_line(ggplot2::aes(y = Y.m), color = 'chartreuse3')+
           ggplot2::geom_ribbon(ggplot2::aes(ymin=Y.lo, ymax=Y.hi), 
                                alpha=0.2, fill='chartreuse')+
           ggplot2::geom_point(data = obs.cl, ggplot2::aes(y=obs)) +
           labs(title = 'Fit to clinical data', y = 'cases')
+        # g.cl
         
-        g.ww = ps %>%
+        g.ww = ps.ww %>%
           drop_na(starts_with('Wr')) %>%
           ggplot2::ggplot(ggplot2::aes(x=date)) + 
           ggplot2::geom_line(ggplot2::aes(y = Wr.m), 
@@ -127,6 +138,7 @@ setRefClass(
             alpha=0.2, fill='chocolate')+
           ggplot2::geom_point(data = obs.ww, ggplot2::aes(y=obs)) +
           labs(title = 'Fit to wastewater data', y = 'concentration')
+        # g.ww
         
         # ---- Posterior parameters
         
