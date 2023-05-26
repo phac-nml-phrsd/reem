@@ -9,8 +9,11 @@
 #' Must have \code{date} and \code{obs} variables. 
 #' @field obs.ww Dataframe representing the wastewater observations. 
 #' Must have \code{date} and \code{obs} variables. 
+#' @field fit.obj List containing the fitted object. 
+#' @field fit.prm List that defines the parameters for the fitting algorithm.
 #' 
 #' @return
+#' 
 #' @export
 #'
 #' 
@@ -22,7 +25,8 @@ setRefClass(
     obs.cl    = "data.frame",
     obs.ww    = "data.frame",
     is.fitted = "logical",
-    fit.obj   = "list"
+    fit.obj   = "list",
+    fit.prm   = "list"
   ),
   
   # - - - - - - - - - - - - - - - - - -
@@ -79,6 +83,7 @@ setRefClass(
         
         .self$is.fitted = TRUE
         .self$fit.obj   = res
+        .self$fit.prm  = prm.abc
         return(res)
       },
       
@@ -87,6 +92,8 @@ setRefClass(
         ps = fit.obj$post.simulations %>% 
           dplyr::bind_rows() %>% 
           dplyr::group_by(date) %>%
+          # `Y` is the aggregated clinical reports
+          # `Wr` is the reported wastewater concentration
           dplyr::summarise(Y.m = mean(Y),
                            Y.lo = min(Y),
                            Y.hi = max(Y),
@@ -109,9 +116,12 @@ setRefClass(
         g.ww = ps %>%
           drop_na(starts_with('Wr')) %>%
           ggplot2::ggplot(ggplot2::aes(x=date)) + 
-          ggplot2::geom_line(ggplot2::aes(y = Wr.m), color = 'chocolate3')+
-          ggplot2::geom_ribbon(ggplot2::aes(ymin=Wr.lo, ymax=Wr.hi), 
-                               alpha=0.2, fill='chocolate')+
+          ggplot2::geom_line(ggplot2::aes(y = Wr.m), 
+                             color = 'chocolate3')+
+          ggplot2::geom_ribbon(ggplot2::aes(
+            ymin = Wr.lo, 
+            ymax = Wr.hi), 
+            alpha=0.2, fill='chocolate')+
           ggplot2::geom_point(data = obs.ww, ggplot2::aes(y=obs)) +
           labs(title = 'Fit to wastewater data', y = 'concentration')
         
@@ -124,10 +134,16 @@ setRefClass(
           select(-starts_with('abc')) %>% 
           pivot_longer(cols = -type)
         
+        col.pp =  c(posterior = 'indianred3', 
+                    prior = 'gray70')
+        
         g.post = dp %>% 
-          ggplot2::ggplot(ggplot2::aes(x= value, 
-                                       color = type, fill = type)) + 
+          ggplot2::ggplot(ggplot2::aes(x     = value, 
+                                       color = type, 
+                                       fill  = type)) + 
           ggplot2::geom_density(alpha = 0.3)+
+          ggplot2::scale_color_manual(values = col.pp)+
+          ggplot2::scale_fill_manual(values = col.pp)+
           ggplot2::facet_wrap(~name, scales = 'free')+
           ggplot2::theme(
             axis.text.y = element_blank(),
@@ -150,9 +166,9 @@ setRefClass(
               gp[[k]] = tmp %>% 
                 ggplot2::ggplot(ggplot2::aes(x = x, y = y))+
                 ggplot2::geom_density_2d_filled()+
-                ggplot2::theme(panel.grid = element_blank())+
+                ggplot2::theme(panel.grid = ggplot2::element_blank())+
                 ggplot2::labs(x=nam[i], y=nam[j]) + 
-                guides(fill = 'none')
+                ggplot2::guides(fill = 'none')
               
               k = k+1
             }
@@ -161,12 +177,39 @@ setRefClass(
         gpall2d = patchwork::wrap_plots(gp) +
           patchwork::plot_annotation(title = 'Posterior parameters 2D density')
         
+   
+        # -- Ordered ABC distances
+        
+        n.post = round(fit.prm$n.abc * fit.prm$p.abc, 0)
+        d = fit.obj$all.distances %>%
+          dplyr::mutate(i = dplyr::row_number()) %>%
+          dplyr::mutate(type = ifelse(i <= n.post,
+                               'accepted','rejected'))
+        
+        g.dist = d %>%
+          ggplot2::ggplot(ggplot2::aes(x = 1:nrow(d), 
+                                       y = abc.err)) + 
+          ggplot2::geom_vline(xintercept = n.post, 
+                              linetype = 'dashed')+
+          ggplot2::geom_step(ggplot2::aes(color = type), 
+                             linewidth = 1 )+
+          ggplot2::scale_y_log10() + 
+          ggplot2::scale_x_log10() + 
+          ggplot2::scale_color_manual(values = c('red2', 'gray80'))+
+          ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) + 
+          ggplot2::labs(
+            title = 'ABC distances from data',
+            x = 'ordered ABC iteration',
+            y = 'distance'
+          )
+        
         
         g.list = list(
           traj.cl = g.cl,
           traj.ww = g.ww,
           post.prms = g.post,
-          post.prms.2d = gpall2d
+          post.prms.2d = gpall2d,
+          dist = g.dist
         )
         g.all = patchwork::wrap_plots(g.list) 
         

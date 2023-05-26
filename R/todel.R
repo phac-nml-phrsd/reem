@@ -5,6 +5,7 @@ if(0){
   library(tidyr)
   library(ggplot2)
   library(lubridate)
+  library(rif)
   # devtools::load_all() 
   
   prms = list(
@@ -87,29 +88,14 @@ if(0){
   
   gg = obj$plot_fit()
   
+  pdf('plot.pdf', width = 20)
   plot(gg$all)
+  dev.off()
   
   d = obj$fit.obj$all.distances
   foo$all.distances
   
   fit.obj = obj$fit.obj
-  
-  
-  ggplot(d, aes(x=1:nrow(d), y=abc.err)) + 
-    geom_step()+
-    scale_y_log10() + 
-    theme(panel.grid.minor = element_blank())
-  
-  gp = foo$post.prms %>% 
-    select(-abc.err) %>% 
-    pivot_longer(cols = -abc.index ) %>%
-    ggplot(aes(x=value)) + 
-    geom_histogram() + 
-    facet_wrap(~name, scales = 'free')
-  
-  gp  
-  
-  
   
   
   
@@ -119,9 +105,11 @@ if(0){
   g = simepi$sim %>% 
     ggplot(aes(x=t))+
     geom_point(aes(y=I))+
-    geom_step(data = obs.cl, aes(y=obs), color='chartreuse3',
+    geom_step(data = obs.cl, aes(y=obs), 
+              color='chartreuse3',
               linewidth = 1)+
-    geom_step(data = obs.ww, aes(y=obs), color='chocolate2',
+    geom_step(data = obs.ww, aes(y=obs), 
+              color='chocolate2',
               linewidth = 1)+
     geom_line(data = a$sim, aes(y=I, group = n.sim), 
               color = 'steelblue2', alpha = 0.2)
