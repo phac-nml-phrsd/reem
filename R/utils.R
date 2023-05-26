@@ -135,9 +135,9 @@ err_fct <- function(cl.i, ww.i,
   if(do.plot){
     g = obs.cl %>% 
       ggplot(aes(x=date))+
-      geom_point(aes(y=Y))+
-      geom_point(data = obs.cla, aes(y=Y), color='red1', size=2)+
-      geom_line(data = obs.cla, aes(y=Y), color='red1',linetype='dashed')+
+      geom_point(aes(y=obs))+
+      geom_point(data = obs.cla, aes(y=obs), color='red1', size=2)+
+      geom_line(data = obs.cla, aes(y=obs), color='red1',linetype='dashed')+
       geom_line(data=cl.i, aes(y=Ym)) 
     plot(g)
   }
@@ -218,4 +218,54 @@ generate_priors <- function(prms.to.fit,
 }
 
 
+
+
+#' Aggregate values across time 
+#'
+#' @param df Dataframe oftemporal data. 
+#' Must have a variable named 
+#' either \code{date} or \`code{time}. 
+#' @param dt.aggr Vector of integer (time) or dates (date)
+#' were the aggregation is performed.
+#' @param var.name String. Name of the variable to be aggregated.
+#'
+#' @return A dataframe where the values of the 
+#' variable \code{var.name} has been aggregated (summed).
+#' 
+#' @export
+#'
+#' @examples
+#' 
+aggregate_time <- function(df, dt.aggr, var.name) {
+  
+  if(0){ # DEBUG
+    dt.aggr = obs.cl$date
+    dt.aggr = obs.cl$t
+    var.name = 'Y'
+  }
+  
+  # Determine if we work with times or dates
+  dt = 't'
+  if(class(dt.aggr) == 'Date') dt = 'date'
+  
+  df$zzz <- df[[var.name]]
+  df$dt  <- df[[dt]]
+  
+  a = df$dt %in% dt.aggr 
+  aa = cumsum(a) + 1
+  
+  tmp = df %>% 
+    dplyr::select(dt, zzz) %>% 
+    dplyr::arrange(dt) %>% 
+    dplyr::mutate(group = aa) %>%
+    dplyr::group_by(group) %>% 
+    dplyr::summarise(
+      aggregation = sum(zzz), 
+      dt = max(dt))
+  
+  res = dplyr::select(tmp, dt, aggregation) 
+  names(res)[1] <- dt
+  
+  return(res) 
+}
 

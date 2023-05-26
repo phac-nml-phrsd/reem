@@ -185,18 +185,14 @@ reem_simulate_epi <- function(prms,
   
   
   # Aggregate reports
-  a = sim$t %in% t.obs.cl 
-  aa = cumsum(a) + 1
+  sim.obs.cl = aggregate_time(df       = sim, 
+                              dt.aggr  = t.obs.cl, 
+                              var.name = 'Y') %>% 
+    dplyr::transmute(
+      t, 
+      date = prms$date.start + t,
+      obs  = aggregation) 
   
-  sim.obs.cl = sim %>% 
-    dplyr::select(t, Y) %>% 
-    arrange(t) %>% 
-    dplyr::mutate(group = aa) %>%
-    dplyr::group_by(group) %>% 
-    dplyr::summarise(obs = sum(Y), 
-                     t = max(t)) %>% 
-    dplyr::mutate(date =  prms$date.start + t) %>% 
-    select(t, date, obs)
   
   sim.obs.ww = sim %>% 
     dplyr::select(t, Wr) %>% 
@@ -236,6 +232,7 @@ reem_simulate_epi <- function(prms,
 #' @export
 #'
 #' @examples
+#' 
 reem_traj_dist_obs <- function(
     obj,
     use.cl, 
@@ -254,7 +251,6 @@ reem_traj_dist_obs <- function(
     stop('The REEM object does not have any observation attached.
          Hence, cannot calculate a distance from observation. ABORTING!')
   }
-  
   
   # Adjust the epidemic start time
   # and check if we did not create

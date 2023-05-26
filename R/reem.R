@@ -89,6 +89,9 @@ setRefClass(
       
       
       plot_fit = function(){
+        
+        
+        
         ps = fit.obj$post.simulations %>% 
           dplyr::bind_rows() %>% 
           dplyr::group_by(date) %>%
