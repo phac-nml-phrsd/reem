@@ -1,9 +1,10 @@
 
 #' Title
 #'
-#' @param prms 
+#' @param prms List of distribution parameters
 #'
-#' @return
+#' @return Numerical vector representing the fecal shedding distribution
+#' 
 #' @export
 #'
 #' @examples

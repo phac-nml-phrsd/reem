@@ -370,6 +370,19 @@ reem_fit_abc <- function(obj,
   use.ww = prm.abc$use.ww
   use.cl = prm.abc$use.cl
   
+  message('\n----- ABC FIT -----\n\n',
+          'Target data sources :\n',
+          '  clinical   = ', ifelse(use.cl,'yes', 'NO'),'\n',
+          '  wastewater = ', ifelse(use.ww,'yes', 'NO'),'\n\n',
+          'Number of priors     : ', prm.abc$n.abc, '\n',
+          'Number of posteriors : ', 
+          round(prm.abc$p.abc * prm.abc$n.abc,0),
+          ' (accept ratio = ',prm.abc$p.abc,')\n',
+          'Number of cores      : ', prm.abc$n.cores,
+          ' (', round(prm.abc$n.abc / prm.abc$n.cores,0),
+          ' iters per core)\n',
+          '\n---------------------\n\n')
+  
   err.type = prm.abc$err.type
   
   deterministic = ifelse(n.sim > 0, FALSE, TRUE)

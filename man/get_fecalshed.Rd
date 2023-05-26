@@ -7,7 +7,10 @@
 get_fecalshed(prms = list(m = 5, v = 3, tmax = 14))
 }
 \arguments{
-\item{prms}{}
+\item{prms}{List of distribution parameters}
+}
+\value{
+Numerical vector representing the fecal shedding distribution
 }
 \description{
 Title

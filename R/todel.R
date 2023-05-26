@@ -53,12 +53,12 @@ if(0){
              is.fitted = FALSE)
   
   prm.abc = list(
-    n.abc = 50,
+    n.abc = 1e3,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
-    p.abc = 0.2, #1e-2,
-    n.cores = 1,  # parallel::detectCores() - 1,
+    p.abc = 0.01, #1e-2,
+    n.cores = 5,  # parallel::detectCores() - 1,
     use.cl = 1, 
-    use.ww = 0,
+    use.ww = 1,
     err.type = 'L2'
   )
   
@@ -77,7 +77,7 @@ if(0){
   
   fname = paste0('plot-',timestamp_short(),'.pdf')
   
-  pdf(file = fname, width = 20)
+  pdf(file = fname, width = 25, height = 10)
   plot(gg$all)
   dev.off()
   
@@ -89,41 +89,42 @@ if(0){
   
   # - - - -  -  - - - - -  - - - - - - - - 
   # --- other stuff
-  
-  g = simepi$sim %>% 
-    ggplot(aes(x=t))+
-    geom_point(aes(y=I))+
-    geom_step(data = obs.cl, aes(y=obs), 
-              color='chartreuse3',
-              linewidth = 1)+
-    geom_step(data = obs.ww, aes(y=obs), 
-              color='chocolate2',
-              linewidth = 1)+
-    geom_line(data = a$sim, aes(y=I, group = n.sim), 
-              color = 'steelblue2', alpha = 0.2)
-  plot(g + scale_y_log10())
-  # plot(g)
-  
-  
-  # --- by reference
-  
-  a = new('reem', 
-          name = 'foo', 
-          prms = prms, 
-          is.fitted = FALSE)
-  
-  a$is.fitted
-  
-  b = a        # copy by reference
-  q = a$copy() # copy by value
-  
-  a$is.fitted <- TRUE  
-  
-  b$is.fitted
-  q$is.fitted
-  
-  
-  a$show()
+  if(0){
+    g = simepi$sim %>% 
+      ggplot(aes(x=t))+
+      geom_point(aes(y=I))+
+      geom_step(data = obs.cl, aes(y=obs), 
+                color='chartreuse3',
+                linewidth = 1)+
+      geom_step(data = obs.ww, aes(y=obs), 
+                color='chocolate2',
+                linewidth = 1)+
+      geom_line(data = a$sim, aes(y=I, group = n.sim), 
+                color = 'steelblue2', alpha = 0.2)
+    plot(g + scale_y_log10())
+    # plot(g)
+    
+    
+    # --- by reference
+    
+    a = new('reem', 
+            name = 'foo', 
+            prms = prms, 
+            is.fitted = FALSE)
+    
+    a$is.fitted
+    
+    b = a        # copy by reference
+    q = a$copy() # copy by value
+    
+    a$is.fitted <- TRUE  
+    
+    b$is.fitted
+    q$is.fitted
+    
+    
+    a$show()
+  }
 }
 
 

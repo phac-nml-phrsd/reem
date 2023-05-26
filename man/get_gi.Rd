@@ -7,9 +7,13 @@
 get_gi(prms = list(m = 3, v = 1, tmax = 10), type = "gamma")
 }
 \arguments{
-\item{prms}{}
+\item{prms}{List of distribution parameters}
 
-\item{type}{}
+\item{type}{String. Distribution family (e.g., gamma)}
+}
+\value{
+Numerical vector representing 
+the intrinsic generation interval distribution.
 }
 \description{
 Title

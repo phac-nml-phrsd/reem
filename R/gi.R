@@ -10,10 +10,11 @@ gi_gamma <- function(m, v, tmax) {
 
 #' Title
 #'
-#' @param prms 
-#' @param type 
+#' @param prms List of distribution parameters 
+#' @param type String. Distribution family (e.g., gamma)
 #'
-#' @return
+#' @return Numerical vector representing 
+#' the intrinsic generation interval distribution.
 #' @export
 #'
 #' @examples

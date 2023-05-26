@@ -1,8 +1,9 @@
 #' Title
 #'
-#' @param prm 
+#' @param prm List of distribution parameters 
 #'
-#' @return
+#' @return Numerical vector representing  the distribution
+#' of viral decay in wastewater.
 #' @export
 #'
 #' @examples

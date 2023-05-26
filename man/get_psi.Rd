@@ -7,7 +7,11 @@
 get_psi(prm)
 }
 \arguments{
-\item{prm}{}
+\item{prm}{List of distribution parameters}
+}
+\value{
+Numerical vector representing  the distribution
+of viral decay in wastewater.
 }
 \description{
 Title
