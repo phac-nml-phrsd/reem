@@ -85,13 +85,30 @@ if(0){
   d = obj$fit.obj$all.distances
   fit.obj = obj$fit.obj
   
+  # - - - - - - - - - -  - - - - - - - - 
+  # --- Forecasts 
   
+   prm = list(
+      asof = ymd('2022-03-01'),
+      use.fit.post = TRUE,
+      n.resample = 20,
+      ci = 0.95
+    )
   
-  # - - - -  -  - - - - -  - - - - - - - - 
+   fcst = obj$forecast(prm)
+   
+   g.fcst = obj$plot_forecast()
+   plot(g.fcst)
+   
+   
+   foo = obj$fcst.obj
+   fcst.obj = obj$fcst.obj 
+  
+  # - - - - - - - - - -  - - - - - - - - 
   # --- other stuff
   if(0){
     g = simepi$sim %>% 
-      ggplot(aes(x=t))+
+      ggplot(aes(x=date))+
       geom_point(aes(y=I))+
       geom_step(data = obs.cl, aes(y=obs), 
                 color='chartreuse3',
@@ -99,7 +116,7 @@ if(0){
       geom_step(data = obs.ww, aes(y=obs), 
                 color='chocolate2',
                 linewidth = 1)+
-      geom_line(data = a$sim, aes(y=I, group = n.sim), 
+      geom_line(data = a$sim, aes(y=I), 
                 color = 'steelblue2', alpha = 0.2)
     plot(g + scale_y_log10())
     # plot(g)

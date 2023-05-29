@@ -410,7 +410,10 @@ reem_fit_abc <- function(obj,
   snowfall::sfStop()
   
   abc.err = sapply(z, '[[', 'distance')
-  abc.sim = lapply(z, '[[', 'sim')
+  abc.sim = lapply(z, '[[', 'sim') %>% 
+    # Add the simulation number (`index`) 
+    # to each iteration:
+    purrr::imap(~ dplyr::mutate(.x, index = .y))
   
   # -- Posteriors
   
@@ -430,3 +433,128 @@ reem_fit_abc <- function(obj,
   
   return(res)
 }
+
+
+
+summarize_fcst <- function(simfwd, prm) {
+  
+  if(0){ 
+    ci = 0.95
+  }
+  
+  ci = prm$ci
+  
+  
+  res = simfwd %>% 
+    bind_rows() %>% 
+    group_by(date) %>%
+    summarise(
+      across(.cols = c(Y,Wr), 
+             .fns = mean,
+             .names = '{.col}_mean',
+             na.rm = TRUE),
+      across(.cols = c(Y,Wr), 
+             .fns = quantile,
+             probs = 0.5 - ci/2, 
+             .names = '{.col}_lo',
+             na.rm = TRUE),
+      across(.cols = c(Y,Wr), 
+             .fns = quantile,
+             probs = 0.5 + ci/2, 
+             .names = '{.col}_hi',
+             na.rm = TRUE)
+    )
+  
+  return(res)
+ 
+  # Mon May 29 11:26:27 2023 ------------------------------
+  # do not delete. try to find an elegant way 
+  # to return multiple CIs (for nice plots)
+  if(0){
+    quantile_df <- function(x, probs = c(0.25, 0.5, 0.75)) {
+      tibble(
+        val = quantile(x, probs, na.rm = TRUE),
+        quant = probs
+      )
+    }
+    
+    tmp = simfwd %>% 
+      bind_rows() %>% 
+      reframe(
+        across(c(Y, Wr), quantile_df, .unpack = TRUE),
+        .by = date
+      )
+    
+    tmp %>% 
+      ggplot(aes(x=date)) + 
+      geom_line(aes(y=Y_mean))+ 
+      geom_ribbon(aes(ymin = Y_lo, ymax = Y_hi), alpha=0.2)
+    
+    
+    tmp %>%
+      drop_na(starts_with('Wr')) %>%
+      ggplot(aes(x=date)) + 
+      geom_point(aes(y=Wr_mean))+ 
+      geom_ribbon(aes(ymin = Wr_lo, ymax = Wr_hi), alpha=0.2)   
+  }
+  
+}
+
+
+reem_forecast <- function(obj, prm) {
+  
+  if(0){ # DEBUG
+    
+    prm = list(
+      asof = ymd('2022-03-01'),
+      use.fit.post = TRUE,
+      n.resample = 20,
+      ci = 0.95
+    )
+    
+  }
+  
+  
+  a = obj$fit.obj
+  
+  # In this case, the forecast is simply reusing
+  # the simulations from the posterior fits
+  # (i.e., no resampling from posterior distributions)
+  if(prm$use.fit.post){
+    simfwd = lapply(
+      X = a$post.simulations, 
+      FUN = dplyr::filter, 
+      date >= prm$asof) 
+  }
+  
+  
+  # Here, we resample from the posterior distributions.
+  # Assume multidimensional normal distribution
+  # to account for correlations between variables
+  
+  if(! prm$use.fit.post){
+    
+    #pp = a$post.prms
+    
+    # TODO: finish if you think it makes sense 
+    # to d it this way...
+  }
+  
+  summary.fcst = summarize_fcst(simfwd, prm)
+  
+  return( list(
+    simfwd = simfwd, 
+    summary.fcst = summary.fcst
+  ))
+  
+}
+
+
+
+
+
+
+
+
+
+

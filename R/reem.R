@@ -26,7 +26,9 @@ setRefClass(
     obs.ww    = "data.frame",
     is.fitted = "logical",
     fit.obj   = "list",
-    fit.prm   = "list"
+    fit.prm   = "list",
+    fcst.prm  = "list",
+    fcst.obj  = "list"
   ),
   
   # - - - - - - - - - - - - - - - - - -
@@ -83,7 +85,7 @@ setRefClass(
         
         .self$is.fitted = TRUE
         .self$fit.obj   = res
-        .self$fit.prm  = prm.abc
+        .self$fit.prm   = prm.abc
         return(res)
       },
       
@@ -95,9 +97,9 @@ setRefClass(
         ps = fit.obj$post.simulations 
         
         ps.cl = lapply(ps, aggregate_time, 
-                   dt.aggr = obs.cl$date, 
-                   # `Y` is the aggregated clinical reports
-                   var.name = 'Y') %>% 
+                       dt.aggr = obs.cl$date, 
+                       # `Y` is the aggregated clinical reports
+                       var.name = 'Y') %>% 
           dplyr::bind_rows() %>% 
           dplyr::group_by(date) %>%
           dplyr::summarise(Y.m = mean(aggregation),
@@ -192,14 +194,14 @@ setRefClass(
         gpall2d = patchwork::wrap_plots(gp) +
           patchwork::plot_annotation(title = 'Posterior parameters 2D density')
         
-   
+        
         # -- Ordered ABC distances
         
         n.post = round(fit.prm$n.abc * fit.prm$p.abc, 0)
         d = fit.obj$all.distances %>%
           dplyr::mutate(i = dplyr::row_number()) %>%
           dplyr::mutate(type = ifelse(i <= n.post,
-                               'accepted','rejected'))
+                                      'accepted','rejected'))
         
         g.dist = d %>%
           ggplot2::ggplot(ggplot2::aes(x = 1:nrow(d), 
@@ -230,6 +232,52 @@ setRefClass(
         
         res = c(g.list, list(all = g.all))
         return(res)
+      },
+      
+      
+      forecast = function(prm){
+        
+        if(!.self$is.fitted) 
+          stop('Model cannot forecast because it is not fitted.')
+        
+        res = reem_forecast(obj = .self, prm = prm) 
+        
+        .self$fcst.prm <- prm
+        .self$fcst.obj <- res
+        
+        return(res)
+      },
+      
+      plot_forecast = function(){
+        if(0){
+          obs.cl = obj$obs.cl
+          fcst.obj = obj$fcst.obj
+        }
+        
+        col.fcst = 'steelblue2'
+        
+        sf = fcst.obj$summary.fcst
+        
+        obs.ww.before = filter(obs.ww, date <= fcst.prm$asof)
+        obs.ww.after  = filter(obs.ww, date > fcst.prm$asof)
+        
+        g = ggplot(data = drop_na(sf, Wr_mean),aes(x=date))+ 
+          geom_point(data = obs.ww.before, aes(y=obs))+ 
+          geom_point(data = obs.ww.after, aes(y=obs), 
+                     color='gray80')+ 
+          geom_line( aes(y = Wr_mean), color= col.fcst, 
+                     linetype = 'dotted') + 
+          geom_ribbon(aes(ymin = Y_lo, ymax = Y_hi), 
+                      alpha = 0.2, 
+                      fill= col.fcst,
+                      color= col.fcst) +
+          geom_vline(xintercept = fcst.prm$asof, 
+                     linetype = 'dashed', 
+                     color = 'gray50') + 
+          annotate(geom = 'text', y=1, x=fcst.prm$asof, 
+                   label = fcst.prm$asof, size = 2)
+        return(g)
+        
       }
       
     )
