@@ -293,11 +293,15 @@ reem_traj_dist_obs <- function(
   # for comparison with actual observations (see further down)
   cl.i = a.cl %>% 
     dplyr::group_by(date) %>% 
-    dplyr::summarize(Ym = mean(obs))
+    dplyr::summarize(Ym = mean(obs)) %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(date <= max(obs.cl$date))
   
   ww.i = a.ww %>% 
     dplyr::group_by(date) %>% 
-    dplyr::summarize(Wm = mean(obs))
+    dplyr::summarize(Wm = mean(obs)) %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(date <= max(obs.ww$date))
   
   # Calculate the ABC distance
   res = err_fct(cl.i, ww.i, 
@@ -370,6 +374,11 @@ reem_fit_abc <- function(obj,
   use.ww = prm.abc$use.ww
   use.cl = prm.abc$use.cl
   
+  d.max = max(obj$obs.cl$date, obj$obs.ww$date)
+  hz    = as.integer(d.max - prms$date.start)
+  
+  obj$prms$horizon <- hz 
+  
   message('\n----- ABC FIT -----\n\n',
           'Target data sources :\n',
           '  clinical   = ', ifelse(use.cl,'yes', 'NO'),'\n',
@@ -381,6 +390,7 @@ reem_fit_abc <- function(obj,
           'Number of cores      : ', prm.abc$n.cores,
           ' (', round(prm.abc$n.abc / prm.abc$n.cores,0),
           ' iters per core)\n',
+          '\nData horizon : ', hz, '\n',
           '\n---------------------\n\n')
   
   err.type = prm.abc$err.type
@@ -501,12 +511,13 @@ summarize_fcst <- function(simfwd, prm) {
 }
 
 
-reem_forecast <- function(obj, prm) {
+reem_forecast <- function(obj, prm.fcst) {
   
   if(0){ # DEBUG
     
-    prm = list(
+    prm.fcst = list(
       asof = ymd('2022-03-01'),
+      horizon.fcst = ymd('2022-07-01'),
       use.fit.post = TRUE,
       n.resample = 20,
       ci = 0.95
@@ -514,17 +525,46 @@ reem_forecast <- function(obj, prm) {
     
   }
   
-  
   a = obj$fit.obj
+  
+  # Extend the horizon to match the one requested for the forecast
+  obj$prms$horizon <- as.integer(prm.fcst$horizon.fcst - obj$prms$date.start)
   
   # In this case, the forecast is simply reusing
   # the simulations from the posterior fits
   # (i.e., no resampling from posterior distributions)
-  if(prm$use.fit.post){
-    simfwd = lapply(
-      X = a$post.simulations, 
-      FUN = dplyr::filter, 
-      date >= prm$asof) 
+  if(prm.fcst$use.fit.post){
+    
+    pp = a$post.prms %>% dplyr::select(!tidyr::starts_with('abc'))
+   
+    # Helper function 
+    update_and_simulate <- function(i, pp, obj) {
+      cat('Simulating forward with posterior sample #',i,'\n')
+      obj$prms[names(pp)] <- pp[i,]
+      s = obj$simulate_epi(deterministic = TRUE) #TODO: let user choose
+      s$sim$index <- i
+      return(s$sim)
+    }
+    
+    npp = nrow(pp)
+    ns  = prm.fcst$n.resample
+    
+    if(ns > npp) {
+      warning('
+      Number of samples required for forecast (',ns,') is larger
+      than the total number of posteriors (',npp,').
+      Because option to resample from posterior is selected, 
+      only ',npp,' samples will be used for the forecast.')
+      
+      ii = 1:npp
+    }
+    
+    if(ns < npp) ii = sample(1:npp, ns, replace = FALSE)
+    
+    simfwd = lapply(X   = ii,
+                    FUN = update_and_simulate, 
+                    pp  = pp, 
+                    obj = obj)
   }
   
   
@@ -532,7 +572,7 @@ reem_forecast <- function(obj, prm) {
   # Assume multidimensional normal distribution
   # to account for correlations between variables
   
-  if(! prm$use.fit.post){
+  if(! prm.fcst$use.fit.post){
     
     #pp = a$post.prms
     
@@ -540,7 +580,7 @@ reem_forecast <- function(obj, prm) {
     # to d it this way...
   }
   
-  summary.fcst = summarize_fcst(simfwd, prm)
+  summary.fcst = summarize_fcst(simfwd, prm.fcst)
   
   return( list(
     simfwd = simfwd, 

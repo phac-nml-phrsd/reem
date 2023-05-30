@@ -235,14 +235,14 @@ setRefClass(
       },
       
       
-      forecast = function(prm){
+      forecast = function(prm.fcst){
         
         if(!.self$is.fitted) 
           stop('Model cannot forecast because it is not fitted.')
         
-        res = reem_forecast(obj = .self, prm = prm) 
+        res = reem_forecast(obj = .self, prm.fcst = prm.fcst) 
         
-        .self$fcst.prm <- prm
+        .self$fcst.prm <- prm.fcst
         .self$fcst.obj <- res
         
         return(res)
@@ -252,16 +252,29 @@ setRefClass(
         if(0){
           obs.cl = obj$obs.cl
           fcst.obj = obj$fcst.obj
+          fcst.prm = obj$fcst.prm
         }
         
         col.fcst = 'steelblue2'
+        col.fit  = 'tan2'
         
-        sf = fcst.obj$summary.fcst
+        sf = fcst.obj$summary.fcst %>% 
+          filter(date >= fcst.prm$asof)
         
         obs.ww.before = filter(obs.ww, date <= fcst.prm$asof)
         obs.ww.after  = filter(obs.ww, date > fcst.prm$asof)
         
+        fitsim.ww = obj$fit.obj$post.simulations %>% 
+          bind_rows() %>% 
+          group_by(date) %>% 
+          summarize(m = mean(Wr), lo = min(Wr), hi = max(Wr)) %>% 
+          drop_na(m)
+        
         g = ggplot(data = drop_na(sf, Wr_mean),aes(x=date))+ 
+          geom_line(data = fitsim.ww, aes(y=m), 
+                    color = col.fit, linetype = 'dashed') + 
+          geom_ribbon(data = fitsim.ww, aes(ymin=lo, ymax=hi), 
+                      fill=col.fit, alpha = 0.1) + 
           geom_point(data = obs.ww.before, aes(y=obs))+ 
           geom_point(data = obs.ww.after, aes(y=obs), 
                      color='gray80')+ 
@@ -275,8 +288,11 @@ setRefClass(
                      linetype = 'dashed', 
                      color = 'gray50') + 
           annotate(geom = 'text', y=1, x=fcst.prm$asof, 
-                   label = fcst.prm$asof, size = 2)
-        return(g)
+                   label = fcst.prm$asof, size = 2) + 
+          labs(title = 'Forecast wastewater concentration', 
+               y = 'concentration')
+        # g
+         return(g)
         
       }
       

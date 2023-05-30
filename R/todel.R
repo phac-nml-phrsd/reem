@@ -8,6 +8,9 @@ if(0){
   library(rif)
   # devtools::load_all() 
   
+  date.start = ymd('2022-01-01')
+  asof       = ymd('2022-03-01') 
+  
   prms = list(
     horizon = 300,  # horizon of the simulation
     last.obs = 299,  # last observation time (must be < horizon)
@@ -16,7 +19,7 @@ if(0){
     t.obs.cl = seq(7,280, by = 7),
     t.obs.ww = seq(3,200, by=3),
     i0prop  = 1e-3,
-    date.start = ymd('2022-01-01'),
+    date.start = date.start,
     start.delta = 0, 
     R0      = 1.5, # Basic reproduction number
     N       = 9999, # population size
@@ -39,8 +42,8 @@ if(0){
   
   simepi  = obj0$simulate_epi(deterministic = FALSE)
   
-  obs.cl = simepi$obs.cl
-  obs.ww = simepi$obs.ww
+  obs.cl = filter(simepi$obs.cl, date <= asof)
+  obs.ww = filter(simepi$obs.ww, date <= asof)
   
   prms$R0 <- 2.5
   
@@ -55,7 +58,7 @@ if(0){
   prm.abc = list(
     n.abc = 1e3,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
-    p.abc = 0.01, #1e-2,
+    p.abc = 0.02, #1e-2,
     n.cores = 5,  # parallel::detectCores() - 1,
     use.cl = 1, 
     use.ww = 1,
@@ -88,14 +91,15 @@ if(0){
   # - - - - - - - - - -  - - - - - - - - 
   # --- Forecasts 
   
-   prm = list(
-      asof = ymd('2022-03-01'),
+  prm.fcst = list(
+      asof         = asof,
+      horizon.fcst = ymd('2022-07-01'),
       use.fit.post = TRUE,
-      n.resample = 20,
-      ci = 0.95
+      n.resample   = 20,
+      ci           = 0.95
     )
   
-   fcst = obj$forecast(prm)
+   fcst = obj$forecast(prm = prm.fcst)
    
    g.fcst = obj$plot_forecast()
    plot(g.fcst)
