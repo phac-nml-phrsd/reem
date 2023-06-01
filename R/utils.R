@@ -236,7 +236,10 @@ generate_priors <- function(prms.to.fit,
 #'
 #' @examples
 #' 
-aggregate_time <- function(df, dt.aggr, var.name) {
+aggregate_time <- function(df, 
+                           dt.aggr, 
+                           var.name,
+                           aggreg.name = NULL) {
   
   if(0){ # DEBUG
     dt.aggr = obs.cl$date
@@ -268,6 +271,8 @@ aggregate_time <- function(df, dt.aggr, var.name) {
   # Rename appropriately
   res = dplyr::select(tmp, dt, aggregation) 
   names(res)[1] <- dt
+  
+  if(!is.null(aggreg.name)) names(res)[2] <- aggreg.name
   
   return(res) 
 }

@@ -261,24 +261,66 @@ setRefClass(
         sf = fcst.obj$summary.fcst %>% 
           filter(date >= fcst.prm$asof)
         
-        obs.ww.before = filter(obs.ww, date <= fcst.prm$asof)
-        obs.ww.after  = filter(obs.ww, date > fcst.prm$asof)
+        
+        # - - - - Retrieve fitted curves
         
         fitsim.ww = obj$fit.obj$post.simulations %>% 
           bind_rows() %>% 
           group_by(date) %>% 
-          summarize(m = mean(Wr), lo = min(Wr), hi = max(Wr)) %>% 
+          summarize(m  = mean(Wr), 
+                    lo = min(Wr), 
+                    hi = max(Wr)) %>% 
           drop_na(m)
         
-        g = ggplot(data = drop_na(sf, Wr_mean),aes(x=date))+ 
-          geom_line(data = fitsim.ww, aes(y=m), 
+        tmp.cl = obj$fit.obj$post.simulations %>% 
+          bind_rows() %>% 
+          group_by(date) %>% 
+          summarize(m = mean(Y), 
+                    lo = min(Y), 
+                    hi = max(Y)) %>% 
+          drop_na(m)
+        
+        # Aggregate for clinical reports
+        
+        ff <- function(df, dt.aggr, vars ) {
+          tmp = list()
+          for(v in vars){
+            a = aggregate_time(df = df, 
+                               dt.aggr = dt.aggr, 
+                               var.name = v, 
+                               aggreg.name = v) 
+            d = a$date
+            tmp[[v]] =  select(a, -date)
+          }
+          res = tmp %>% 
+            bind_cols( ) %>% 
+            mutate(date = d) 
+          return(res)
+        }
+        
+        fitsim.cl = ff(df = tmp.cl, dt.aggr = obs.cl$date, 
+                       vars = c('m','lo','hi')) %>%
+          filter(date <= max(obs.cl$date))
+        
+        
+        dt = as.numeric(diff(obs.cl$date))[1]
+        dt.aggr.fcst = seq.Date(
+          from = max(obs.cl$date), to = max(sf$date), by = dt)
+        
+        sf.cl = ff(df = sf, 
+                   dt.aggr = dt.aggr.fcst, 
+                   vars = c('Y_mean','Y_lo','Y_hi')) %>% 
+          filter(date > prm.fcst$asof)
+        
+        
+        g.cl = ggplot(data = sf.cl,
+                      aes(x=date))+ 
+          geom_line(data = fitsim.cl, aes(y=m), 
                     color = col.fit, linetype = 'dashed') + 
-          geom_ribbon(data = fitsim.ww, aes(ymin=lo, ymax=hi), 
+          geom_ribbon(data = fitsim.cl, aes(ymin=lo, ymax=hi), 
                       fill=col.fit, alpha = 0.1) + 
-          geom_point(data = obs.ww.before, aes(y=obs))+ 
-          geom_point(data = obs.ww.after, aes(y=obs), 
-                     color='gray80')+ 
-          geom_line( aes(y = Wr_mean), color= col.fcst, 
+          geom_point(data = obs.cl, aes(y=obs))+ 
+          geom_line( aes(y = Y_mean), color= col.fcst, 
                      linetype = 'dotted') + 
           geom_ribbon(aes(ymin = Y_lo, ymax = Y_hi), 
                       alpha = 0.2, 
@@ -289,13 +331,37 @@ setRefClass(
                      color = 'gray50') + 
           annotate(geom = 'text', y=1, x=fcst.prm$asof, 
                    label = fcst.prm$asof, size = 2) + 
+          labs(title = 'Forecast clinical reports', 
+               y = 'cases')
+        # g.cl
+        
+        g.ww = ggplot(data = drop_na(sf, Wr_mean),
+                      aes(x=date))+ 
+          geom_line(data = fitsim.ww, aes(y=m), 
+                    color = col.fit, linetype = 'dashed') + 
+          geom_ribbon(data = fitsim.ww, aes(ymin=lo, ymax=hi), 
+                      fill=col.fit, alpha = 0.1) + 
+          geom_point(data = obs.ww, aes(y=obs))+ 
+          geom_line( aes(y = Wr_mean), color= col.fcst, 
+                     linetype = 'dotted') + 
+          geom_ribbon(aes(ymin = Wr_lo, ymax = Wr_hi), 
+                      alpha = 0.2, 
+                      fill= col.fcst,
+                      color= col.fcst) +
+          geom_vline(xintercept = fcst.prm$asof, 
+                     linetype = 'dashed', 
+                     color = 'gray50') + 
+          annotate(geom = 'text', y=1, x=fcst.prm$asof, 
+                   label = fcst.prm$asof, size = 2) + 
           labs(title = 'Forecast wastewater concentration', 
                y = 'concentration')
-        # g
-         return(g)
+        # g.ww
         
+         return(list(
+           cl = g.cl, 
+           ww = g.ww
+         ))
       }
-      
     )
 )
 

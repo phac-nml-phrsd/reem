@@ -559,7 +559,7 @@ reem_forecast <- function(obj, prm.fcst) {
       ii = 1:npp
     }
     
-    if(ns < npp) ii = sample(1:npp, ns, replace = FALSE)
+    if(ns <= npp) ii = sample(1:npp, ns, replace = FALSE)
     
     simfwd = lapply(X   = ii,
                     FUN = update_and_simulate, 
