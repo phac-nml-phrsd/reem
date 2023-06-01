@@ -248,7 +248,9 @@ setRefClass(
         return(res)
       },
       
-      plot_forecast = function(){
+      plot_forecast = function(
+                        date_breaks = '2 months',
+                        date_labels = '%b`%y'){
         if(0){
           obs.cl = obj$obs.cl
           fcst.obj = obj$fcst.obj
@@ -257,6 +259,10 @@ setRefClass(
         
         col.fcst = 'steelblue2'
         col.fit  = 'tan2'
+        xaxis = scale_x_date(
+          date_breaks = date_breaks, 
+          date_labels = date_labels)
+        
         
         sf = fcst.obj$summary.fcst %>% 
           filter(date >= fcst.prm$asof)
@@ -331,8 +337,9 @@ setRefClass(
                      color = 'gray50') + 
           annotate(geom = 'text', y=1, x=fcst.prm$asof, 
                    label = fcst.prm$asof, size = 2) + 
+          xaxis + 
           labs(title = 'Forecast clinical reports', 
-               y = 'cases')
+               x = '', y = 'cases')
         # g.cl
         
         g.ww = ggplot(data = drop_na(sf, Wr_mean),
@@ -354,7 +361,8 @@ setRefClass(
           annotate(geom = 'text', y=1, x=fcst.prm$asof, 
                    label = fcst.prm$asof, size = 2) + 
           labs(title = 'Forecast wastewater concentration', 
-               y = 'concentration')
+               x = '', y = 'concentration') +
+          xaxis 
         # g.ww
         
          return(list(
