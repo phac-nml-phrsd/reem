@@ -8,6 +8,8 @@ plot*.pdf
 # Session Data files
 .RData
 .RDataTmp
+*.rds
+R/*.rds
 
 # User-specific files
 .Ruserdata
