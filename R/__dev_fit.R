@@ -55,10 +55,12 @@ if(0){
              obs.ww = obs.ww,
              is.fitted = FALSE)
   
+  # ---- Fit ----
+  
   prm.abc = list(
-    n.abc = 1e3,
+    n.abc = 2e3,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
-    p.abc = 0.02, #1e-2,
+    p.abc = 0.01, #1e-2,
     n.cores = 5,  # parallel::detectCores() - 1,
     use.cl = 1, 
     use.ww = 1,
@@ -88,28 +90,12 @@ if(0){
   d = obj$fit.obj$all.distances
   fit.obj = obj$fit.obj
   
+  saveRDS(object = obj, file = 'obj-dev.rds')
+  
+  
+
   # - - - - - - - - - -  - - - - - - - - 
-  # --- Forecasts 
-  
-  prm.fcst = list(
-      asof         = asof,
-      horizon.fcst = ymd('2022-06-01'),
-      use.fit.post = TRUE,
-      n.resample   = 20,
-      ci           = 0.95
-    )
-  
-   fcst = obj$forecast(prm = prm.fcst)
-   
-   g.fcst = obj$plot_forecast(date_breaks = '1 month')
-   patchwork::wrap_plots(g.fcst, ncol=1)
-   
-   
-   foo = obj$fcst.obj
-   fcst.obj = obj$fcst.obj 
-  
-  # - - - - - - - - - -  - - - - - - - - 
-  # --- other stuff
+  # --- other stuff  ----
   if(0){
     g = simepi$sim %>% 
       ggplot(aes(x=date))+
