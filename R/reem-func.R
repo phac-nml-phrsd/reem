@@ -446,13 +446,13 @@ reem_fit_abc <- function(obj,
 
 
 
-summarize_fcst <- function(simfwd, prm) {
+summarize_fcst <- function(simfwd, prm.fcst) {
   
   if(0){ 
     ci = 0.95
   }
   
-  ci = prm$ci
+  ci = prm.fcst$ci
   
   
   res = simfwd %>% 
@@ -511,7 +511,7 @@ summarize_fcst <- function(simfwd, prm) {
 }
 
 
-reem_forecast <- function(obj, prm.fcst) {
+reem_forecast <- function(obj, prm.fcst, verbose ) {
   
   if(0){ # DEBUG
     
@@ -538,8 +538,8 @@ reem_forecast <- function(obj, prm.fcst) {
     pp = a$post.prms %>% dplyr::select(!tidyr::starts_with('abc'))
    
     # Helper function 
-    update_and_simulate <- function(i, pp, obj) {
-      cat('Simulating forward with posterior sample #',i,'\n')
+    update_and_simulate <- function(i, pp, obj, verbose) {
+      if(verbose) cat('Simulating forward with posterior sample #',i,'\n')
       obj$prms[names(pp)] <- pp[i,]
       s = obj$simulate_epi(deterministic = TRUE) #TODO: let user choose
       s$sim$index <- i
@@ -559,12 +559,15 @@ reem_forecast <- function(obj, prm.fcst) {
       ii = 1:npp
     }
     
-    if(ns <= npp) ii = sample(1:npp, ns, replace = FALSE)
+    if(ns <= npp) ii = sort(sample(1:npp, ns, replace = FALSE))
+    
+    message('Sampling ',ns, ' posterior parameter sets out of ', npp,' available.')
     
     simfwd = lapply(X   = ii,
                     FUN = update_and_simulate, 
                     pp  = pp, 
-                    obj = obj)
+                    obj = obj,
+                    verbose = verbose)
   }
   
   
@@ -589,6 +592,129 @@ reem_forecast <- function(obj, prm.fcst) {
   
 }
 
+#' Plot forecasts
+#'
+#' @param obj 
+#' @param date_breaks 
+#' @param date_labels 
+#'
+#' @return A ggplot object.
+#'
+reem_plot_forecast <- function(
+    obj,
+   date_breaks,
+   date_labels  ) {
+  
+  obs.cl = obj$obs.cl
+  obs.ww = obj$obs.ww
+  fcst.obj = obj$fcst.obj
+  fcst.prm = obj$fcst.prm
+  
+  # - - - Cosmetics  
+  
+  col.fcst = 'steelblue2'
+  col.fit  = 'tan2'
+  xaxis = scale_x_date(
+    date_breaks = date_breaks, 
+    date_labels = date_labels)
+  alpha.ribbon = 0.20
+  
+  # - - - - Retrieve fitted curves
+  
+  sf = fcst.obj$summary.fcst 
+  
+  fitsim.ww = obj$fit.obj$post.simulations %>% 
+    bind_rows() %>% 
+    group_by(date) %>% 
+    summarize(m  = mean(Wr), 
+              lo = min(Wr), 
+              hi = max(Wr)) %>% 
+    drop_na(m)
+  
+  tmp.cl = obj$fit.obj$post.simulations %>% 
+    bind_rows() %>% 
+    group_by(date) %>% 
+    summarize(m = mean(Y), 
+              lo = min(Y), 
+              hi = max(Y)) %>% 
+    drop_na(m)
+  
+  # Aggregate for clinical reports
+  fitsim.cl = tmp.cl %>% 
+    aggcl(dt.aggr = obs.cl$date, 
+          vars = c('m','lo','hi')) %>%
+    filter(date <= max(obs.cl$date))
+  
+  # set the aggregation dates as 
+  # starting from `asof` and a time interval
+  # equal to the one of the observations:
+  dt = as.numeric(diff(obs.cl$date))[1]
+  dt.aggr.fcst = seq.Date(from = prm.fcst$asof , 
+                          to = max(sf$date), 
+                          by = dt)
+  
+  # aggregation of clinical reports
+  sf.cl = aggcl(df = sf, 
+                dt.aggr = dt.aggr.fcst, 
+                vars = c('Y_mean','Y_lo','Y_hi')) %>% 
+    filter(date >= prm.fcst$asof)
+  
+  # - - - Plots - - - 
+  
+  g.cl = ggplot(data = sf.cl,
+                aes(x=date))+ 
+    geom_line(data = fitsim.cl, aes(y=m), 
+              color = col.fit, linetype = 'dashed') + 
+    geom_ribbon(data = fitsim.cl, aes(ymin=lo, ymax=hi), 
+                fill=col.fit, alpha = alpha.ribbon / 2) + 
+    geom_point(data = obs.cl, aes(y=obs))+ 
+    geom_line( aes(y = Y_mean), color= col.fcst, 
+               linetype = 'dotted') + 
+    geom_ribbon(aes(ymin = Y_lo, ymax = Y_hi), 
+                alpha = alpha.ribbon, 
+                fill= col.fcst,
+                color= col.fcst) +
+    geom_vline(xintercept = fcst.prm$asof, 
+               linetype = 'dashed', 
+               color = 'gray50') + 
+    annotate(geom = 'text', y=1, x=fcst.prm$asof, 
+             label = fcst.prm$asof, size = 2) + 
+    xaxis + 
+    labs(title = 'Forecast clinical reports', 
+         x = '', y = 'cases')
+  # g.cl
+  
+  g.ww = sf %>% 
+    drop_na(Wr_mean) %>%
+    filter(date >= fcst.prm$asof) %>%
+    ggplot(aes(x=date))+ 
+    geom_line(data = fitsim.ww, aes(y=m), 
+              color = col.fit, linetype = 'dashed') + 
+    geom_ribbon(data = fitsim.ww, aes(ymin=lo, ymax=hi), 
+                fill=col.fit, alpha = alpha.ribbon / 2) + 
+    geom_point(data = obs.ww, aes(y=obs))+ 
+    geom_line( aes(y = Wr_mean), color= col.fcst, 
+               linetype = 'dotted') + 
+    geom_ribbon(aes(ymin = Wr_lo, ymax = Wr_hi), 
+                alpha = alpha.ribbon, 
+                fill= col.fcst,
+                color= col.fcst) +
+    geom_vline(xintercept = fcst.prm$asof, 
+               linetype = 'dashed', 
+               color = 'gray50') + 
+    annotate(geom = 'text', y=1, x=fcst.prm$asof, 
+             label = fcst.prm$asof, size = 2) + 
+    labs(title = 'Forecast wastewater concentration', 
+         x = '', y = 'concentration') +
+    xaxis 
+  # g.ww
+  
+  return(list(
+    cl = g.cl, 
+    ww = g.ww
+  ))
+  
+}
 
 
 

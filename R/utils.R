@@ -277,3 +277,20 @@ aggregate_time <- function(df,
   return(res) 
 }
 
+#' Helper function
+#' 
+aggcl <- function(df, dt.aggr, vars ) {
+  tmp = list()
+  for(v in vars){
+    a = aggregate_time(df = df, 
+                       dt.aggr = dt.aggr, 
+                       var.name = v, 
+                       aggreg.name = v) 
+    d = a$date
+    tmp[[v]] =  select(a, -date)
+  }
+  res = tmp %>% 
+    bind_cols( ) %>% 
+    mutate(date = d) 
+  return(res)
+}
