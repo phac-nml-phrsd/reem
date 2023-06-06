@@ -61,7 +61,7 @@ if(0){
     n.abc = 2e3,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
     p.abc = 0.01, #1e-2,
-    n.cores = 5,  # parallel::detectCores() - 1,
+    n.cores = min(12, parallel::detectCores() - 1),
     use.cl = 1, 
     use.ww = 1,
     err.type = 'L2'

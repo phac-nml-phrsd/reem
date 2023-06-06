@@ -597,7 +597,8 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
 reem_plot_fit <- function(obj) {
   
   # Prepare dataframes for plotting
-  
+ 
+  fit.obj = obj$fit.obj 
   ps = fit.obj$post.simulations 
   
   ps.cl = lapply(ps, aggregate_time, 
@@ -700,6 +701,8 @@ reem_plot_fit <- function(obj) {
   
   
   # -- Ordered ABC distances
+  
+  fit.prm = obj$fit.prm
   
   n.post = round(fit.prm$n.abc * fit.prm$p.abc, 0)
   d = fit.obj$all.distances %>%
