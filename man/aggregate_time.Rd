@@ -4,7 +4,7 @@
 \alias{aggregate_time}
 \title{Aggregate values across time}
 \usage{
-aggregate_time(df, dt.aggr, var.name)
+aggregate_time(df, dt.aggr, var.name, aggreg.name = NULL)
 }
 \arguments{
 \item{df}{Dataframe oftemporal data. 

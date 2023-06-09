@@ -57,6 +57,11 @@ setRefClass(
         )
       },
       
+      
+      # = = = = = = = = = = 
+      # ====   Fit   ====
+      # = = = = = = = = = = 
+      
       traj_dist_obs = function(use.cl, 
                                use.ww, 
                                err.type,
@@ -94,6 +99,9 @@ setRefClass(
         return(reem_plot_fit(obj = .self))  
       },
       
+      # = = = = = = = = = = 
+      # ==== Forecasts ====
+      # = = = = = = = = = = 
       
       forecast = function(prm.fcst, verbose = FALSE){
         
@@ -119,7 +127,44 @@ setRefClass(
           date_labels = date_labels
         )
        return(res) 
+      },
+      
+      # = = = = = = = = = = 
+      # ==== Backtest ====
+      # = = = = = = = = = = 
+      
+      calc_scores = function( 
+                      var, 
+                      obs.new, 
+                      density.n = 100, 
+                      density.adjust = 0.4)
+        {
+            res = reem_calc_scores(
+              var            = var,
+              obs.new        = obs.new,
+              fcst           = .self$fcst.obj,
+              density.n      = density.n,
+              density.adjust = density.adjust
+            )
+            return(res)
+      },
+      
+      forecast_densities = function(
+                      var, 
+                      obs.new, 
+                      density.n = 100, 
+                      density.adjust = 0.4)
+      {
+        res = reem_forecast_densities(
+          var            = var,
+          obs.new        = obs.new,
+          fcst           = .self$fcst.obj,
+          density.n      = density.n,
+          density.adjust = density.adjust
+          )
+        return(res)
       }
+    
     )
 )
 
