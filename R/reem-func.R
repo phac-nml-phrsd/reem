@@ -540,7 +540,17 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
     # Helper function 
     update_and_simulate <- function(i, pp, obj, verbose) {
       if(verbose) cat('Simulating forward with posterior sample #',i,'\n')
+      
+      # update fitted parameters 
+      # with their posterior values
       obj$prms[names(pp)] <- pp[i,]
+      
+      # Forward simulations are calculated 
+      # for every day in the future (no unobserved date):
+      tww = obj$prms$t.obs.ww
+      obj$prms$t.obs.ww <- min(tww):max(tww)
+      
+      # Simulate forward
       s = obj$simulate_epi(deterministic = TRUE) #TODO: let user choose
       s$sim$index <- i
       return(s$sim)
@@ -571,14 +581,8 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
   }
   
   
-  # Here, we resample from the posterior distributions.
-  # Assume multidimensional normal distribution
-  # to account for correlations between variables
-  
   if(! prm.fcst$use.fit.post){
-    
-    #pp = a$post.prms
-    
+    stop('`use.fit.post = FALSE` is not implemented!')
     # TODO: finish if you think it makes sense 
     # to d it this way...
   }
