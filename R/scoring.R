@@ -38,7 +38,14 @@ calc_density_one <- function(fcst.vals,
   b   = data.frame(x = a$x[idx], y = a$y[idx])
   b$y = b$y / sum(b$y)   # must normalize after filtering out.
   
-  return(b)
+  # Add two artificial points such 
+  # that it is pretty if it is plotted
+  n = nrow(b)
+  dx = diff(b$x)[1]
+  bb = data.frame( 
+    x = c(max(0, b$x[1] - dx), b$x, b$x[n] + dx ),
+    y = c(0, b$y, 0))
+  return(bb)
 }
 
 
