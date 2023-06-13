@@ -451,9 +451,8 @@ summarize_fcst <- function(simfwd, prm.fcst) {
   if(0){ 
     ci = 0.95
   }
-  
+  message('\nSummarizing forecasts...',appendLF = FALSE)
   ci = prm.fcst$ci
-  
   
   res = simfwd %>% 
     bind_rows() %>% 
@@ -474,7 +473,7 @@ summarize_fcst <- function(simfwd, prm.fcst) {
              .names = '{.col}_hi',
              na.rm = TRUE)
     )
-  
+  message(' done.')
   return(res)
   
   # Mon May 29 11:26:27 2023 ------------------------------
@@ -514,7 +513,6 @@ summarize_fcst <- function(simfwd, prm.fcst) {
 reem_forecast <- function(obj, prm.fcst, verbose ) {
   
   if(0){ # DEBUG
-    
     prm.fcst = list(
       asof = ymd('2022-03-01'),
       horizon.fcst = ymd('2022-07-01'),
@@ -522,7 +520,6 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
       n.resample = 20,
       ci = 0.95
     )
-    
   }
   
   a = obj$fit.obj
@@ -538,8 +535,10 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
     pp = a$post.prms %>% dplyr::select(!tidyr::starts_with('abc'))
     
     # Helper function 
-    update_and_simulate <- function(i, pp, obj, verbose) {
+    update_and_simulate <- function(i, pp, obj, verbose, tpb) {
+      
       if(verbose) cat('Simulating forward with posterior sample #',i,'\n')
+      setTxtProgressBar(tpb, value = i)
       
       # update fitted parameters 
       # with their posterior values
@@ -572,12 +571,14 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
     if(ns <= npp) ii = sort(sample(1:npp, ns, replace = FALSE))
     
     message('Sampling ',ns, ' posterior parameter sets out of ', npp,' available.')
+    tpb = txtProgressBar(min = 0, max = max(ii), style = 3, width = 50)
     
     simfwd = lapply(X   = ii,
                     FUN = update_and_simulate, 
                     pp  = pp, 
                     obj = obj,
-                    verbose = verbose)
+                    verbose = verbose,
+                    tpb = tpb)
   }
   
   
