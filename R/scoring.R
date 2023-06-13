@@ -59,6 +59,15 @@ calc_score_one <- function(i, var,
                            density.n, 
                            density.adjust) {
   
+  # Mon Jun 12 15:22:44 2023 ------------------------------
+  # STOPPED HERE... 
+  # add an input parameter that can specify an aggregation schedule.
+  # then retrieve all fcst values for the dates in between
+  # and sum (aggregate) them. 
+  # basically, do a loop ofthe function call below.
+  # If no aggregation, keep the code as is...
+  
+  
   # All forecasted values at a given 
   # date across all simulations
   fcst.vals = sapply(X    = 1:length(fcst$simfwd), 

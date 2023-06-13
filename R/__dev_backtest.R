@@ -26,10 +26,10 @@ if(0){
   
   # Create new (future) observations
   obs.new = data.frame(
-    date = ymd('2022-03-14') + c(0:2)*14,
+    date = ymd('2022-03-14') + c(0,14,30),#c(0:2)*14,
     obs  = c(50, 15,4)
   )
-  var = 'Wr' #Wr'
+  var = 'Y' #Wr'
   
   g.fs = plot_forecast_scores(obj = obj, obs.new = obs.new, var = var)
   plot(g.fs)
