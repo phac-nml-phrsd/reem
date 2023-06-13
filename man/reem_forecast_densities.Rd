@@ -5,7 +5,14 @@
 \title{Densities of the forecasted values
 given new observations.}
 \usage{
-reem_forecast_densities(var, obs.new, fcst, density.n, density.adjust)
+reem_forecast_densities(
+  var,
+  obs.new,
+  fcst,
+  density.n,
+  density.adjust,
+  aggr.window
+)
 }
 \arguments{
 \item{var}{}
@@ -17,6 +24,8 @@ reem_forecast_densities(var, obs.new, fcst, density.n, density.adjust)
 \item{density.n}{}
 
 \item{density.adjust}{}
+
+\item{aggr.window}{}
 }
 \description{
 Densities of the forecasted values

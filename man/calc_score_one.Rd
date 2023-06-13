@@ -5,7 +5,7 @@
 \title{Calculate the forecasting score at 
 a given date of new observations}
 \usage{
-calc_score_one(i, var, obs.new, fcst, density.n, density.adjust)
+calc_score_one(i, var, obs.new, fcst, density.n, density.adjust, aggr.window)
 }
 \arguments{
 \item{i}{}
@@ -19,6 +19,8 @@ calc_score_one(i, var, obs.new, fcst, density.n, density.adjust)
 \item{density.n}{}
 
 \item{density.adjust}{}
+
+\item{aggr.window}{}
 }
 \description{
 Calculate the forecasting score at 

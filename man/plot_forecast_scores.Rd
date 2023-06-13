@@ -4,7 +4,7 @@
 \alias{plot_forecast_scores}
 \title{Title}
 \usage{
-plot_forecast_scores(obj, obs.new, var)
+plot_forecast_scores(obj, obs.new, var, aggr.window = NULL)
 }
 \arguments{
 \item{obj}{}
@@ -12,6 +12,8 @@ plot_forecast_scores(obj, obs.new, var)
 \item{obs.new}{}
 
 \item{var}{}
+
+\item{aggr.window}{}
 }
 \description{
 Title

@@ -42,6 +42,43 @@ calc_density_one <- function(fcst.vals,
 }
 
 
+#' Helper function that extract forecasted values
+#' with the option to aggregate them (e.g. clinical cases) 
+#'
+#' @param i 
+#' @param fcst 
+#' @param aggr.window 
+#' @param obs.new 
+#' @param var 
+#'
+#' @return
+#' 
+extract_helper <- function(i, fcst, aggr.window, obs.new, var) {
+  nfs = length(fcst$simfwd)
+  if(is.null(aggr.window)){
+    # All forecasted values at a given 
+    # date across all simulations
+    res = sapply(X    = 1:length(fcst$simfwd), 
+                 FUN  = extract_fcst_value, 
+                 fcst = fcst, 
+                 d    = obs.new$date[i], 
+                 var  = var)
+  }
+  
+  if(!is.null(aggr.window)){
+    tmp = matrix(nrow = aggr.window, ncol = nfs)
+    for(k in 1:aggr.window){
+      tmp[k,] = sapply(X    = 1:nfs, 
+                       FUN  = extract_fcst_value, 
+                       fcst = fcst, 
+                       d    = obs.new$date[i] - k+1, # `+1` bc we want `-k+1=0` 
+                       var  = var)
+    }
+    res = apply(tmp, MARGIN = 2, FUN = sum)
+  }
+  return(res) 
+}
+
 #' Calculate the forecasting score at 
 #' a given date of new observations
 #'
@@ -51,30 +88,21 @@ calc_density_one <- function(fcst.vals,
 #' @param fcst 
 #' @param density.n 
 #' @param density.adjust 
+#' @param aggr.window 
 #'
 #' @return
 calc_score_one <- function(i, var, 
                            obs.new, 
                            fcst,
                            density.n, 
-                           density.adjust) {
+                           density.adjust,
+                           aggr.window) {
   
-  # Mon Jun 12 15:22:44 2023 ------------------------------
-  # STOPPED HERE... 
-  # add an input parameter that can specify an aggregation schedule.
-  # then retrieve all fcst values for the dates in between
-  # and sum (aggregate) them. 
-  # basically, do a loop ofthe function call below.
-  # If no aggregation, keep the code as is...
-  
-  
-  # All forecasted values at a given 
-  # date across all simulations
-  fcst.vals = sapply(X    = 1:length(fcst$simfwd), 
-                     FUN  = extract_fcst_value, 
-                     fcst = fcst, 
-                     d    = obs.new$date[i], 
-                     var  = var)
+ fcst.vals = extract_helper(i = i, 
+                            fcst = fcst, 
+                            aggr.window = aggr.window,
+                            obs.new = obs.new, 
+                            var = var)
   
   # Density for all these forecasted values
   b = calc_density_one(fcst.vals = fcst.vals, 
@@ -113,7 +141,8 @@ reem_calc_scores <- function(var,
                              obs.new, 
                              fcst,
                              density.n = 100, 
-                             density.adjust = 0.4) {
+                             density.adjust = 0.4,
+                             aggr.window = NULL) {
   
   scores = sapply(X       = 1:nrow(obs.new), 
                   FUN     = calc_score_one,
@@ -121,7 +150,8 @@ reem_calc_scores <- function(var,
                   obs.new = obs.new, 
                   fcst    = fcst,
                   density.n      = density.n,
-                  density.adjust = density.adjust)
+                  density.adjust = density.adjust,
+                  aggr.window    = aggr.window)
   return(scores)    
 }
 
@@ -135,6 +165,7 @@ reem_calc_scores <- function(var,
 #' @param fcst 
 #' @param density.n 
 #' @param density.adjust 
+#' @param aggr.window 
 #'
 #' @return
 #'
@@ -142,29 +173,27 @@ reem_forecast_densities <- function(var,
                                     obs.new, 
                                     fcst,
                                     density.n , 
-                                    density.adjust) {
+                                    density.adjust,
+                                    aggr.window) {
   res = list()
   
   # Loop through all dates
   
   for(i in 1:nrow(obs.new)){
     
-    d =  obs.new$date[i]
-    
-    # All forecasted values at a single 
-    # date across all simulations
-    fcst.vals = sapply(X    = 1:length(fcst$simfwd), 
-                       FUN  = extract_fcst_value, 
-                       fcst = fcst, 
-                       d    = d, 
-                       var  = var)
+    fcst.vals = extract_helper(
+      i = i, 
+      fcst = fcst, 
+      aggr.window = aggr.window, 
+      obs.new = obs.new, 
+      var = var)
     
     tmp  = calc_density_one(fcst.vals = fcst.vals,
-                              density.n = density.n, 
-                              density.adjust = density.adjust)
+                            density.n = density.n, 
+                            density.adjust = density.adjust)
     
     res[[i]] = tmp  %>% 
-      mutate(date = d, 
+      mutate(date = obs.new$date[i], 
              obs  = obs.new$obs[i])
   }
   return(res)
@@ -177,6 +206,7 @@ reem_forecast_densities <- function(var,
 #' @param obj 
 #' @param obs.new 
 #' @param var 
+#' @param aggr.window 
 #'
 #' @return
 #' @export
@@ -184,16 +214,21 @@ reem_forecast_densities <- function(var,
 #' @examples
 plot_forecast_scores <- function( obj,  
                                   obs.new,
-                                  var) {
+                                  var, 
+                                  aggr.window = NULL) {
   
   # Forecasting score of the new observations
-  scores = obj$calc_scores(var, obs.new) 
+  scores = obj$calc_scores(var         = var, 
+                           obs.new     = obs.new, 
+                           aggr.window = aggr.window) 
   
   # Attach scores to associated observation
   obs.new$score <- scores
   
   # Retrieve the forecast densities
-  fd = obj$forecast_densities(var, obs.new)
+  fd  = obj$forecast_densities(var         = var, 
+                               obs.new     = obs.new, 
+                               aggr.window = aggr.window)
   dfd = bind_rows(fd)
   
   # normalize for pretty figure
@@ -216,7 +251,7 @@ plot_forecast_scores <- function( obj,
   
   g.new = g.tmp  +
     geom_text(data = obs.new, 
-              color = 'red2', size=3,
+              color = 'indianred2', size=3,
               mapping = aes(x=date, y=-3,
                             label = round(score,2)))+
     # Densities at new observation dates
@@ -227,7 +262,7 @@ plot_forecast_scores <- function( obj,
                  color = 'mediumpurple1',
                  alpha     = 0.2,
                  linewidth = 0.2) + 
-    geom_point(data = obs.new, color='red2',
+    geom_point(data = obs.new, color='indianred2',
                shape = 7,size = 3,stroke = 0.8, 
                mapping = aes(x=date, y=obs)) + 
     labs(title = paste('Forecast scoring:', var))

@@ -137,14 +137,16 @@ setRefClass(
                       var, 
                       obs.new, 
                       density.n = 100, 
-                      density.adjust = 0.4)
+                      density.adjust = 0.4,
+                      aggr.window = NULL)
         {
             res = reem_calc_scores(
               var            = var,
               obs.new        = obs.new,
               fcst           = .self$fcst.obj,
               density.n      = density.n,
-              density.adjust = density.adjust
+              density.adjust = density.adjust,
+              aggr.window    = aggr.window
             )
             return(res)
       },
@@ -153,14 +155,16 @@ setRefClass(
                       var, 
                       obs.new, 
                       density.n = 100, 
-                      density.adjust = 0.4)
+                      density.adjust = 0.4,
+                      aggr.window)
       {
         res = reem_forecast_densities(
           var            = var,
           obs.new        = obs.new,
           fcst           = .self$fcst.obj,
           density.n      = density.n,
-          density.adjust = density.adjust
+          density.adjust = density.adjust, 
+          aggr.window    = aggr.window
           )
         return(res)
       }

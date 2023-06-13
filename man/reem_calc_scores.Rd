@@ -4,7 +4,14 @@
 \alias{reem_calc_scores}
 \title{Forecasting scores given new observations}
 \usage{
-reem_calc_scores(var, obs.new, fcst, density.n = 100, density.adjust = 0.4)
+reem_calc_scores(
+  var,
+  obs.new,
+  fcst,
+  density.n = 100,
+  density.adjust = 0.4,
+  aggr.window = NULL
+)
 }
 \arguments{
 \item{var}{}
