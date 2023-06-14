@@ -148,10 +148,9 @@ reem_simulate_epi <- function(prms,
                               deterministic) {
   
   if(is.null(prms$t.obs.ww)){
-    # generate times when ww is observed:
-    t.obs.ww  = cumsum(1 + rpois(n=prms$horizon, 
-                                 lambda= prms$freq.obs.ww-1))
-    t.obs.ww  = t.obs.ww[t.obs.ww < prms$horizon]
+    # If not specified, then assumed 
+    # observed at all time steps:
+    t.obs.ww  = 1:prms$horizon
     prms = c(prms, t.obs.ww = list(t.obs.ww))
   }
   
@@ -165,7 +164,10 @@ reem_simulate_epi <- function(prms,
   # Build times
   if(!has.date.start){
     prms$date.start <- lubridate::ymd('2020-01-01')
-    # TODO: throw a warning..
+    
+    warning('The start date (prms$date.start) of ',
+            'the REEM model has not been specified.',
+            ' Setting it to 2020-01-01. ')
   }
   
   if(is.null(prms$t.obs.cl)){

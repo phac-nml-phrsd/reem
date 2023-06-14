@@ -11,7 +11,7 @@ if(0){
   date.start = ymd('2022-01-01')
   asof       = ymd('2022-03-01') 
   
-  prms = list(
+  prms0 = list(
     horizon = 300,  # horizon of the simulation
     last.obs = 299,  # last observation time (must be < horizon)
     B       = rep(1,300), # Behavior change
@@ -35,7 +35,7 @@ if(0){
   
   obj0 = new('reem', 
              name = 'foo', 
-             prms = prms, 
+             prms = prms0, 
              is.fitted = FALSE)
   
   obj0$print_prms()
@@ -48,6 +48,10 @@ if(0){
   prms$R0 <- 2.5
   
   # Attached simulated data to new `reem` object:
+  
+  prms = prms0
+  prms$t.obs.cl <- NULL
+  prms$t.obs.ww <- NULL
   obj  = new('reem', 
              name = 'foo2', 
              prms = prms, 
