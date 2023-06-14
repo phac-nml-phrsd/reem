@@ -53,7 +53,7 @@ setRefClass(
       
       simulate_epi = function(deterministic){
         return(
-          reem_simulate_epi(prms, deterministic)
+          reem_simulate_epi(obj = .self, deterministic)
         )
       },
       

@@ -44,8 +44,12 @@ if(0){
   
   obs.cl = filter(simepi$obs.cl, date <= asof)
   obs.ww = filter(simepi$obs.ww, date <= asof)
-  
-  prms$R0 <- 2.5
+ 
+  # mess with the dates such that they 
+  # do not perfectly align with the simulation
+  obs.cl$t <- obs.cl$t + 1
+  obs.cl$date <- obs.cl$date + 1
+   
   
   # Attached simulated data to new `reem` object:
   
@@ -59,13 +63,15 @@ if(0){
              obs.ww = obs.ww,
              is.fitted = FALSE)
   
+  prms$R0 <- 2.5
+  
   # ---- Fit ----
   
   prm.abc = list(
     n.abc = 2e3,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
     p.abc = 0.01, #1e-2,
-    n.cores = min(12, parallel::detectCores() - 1),
+    n.cores = 1, #min(12, parallel::detectCores() - 1),
     use.cl = 1, 
     use.ww = 1,
     err.type = 'L2'
@@ -77,6 +83,9 @@ if(0){
     i0prop = c(-5,-2),
     start.delta = c(-7,7)  
   )
+  # Wed Jun 14 16:09:28 2023 ------------------------------
+  # STOPPED HERE
+  # date mismatch is caused by bad design. Change that!
   
   system.time({
     foo = obj$fit_abc(prm.abc, prms.to.fit)  

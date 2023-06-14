@@ -144,8 +144,10 @@ reem_simulate <- function(prms, deterministic) {
 #' @export
 #'
 #' @examples
-reem_simulate_epi <- function(prms, 
+reem_simulate_epi <- function(obj, 
                               deterministic) {
+  
+  prms = obj$prms
   
   if(is.null(prms$t.obs.ww)){
     # If not specified, then assumed 
@@ -153,9 +155,6 @@ reem_simulate_epi <- function(prms,
     t.obs.ww  = 1:prms$horizon
     prms = c(prms, t.obs.ww = list(t.obs.ww))
   }
-  
-  # Simulate epidemic to generate data
-  sim = reem_simulate(prms, deterministic)
   
   # When working with real data, 
   # we usually are in "date mode"
@@ -171,12 +170,13 @@ reem_simulate_epi <- function(prms,
   }
   
   if(is.null(prms$t.obs.cl)){
-    # generate times when clinical is observed:
-    tmax = max(sim$t)
-    t.obs.cl = prms$lag * c(1:999)
-    t.obs.cl = t.obs.cl[t.obs.cl < tmax]
+    # same times as when clinical is observed:
+    t.obs.cl = as.integer(obj$obs.cl$date - prms$date.start)
   }
   if(!is.null(prms$t.obs.cl)) t.obs.cl = prms$t.obs.cl
+  
+   # Simulate epidemic to generate data
+  sim = reem_simulate(prms, deterministic)
   
   sim = dplyr::mutate(sim, date = prms$date.start + t)
   
