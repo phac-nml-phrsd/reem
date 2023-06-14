@@ -1,2 +1,2 @@
-# rif
-Respiratory infection forecaster
+# reem
+Renewal Equation bsaed Epidemic Model
