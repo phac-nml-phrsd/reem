@@ -1,6 +1,6 @@
-Package: rif
+Package: reem
 Type: Package
-Title: Respiratory infections forecaster 
+Title: Renewal Equation based Epidemic Model 
 Version: 1.0
 Date: 2023-05-18
 Author: David Champredon
