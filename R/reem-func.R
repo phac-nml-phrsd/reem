@@ -375,7 +375,16 @@ reem_fit_abc <- function(obj,
   use.cl = prm.abc$use.cl
   
   d.max = max(obj$obs.cl$date, obj$obs.ww$date)
-  hz    = as.integer(d.max - prms$date.start)
+  hz    = as.integer(d.max - obj$prms$date.start)
+  
+  if(hz <= 1) {
+    stop('Horizon is too short!\n',
+         'horizon = ', hz, '\n',
+         'max date obs cl & ww : ', d.max,'\n',
+         'model start date     : ',obj$prms$date.start,
+         '\n ABORTING!\n')
+    
+  }
   
   obj$prms$horizon <- hz 
   
@@ -390,7 +399,7 @@ reem_fit_abc <- function(obj,
           'Number of cores      : ', prm.abc$n.cores,
           ' (', round(prm.abc$n.abc / prm.abc$n.cores,0),
           ' iters per core)\n',
-          '\nData horizon : ', hz, '\n',
+          '\nData horizon : ', hz, ' (days) \n',
           '\n---------------------\n\n')
   
   err.type = prm.abc$err.type
