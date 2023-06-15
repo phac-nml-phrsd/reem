@@ -25,6 +25,7 @@ reem_simulate <- function(prms, deterministic) {
   kappa   = prms$kappa
   psi     = prms$psi
   t.obs.ww = prms$t.obs.ww
+  shed.mult = prms$shed.mult
   
   ni = length(I.init)
   
@@ -72,9 +73,9 @@ reem_simulate <- function(prms, deterministic) {
   w.m = numeric(horizon)
   for(t in 1:horizon){
     idx = 1:min(t-1,nf)
-    w.m[t] = sum(fec[idx]*I[t-idx])
+    w.m[t] = shed.mult * sum(fec[idx]*I[t-idx])
   }
-  Wd = w.m
+  Wd =  w.m
   if(!deterministic) Wd = rnorm(n = horizon, mean = w.m, sd = w.m * 0.1)
   
   # -- present at sampling site
