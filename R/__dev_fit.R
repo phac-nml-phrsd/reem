@@ -30,7 +30,8 @@ if(0){
     g       = get_gi(), # Generation interval distribution
     fec     = get_fecalshed(), # fecal shedding kinetics
     kappa   = 0.18, # decay in ww
-    psi     = get_psi()   # plug flow simulation
+    psi     = get_psi(),   # plug flow simulation,
+    shed.mult = 1e-3
   )
   
   obj0 = new('reem', 
