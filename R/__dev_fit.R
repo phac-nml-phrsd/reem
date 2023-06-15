@@ -71,7 +71,7 @@ if(0){
     n.abc = 2e3,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
     p.abc = 0.01, #1e-2,
-    n.cores = 1, #min(12, parallel::detectCores() - 1),
+    n.cores = min(12, parallel::detectCores() - 1),
     use.cl = 1, 
     use.ww = 1,
     err.type = 'L2'
@@ -99,12 +99,10 @@ if(0){
   plot(gg$all)
   dev.off()
   
-  
   d = obj$fit.obj$all.distances
   fit.obj = obj$fit.obj
   
   saveRDS(object = obj, file = 'obj-dev.rds')
-  
   
 
   # - - - - - - - - - -  - - - - - - - - 
