@@ -334,7 +334,10 @@ reem_plot_fit <- function(obj) {
         gp[[k]] = tmp %>% 
           ggplot2::ggplot(ggplot2::aes(x = x, y = y))+
           ggplot2::geom_density_2d_filled()+
-          ggplot2::theme(panel.grid = ggplot2::element_blank())+
+          ggplot2::theme(
+            panel.grid = ggplot2::element_blank(),
+            axis.text = ggplot2::element_text(size = ggplot2::rel(0.6))
+            )+
           ggplot2::labs(x=nam[i], y=nam[j]) + 
           ggplot2::guides(fill = 'none')
         
@@ -365,7 +368,7 @@ reem_plot_fit <- function(obj) {
                        linewidth = 1 )+
     ggplot2::scale_y_log10() + 
     ggplot2::scale_x_log10() + 
-    ggplot2::scale_color_manual(values = c('red2', 'gray80'))+
+    ggplot2::scale_color_manual(values = c('indianred2', 'gray90'))+
     ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) + 
     ggplot2::labs(
       title = 'ABC distances from data',
