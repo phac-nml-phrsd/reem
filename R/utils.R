@@ -256,13 +256,23 @@ aggregate_time <- function(df,
   df$dt  <- df[[dt]]
   
   # Calculate aggregation
-  a = df$dt %in% dt.aggr 
-  aa = cumsum(a) + 1
   
+  # define the indices of each group
+  idx.tmp = df$dt %in% dt.aggr 
+  if(sum(idx.tmp)==0) {
+    stop('The aggregation times/dates are not found in the simulation times.\n',
+         '(clinical observations dates and/or start date are likely mispecified)')
+  }
+  idx     = cumsum(idx.tmp) + 1   # `+1` because we don't want index `0` in vectors 
+  # need to shift by one 
+  # to aggregate until `dt.agrr`
+  idx = c(1, idx[-length(idx)])
+ 
+  # aggregation
   tmp = df %>% 
     dplyr::select(dt, zzz) %>% 
     dplyr::arrange(dt) %>% 
-    dplyr::mutate(group = aa) %>%
+    dplyr::mutate(group = idx) %>%
     dplyr::group_by(group) %>% 
     dplyr::summarise(
       aggregation = sum(zzz), 

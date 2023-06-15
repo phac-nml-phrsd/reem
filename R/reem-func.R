@@ -149,18 +149,12 @@ reem_simulate_epi <- function(obj,
   
   prms = obj$prms
   
-  if(is.null(prms$t.obs.ww)){
-    # If not specified, then assumed 
-    # observed at all time steps:
-    t.obs.ww  = 1:prms$horizon
-    prms = c(prms, t.obs.ww = list(t.obs.ww))
-  }
-  
+  # == Build times ==
+   
   # When working with real data, 
   # we usually are in "date mode"
   has.date.start = !is.null(prms$date.start)
   
-  # Build times
   if(!has.date.start){
     prms$date.start <- lubridate::ymd('2020-01-01')
     
@@ -169,11 +163,37 @@ reem_simulate_epi <- function(obj,
             ' Setting it to 2020-01-01. ')
   }
   
-  if(is.null(prms$t.obs.cl)){
-    # same times as when clinical is observed:
-    t.obs.cl = as.integer(obj$obs.cl$date - prms$date.start)
+  # -- Observation times 
+  
+  # If observation times/dates not specified:
+  # - if `obs.xx` exists, set obs date/times to the ones of this object.
+  # - if `obs.xx` does not exist, assume observation at every time step.
+  
+  # Check if dates or times are missing as input 
+  miss.obs.dt.cl = is.null(prms$t.obs.cl) & is.null(prms$date.obs.cl)
+  miss.obs.dt.ww = is.null(prms$t.obs.ww) & is.null(prms$date.obs.ww)
+  
+  if(miss.obs.dt.ww){
+    # If not specified, then assumed 
+    # observed at all time steps:
+    date.obs.ww  = prms$date.start + 1:prms$horizon
+    t.obs.ww     = 1:prms$horizon
+    prms = c(prms, 
+             t.obs.ww    = list(t.obs.ww),
+             date.obs.ww = list(date.obs.ww))
   }
-  if(!is.null(prms$t.obs.cl)) t.obs.cl = prms$t.obs.cl
+  
+  if(miss.obs.dt.cl){
+    # same times as when clinical is observed:
+    date.obs.cl = obj$obs.cl$date
+    t.obs.cl    = obj$obs.cl$t
+  }
+  
+  # For simulations (TODO: change that...)
+  if(!is.null(prms$t.obs.cl)) {
+    t.obs.cl    = prms$t.obs.cl
+    date.obs.cl = prms$date.start + t.obs.cl
+  }
   
    # Simulate epidemic to generate data
   sim = reem_simulate(prms, deterministic)
@@ -188,11 +208,11 @@ reem_simulate_epi <- function(obj,
   
   # Aggregate clinical reports
   sim.obs.cl = aggregate_time(df       = sim, 
-                              dt.aggr  = t.obs.cl, 
+                              dt.aggr  = date.obs.cl, 
                               var.name = 'Y') %>% 
     dplyr::transmute(
-      t, 
-      date = prms$date.start + t,
+      date, 
+      t = as.integer(date - prms$date.start),
       obs  = aggregation) 
   
   # Extract wastewater observations
