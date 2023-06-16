@@ -174,7 +174,13 @@ reem_simulate_epi <- function(obj,
   if(miss.obs.dt.cl){
     # same times as when clinical is observed:
     date.obs.cl = obj$obs.cl$date
-    t.obs.cl    = obj$obs.cl$t
+    
+    # if clinical observation times are not defined
+    times.cl.def = 't' %in% names(obj$obs.cl)
+    if(! times.cl.def){
+      t.obs.cl = as.integer(obj$obs.cl$date - prms$date.start)
+    }
+    if(times.cl.def) t.obs.cl = obj$obs.cl$t
   }
   
   # For simulations (TODO: change that...)

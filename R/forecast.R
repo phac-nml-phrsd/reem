@@ -91,17 +91,19 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
     # Helper function 
     update_and_simulate <- function(i, pp, obj, verbose, tpb) {
       
-      if(verbose) cat('Simulating forward with posterior sample #',i,'\n')
-      setTxtProgressBar(tpb, value = i)
+      if(verbose)  cat('Simulating forward with posterior sample #',i,'\n')
+      if(!verbose) setTxtProgressBar(tpb, value = i)
       
       # update fitted parameters 
       # with their posterior values
       obj$prms[names(pp)] <- pp[i,]
       
+      # Update initial number of infectious individuals `obj$prms$I.init`
+      obj$prms = set_I_init(obj$prms)
+      
       # Forward simulations are calculated 
       # for every day in the future (no unobserved date):
-      tww = obj$prms$t.obs.ww
-      obj$prms$t.obs.ww <- min(tww):max(tww)
+      obj$prms$t.obs.ww <- 1:prm.fcst$horizon.fcst 
       
       # Simulate forward
       s = obj$simulate_epi(deterministic = TRUE) #TODO: let user choose
@@ -124,8 +126,10 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
     
     if(ns <= npp) ii = sort(sample(1:npp, ns, replace = FALSE))
     
-    message('Sampling ',ns, ' posterior parameter sets out of ', npp,' available.')
-    tpb = txtProgressBar(min = 0, max = max(ii), style = 3, width = 50)
+    message('\nSampling ',ns, ' posterior parameter sets out of ', npp,
+            ' available.\n')
+    
+    tpb = txtProgressBar(min = 0, max = max(ii), style = 3, width = 25)
     
     simfwd = lapply(X   = ii,
                     FUN = update_and_simulate, 
