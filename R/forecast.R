@@ -221,7 +221,7 @@ reem_plot_forecast <- function(
   sf.cl = aggcl(df = sf, 
                 dt.aggr = dt.aggr.fcst, 
                 vars = c('Y_mean','Y_lo','Y_hi')) %>% 
-    filter(date >= prm.fcst$asof)
+    filter(date >prm.fcst$asof)
   
   # - - - Plots - - - 
   

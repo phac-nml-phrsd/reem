@@ -103,25 +103,32 @@ calc_score_one <- function(i, var,
                            fcst,
                            density.n, 
                            density.adjust,
-                           aggr.window) {
+                           aggr.window,
+                           pb) {
+  # print(i)
   
- fcst.vals = extract_helper(i = i, 
-                            fcst = fcst, 
-                            aggr.window = aggr.window,
-                            obs.new = obs.new, 
-                            var = var)
+  setTxtProgressBar(pb, value = i)
   
+  tmp.fv = extract_helper(i = i, 
+                          fcst = fcst, 
+                          aggr.window = aggr.window,
+                          obs.new = obs.new, 
+                          var = var)
+  fcst.vals = tmp.fv[!is.na(tmp.fv)]
+  
+  if(length(fcst.vals) == 0) return(NA)
+    
   # Density for all these forecasted values
   b = calc_density_one(fcst.vals = fcst.vals, 
                        density.n = density.n, 
                        density.adjust = density.adjust) 
   
   # Retrieve the x-value step of the density
-  dx = diff(b$x)[1]
+  dx = diff(b$x)[2]
   
   # Identify the density value 
   # at the new observation 
-  xx    = which( abs(b$x - obs.new$obs[i]) < dx/2 )[1]
+  xx    = which( abs(b$x - obs.new$obs[i]) < dx )[1]
   score = -log(b$y[xx])
   
   # Notes: 
@@ -150,15 +157,17 @@ reem_calc_scores <- function(var,
                              density.n = 100, 
                              density.adjust = 0.4,
                              aggr.window = NULL) {
-  
-  scores = sapply(X       = 1:nrow(obs.new), 
+  n = nrow(obs.new)
+  pb = txtProgressBar(min = 0, max = n, style = 3, width = 30)
+  scores = sapply(X       = 1:n, 
                   FUN     = calc_score_one,
                   var     = var, 
                   obs.new = obs.new, 
                   fcst    = fcst,
                   density.n      = density.n,
                   density.adjust = density.adjust,
-                  aggr.window    = aggr.window)
+                  aggr.window    = aggr.window,
+                  pb = pb)
   return(scores)    
 }
 
