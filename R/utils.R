@@ -62,7 +62,7 @@ mean_inc <- function(t, R0, B, S, N, alpha, g, I) {
   
   tmp1 = R0 * B[t] * (S[t-1]/N)^(exp(alpha))  
   
-  revI = rev(I[1:n])
+  revI = I[n:1]  # faster than using `rev()`
   n2   = min(n,length(g))
   tmp2 = g[1:n2] * revI[1:n2] 
   
@@ -189,8 +189,7 @@ aggregate_time <- function(df,
   idx = c(1, idx[-length(idx)])
  
   # aggregation
-  tmp = df %>% 
-    dplyr::select(dt, zzz) %>% 
+  tmp = data.frame(dt = df$dt, zzz = df$zzz) %>% 
     dplyr::arrange(dt) %>% 
     dplyr::mutate(group = idx) %>%
     dplyr::group_by(group) %>% 

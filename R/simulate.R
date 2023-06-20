@@ -104,8 +104,6 @@ reem_simulate <- function(prms, deterministic) {
   Wr = wr.m
   if(!deterministic) Wr = rnorm(n=n.ww, mean = wr.m, sd = wr.m * 0.2)
   
-  tmp = data.frame(t = t.obs.ww, Wr = Wr)
-  
   df = data.frame(
     t = 1:horizon, 
     m = m, 
@@ -116,8 +114,12 @@ reem_simulate <- function(prms, deterministic) {
     Wd = Wd, 
     Wp = Wp)
   
-  df = dplyr::left_join(df, tmp, by='t')
-  
+  # This is equivalent as but quicker than a `left_join()`
+  # and we want this code to be as fast as possible!
+  df$Wr <- NA
+  idx = df$t %in% t.obs.ww
+  df$Wr[idx] <- Wr
+   
   return(df)  
 }
 
