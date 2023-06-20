@@ -1,4 +1,107 @@
 
+#' sqrt sum of squared difference
+#'
+#' @param x 
+#' @param y 
+#'
+#' @return
+sss <- function(x,y) {
+  return(sqrt( sum( (x-y)^2 ) ))
+}
+
+
+#' Normalization with one of the largest values
+#'
+#' @param x Vector of positive numerical values.
+#'
+#' @return Normalized vector.
+#'
+normlarge <- function(x, largest.rank = 3) {
+  if(!all(x>=0)) stop('`normlarge` is implemented for positive vectors only.')
+  # Element used for normalization
+  idx = min(length(x), largest.rank)
+  val = sort(x, decreasing = TRUE)[idx]
+  return(val)
+}
+
+
+#' Error function for a fit algorithm
+#'
+#' @param cl.i Dataframe of simulated clinical observations
+#' @param ww.i Dataframe of simulated wastewater observations
+#' @param obs.cl Dataframe of clinical observations
+#' @param obs.ww Dataframe of wastewater observations
+#' @param use.cl Logical. Use clinical data in fit?
+#' @param use.ww Logical. Use wastewater data in fit?
+#'
+#' @return Numerical value representing the distance 
+#' of the simulation from the observed data.
+#' 
+err_fct <- function(cl.i, ww.i, 
+                    obs.cl, obs.ww,
+                    use.cl, use.ww,
+                    err.type = 'rel',
+                    do.plot = FALSE) {
+  
+  # --- Checks  
+  
+  if(! all(obs.cl$date[-1] %in% cl.i$date)){
+    print('observed cl:')
+    print(obs.cl$date)
+    print('simulated cl (ABC internal):')
+    print(cl.i$date)
+    stop('Date mismatch: clinical observation dates are missing in simulation.')
+  }
+  if(!all(obs.ww$date[-1] %in% ww.i$date)){
+    print('observed ww:')
+    print(obs.ww$date)
+    print('simulated ww (ABC internal):')
+    print(ww.i$date)
+    stop('Date mismatch: wastewater observation dates are missing in simulation.')
+  }
+  
+  # --- Adjust to fitting observation dates
+  
+  df.cl = dplyr::left_join(cl.i, obs.cl, by='date')
+  df.ww = dplyr::left_join(ww.i, obs.ww, by='date') %>% 
+    tidyr::drop_na(obs)
+  
+  err.cl = 0
+  err.ww = 0
+  
+  if(err.type == 'L2'){
+    if(use.cl) err.cl = sss(df.cl$obs, df.cl$Ym) 
+    if(use.ww) err.ww = sss(df.ww$obs, df.ww$Wm)
+  }
+  if(err.type == 'rel'){
+    if(use.cl) err.cl = sqrt(sum( (df.cl$Ym/df.cl$obs - 1 )^2 )) #TODO: handle div by 0
+    if(use.ww) err.ww = sqrt(sum( (df.ww$Wm/df.ww$obs - 1 )^2 ))
+  }
+  # The vectors are normalized by their respective
+  # largest value to put both ww and clinical 
+  # on the same scale:
+  if(err.type == 'normlarge'){
+    largest.rank = 3
+    if(use.cl) {
+      z.cl = normlarge(df.cl$obs, largest.rank ) 
+      err.cl = sss(df.cl$obs/z.cl , df.cl$Ym/z.cl)
+      }
+    if(use.ww) {
+      z.ww = normlarge(df.ww$obs, largest.rank) 
+      err.ww = sss(df.ww$obs/z.ww , df.ww$Wm/z.ww)
+    }
+  }
+  
+  # WARNING -- FIXME??
+  # The errors calculated above have a number of elements
+  # equal to nrow(cl.i), which varies as delta.start changes.
+  # Hence, the error may not be consistent across all priors.
+  
+  err =  err.cl + err.ww
+  return(err)
+}
+
+
 #' Calculate the distance of the 
 #' epidemic trajectory from 
 #' clinical and wastewater observations
@@ -160,7 +263,7 @@ reem_fit_abc <- function(obj,
   use.ww = prm.abc$use.ww
   use.cl = prm.abc$use.cl
   
-  d.max = max(obj$obs.cl$date, obj$obs.ww$date)
+  d.max = max(obj$obs.cl$date, obj$obs.ww$date) + 1
   hz    = as.integer(d.max - obj$prms$date.start)
   
   if(hz <= 1) {
