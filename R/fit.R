@@ -245,7 +245,9 @@ reem_plot_fit <- function(obj) {
   # Prepare dataframes for plotting
  
   fit.obj = obj$fit.obj 
-  ps = fit.obj$post.simulations 
+  ps      = fit.obj$post.simulations 
+  obs.cl  = obj$obs.cl
+  obs.ww  = obj$obs.ww
   
   ps.cl = lapply(ps, aggregate_time, 
                  dt.aggr = obs.cl$date, 
@@ -265,7 +267,6 @@ reem_plot_fit <- function(obj) {
     dplyr::summarise(Wr.m = mean(Wr),
                      Wr.lo = min(Wr),
                      Wr.hi = max(Wr))
-  
   
   ggplot2::theme_set(ggplot2::theme_bw())
   
