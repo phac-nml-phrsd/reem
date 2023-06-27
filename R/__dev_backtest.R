@@ -33,6 +33,13 @@ if(0){
   var = 'Y' #Wr'
   
   aggr.window = ifelse(var=='Y', 7, NULL)
+  
+  
+  ins = obj$inside_CI( var = var,
+                    obs.new = obs.new,
+                    aggr.window = aggr.window,
+                    ci.width = 0.8)
+  
    
   g.fs = plot_forecast_scores(obj = obj, 
                               obs.new = obs.new, 

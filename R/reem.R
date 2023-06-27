@@ -132,7 +132,23 @@ setRefClass(
       # = = = = = = = = = = 
       # ==== Backtest ====
       # = = = = = = = = = = 
+     
       
+      inside_CI = function(
+                    var,
+                    obs.new,
+                    aggr.window,
+                    ci.width)
+      {
+        res = reem_inside_CI(var, 
+                             obs.new, 
+                             ci.width, 
+                             aggr.window,
+                             fcst = .self$fcst.obj)
+          return(res)
+      },
+      
+       
       calc_scores = function( 
                       var, 
                       obs.new, 

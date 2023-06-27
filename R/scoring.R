@@ -4,7 +4,16 @@
 extract_fcst_value <- function(i, fcst, d, var) {
   tmp = fcst$simfwd[[i]] %>% 
     select(date, !!var) %>% 
-    filter(date == d) %>% 
+    filter(date == d) 
+  
+  if(nrow(tmp)==0){
+    stop('Date ',d,' not found in the simulated forecasts.\n',
+         'Cannot extract the forecasted value. ',
+         'Maybe your forcast horizon is earlier than the new observation dates?\n ',
+         'Aborting!')
+  }
+  
+  tmp = tmp %>% 
     select(!!var) %>% 
     as.numeric()
   return(tmp)
@@ -61,7 +70,10 @@ calc_density_one <- function(fcst.vals,
 #' @return
 #' 
 extract_helper <- function(i, fcst, aggr.window, obs.new, var) {
+  
+  # Number of simulations informing the forecast
   nfs = length(fcst$simfwd)
+  
   if(is.null(aggr.window)){
     # All forecasted values at a given 
     # date across all simulations
@@ -173,6 +185,45 @@ reem_calc_scores <- function(var,
 
 
 
+#' Assess if the forecasted credible interval contains
+#' the actual (future) observed value.
+#'
+#' @param var String. Name of the variable.
+#' @param obs.new Dataframe of the new/actual observations of this variable.
+#' @param ci.width Numerical. Width of the centered credible interval.
+#' @param aggr.window Numerical. Width of the aggregation window for the variable. 
+#' \code{NULL} if no aggregation.
+#' @param fcst Forecast object of the \code{reem} object.
+#'
+#' @return A logical vector indicating if the actual observed value
+#' is inside the credible interval. Each element corresponds to an 
+#' observation date. (Hence the vector has the same length as the 
+#' number of rows of \code{obs.new}.)
+#'
+reem_inside_CI <- function(var, obs.new, ci.width, aggr.window, fcst) {
+  
+  if(0){
+    ci.width = 0.80
+  }
+  
+  n = nrow(obs.new)
+  inside = logical(n)
+  for(i in 1:n){
+    message('inside CI: ',i,'/',n)
+    tmp.fv = extract_helper(i = i, 
+                            fcst = fcst, 
+                            aggr.window = aggr.window,
+                            obs.new = obs.new, 
+                            var = var)
+    fcst.vals = tmp.fv[!is.na(tmp.fv)]
+    
+    q = quantile(fcst.vals, probs = 0.5 + c(-1,1) * ci.width/2)
+    inside[i] = (q[1] <= obs.new$obs[i]) & (obs.new$obs[i] <= q[2]) 
+  }
+  return(inside)
+}
+
+
 #' Densities of the forecasted values
 #' given new observations.
 #'
@@ -196,7 +247,7 @@ reem_forecast_densities <- function(var,
   # Loop through all dates
   
   for(i in 1:nrow(obs.new)){
-    
+   # print(i) # DEBUG
     fcst.vals = extract_helper(
       i = i, 
       fcst = fcst, 
