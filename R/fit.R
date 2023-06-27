@@ -141,6 +141,12 @@ reem_traj_dist_obs <- function(
          Hence, cannot calculate a distance from observation. ABORTING!')
   }
   
+  # Setting the horizon for each data source
+  if(nrow(obs.cl) > 0)  datemax.cl = max(obs.cl$date)
+  if(nrow(obs.ww) > 0)  datemax.ww = max(obs.ww$date)
+  if(nrow(obs.ww) == 0) datemax.ww = datemax.cl
+  if(nrow(obs.cl) == 0) datemax.cl = datemax.ww
+  
   # Adjust the epidemic start time
   # and check if we did not create
   # negative times inadvertently:
@@ -184,13 +190,13 @@ reem_traj_dist_obs <- function(
     dplyr::group_by(date) %>% 
     dplyr::summarize(Ym = mean(obs)) %>%
     dplyr::ungroup() %>%
-    dplyr::filter(date <= max(obs.cl$date))
+    dplyr::filter(date <= datemax.cl)
   
   ww.i = a.ww %>% 
     dplyr::group_by(date) %>% 
     dplyr::summarize(Wm = mean(obs)) %>%
     dplyr::ungroup() %>%
-    dplyr::filter(date <= max(obs.ww$date))
+    dplyr::filter(date <= datemax.ww)
   
   # Calculate the ABC distance
   res = err_fct(cl.i, ww.i, 
@@ -201,8 +207,6 @@ reem_traj_dist_obs <- function(
     distance = res, 
     sim = a.sim
   ))
-  
-  
 }
 
 
@@ -216,7 +220,7 @@ calc_dist_parallel <- function(i,
                                deterministic,
                                n.sim = 10, 
                                verbose = FALSE ) {
-  cat('ABC iteration #',i,'\n') 
+  if(i%%50 == 0) cat('ABC iteration #',i,'\n') 
   pp = priors[i,]
   
   if('i0prop' %in% names(priors)){
