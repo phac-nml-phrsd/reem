@@ -69,24 +69,21 @@ if(0){
   # ---- Fit ----
   
   prm.abc = list(
-    n.abc = 2e3,
+    n.abc = 500,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
-    p.abc = 0.01, #1e-2,
-    n.cores = min(12, parallel::detectCores() - 1),
+    p.abc = 0.02, #1e-2,
+    n.cores = 1, #min(12, parallel::detectCores() - 1),
     use.cl = 1, 
     use.ww = 1,
     err.type = 'L2'
   )
   
-  prms.to.fit = list(
-    R0    = c(1.2, 3),
-    alpha = c(0, 2),
-    i0prop = c(-5,-2),
-    start.delta = c(-7,7)  
+   prms.to.fit = list(
+    R0          = list('gamma', 1.5, 0.251),
+    alpha       = list('normp', 2, 1),
+    i0prop      = list('unif', -5, -2),
+    start.delta = list('unif_int', -7, 7)  
   )
-  # Wed Jun 14 16:09:28 2023 ------------------------------
-  # STOPPED HERE
-  # date mismatch is caused by bad design. Change that!
   
   system.time({
     foo = obj$fit_abc(prm.abc, prms.to.fit)  

@@ -85,7 +85,7 @@ err_fct <- function(cl.i, ww.i,
     if(use.cl) {
       z.cl = normlarge(df.cl$obs, largest.rank ) 
       err.cl = sss(df.cl$obs/z.cl , df.cl$Ym/z.cl)
-      }
+    }
     if(use.ww) {
       z.ww = normlarge(df.ww$obs, largest.rank) 
       err.ww = sss(df.ww$obs/z.ww , df.ww$Wm/z.ww)
@@ -246,40 +246,49 @@ calc_dist_parallel <- function(i,
 #' Generate prior samples given 
 #' paramter names and range.
 #'
-#' @param prms.to.fit List of parameters name with their range.
+#' @param prms.to.fit List of parameters name with their 
+#' prior distribution and parameters
 #' @param n.priors Integer. Number of sample to generate for each parameter.
 #'
 #' @return
 #' @export
 #'
-#' @examples
-generate_priors <- function(prms.to.fit,
-                            n.priors) {
-  
+generate_priors <- function(prms.to.fit, n.priors) {
   tmp = list()
   
   for(i in seq_along(prms.to.fit)){
+    x = prms.to.fit[[i]]
+    distrib = x[[1]]
     
-    is.int = is_prm_integer(names(prms.to.fit)[i])
-   
-    lwr = prms.to.fit[[i]][1]
-    upr = prms.to.fit[[i]][2]
+    if(distrib == 'unif') 
+      tmp[[i]] = runif(n = n.priors, min = x[[2]], max = x[[3]])
     
-    if(is.int){
-      tmp[[i]] = sample( x       = lwr:upr, 
-                         size    = n.priors,
-                         replace = TRUE)
+    if(grepl('^norm', distrib)){
+      y = rnorm(n = n.priors, mean = x[[2]], sd = x[[3]])
+      if(distrib == 'normp') y[y<0] <- -y[y<0] # force positive samples
+      tmp[[i]] = y
     }
-    if(!is.int){
-      tmp[[i]] = runif(n   = n.priors, 
-                       min = lwr, 
-                       max = upr)
+    
+    if(distrib == 'exp')
+      tmp[[i]] = rexp(n = n.priors, rate = 1 / x[[2]])
+    
+    if(distrib == 'unif_int')
+      tmp[[i]] = sample(x = x[[2]]:x[[3]], size = n.priors, replace = TRUE)
+    
+    if(distrib == 'gamma'){
+      # Note: Gamma is assumed parametrized with 
+      # mean and variance, not shape and scale.
+      m = x[[2]] ; v = x[[3]]
+      scale = v / m
+      shape = m^2 / v
+      tmp[[i]] = rgamma(n = n.priors, shape = shape, scale = scale)
     }
   }
   priors = data.frame(tmp)
   names(priors) = names(prms.to.fit)
   return(priors)
 }
+
 
 #' Fit model to observed data using the ABC algorithm.
 #'
@@ -389,7 +398,7 @@ reem_fit_abc <- function(obj,
 reem_plot_fit <- function(obj) {
   
   # Prepare dataframes for plotting
- 
+  
   fit.obj = obj$fit.obj 
   ps      = fit.obj$post.simulations 
   obs.cl  = obj$obs.cl
@@ -484,7 +493,7 @@ reem_plot_fit <- function(obj) {
           ggplot2::theme(
             panel.grid = ggplot2::element_blank(),
             axis.text = ggplot2::element_text(size = ggplot2::rel(0.6))
-            )+
+          )+
           ggplot2::labs(x=nam[i], y=nam[j]) + 
           ggplot2::guides(fill = 'none')
         
