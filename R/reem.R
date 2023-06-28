@@ -183,6 +183,11 @@ setRefClass(
           aggr.window    = aggr.window
           )
         return(res)
+      },
+      
+      forecast_peak = function(var){
+        res = reem_forecast_peak(var = var, fcst = .self$fcst.obj)
+        return(res)
       }
     
     )

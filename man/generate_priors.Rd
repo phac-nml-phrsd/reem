@@ -5,13 +5,13 @@
 \title{Generate prior samples given 
 paramter names and range.}
 \usage{
-generate_priors(ptf, n.priors)
+generate_priors(prms.to.fit, n.priors)
 }
 \arguments{
-\item{n.priors}{Integer. Number of sample to generate for each parameter.}
-
 \item{prms.to.fit}{List of parameters name with their 
 prior distribution and parameters}
+
+\item{n.priors}{Integer. Number of sample to generate for each parameter.}
 }
 \description{
 Generate prior samples given 

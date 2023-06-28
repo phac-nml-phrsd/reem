@@ -281,4 +281,20 @@ reem_plot_forecast <- function(
 }
 
 
+#' Extract the forecasted peak values and timing.
+#' 
+#' @param var String. Name of the model variable. 
+#' @param fcst Forecast object `fcst.obj` of the `reem` class object.  
+#'
+#' @return A dataframe of the forecasted peaks.
+#'
+reem_forecast_peak <- function(var, fcst) {
+  res = fcst$simfwd %>% 
+    bind_rows() %>%
+    group_by(index) %>% 
+    summarise(peak.date = date[which.max(.data[[var]])[1]],
+              peak.value = max(.data[[var]]))
+  return(res)
+}
+
 
