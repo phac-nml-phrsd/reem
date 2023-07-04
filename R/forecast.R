@@ -213,7 +213,7 @@ reem_plot_forecast <- function(
   # starting from `asof` and a time interval
   # equal to the one of the observations:
   dt = as.numeric(diff(obs.cl$date))[1]
-  dt.aggr.fcst = seq.Date(from = prm.fcst$asof , 
+  dt.aggr.fcst = seq.Date(from = fcst.prm$asof , 
                           to = max(sf$date), 
                           by = dt)
   
@@ -221,7 +221,7 @@ reem_plot_forecast <- function(
   sf.cl = aggcl(df = sf, 
                 dt.aggr = dt.aggr.fcst, 
                 vars = c('Y_mean','Y_lo','Y_hi')) %>% 
-    filter(date >prm.fcst$asof)
+    filter(date >fcst.prm$asof)
   
   # - - - Plots - - - 
   
@@ -293,7 +293,7 @@ reem_forecast_peak <- function(var, fcst) {
     bind_rows() %>%
     group_by(index) %>% 
     summarise(peak.date = date[which.max(.data[[var]])[1]],
-              peak.value = max(.data[[var]]))
+              peak.value = max(.data[[var]],na.rm = TRUE))
   return(res)
 }
 
