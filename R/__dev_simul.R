@@ -12,7 +12,7 @@ if(0){
   asof       = ymd('2022-03-01') 
   
   prms = list(
-    horizon = 300,  # horizon of the simulation
+    horizon = 120,  # horizon of the simulation
     last.obs = 299,  # last observation time (must be < horizon)
     B       = rep(1,300), # Behavior change
     freq.obs.ww = 3, # average frequency of ww observation
@@ -44,5 +44,46 @@ if(0){
   simepi  = obj$simulate_epi(deterministic = FALSE)
   
   simepi$sim %>% ggplot(aes(x=date, y = Wd)) + geom_line()
+  
+  # impact of `alpha`
+  obj$prms$alpha <- 0
+  s0  = obj$simulate_epi(deterministic = TRUE)
+  obj$prms$alpha <- 1
+  s2  = obj$simulate_epi(deterministic = TRUE)
+  
+  df = rbind(
+    mutate(s0$sim, alpha = 'alpha = 0'),
+    mutate(s2$sim, alpha = 'alpha = 1'))
+    
+  
+  g.alpha = df %>% 
+    ggplot(aes(x=date, y = I, color = alpha)) + 
+    geom_line(linewidth = 2) + scale_y_log10() + 
+    coord_cartesian(ylim=c(1,1e3))+
+    theme(panel.grid.minor = element_blank()) +
+    labs(title = 'impact of alpha', x='', y='incidence')
+  g.alpha
+  
+  # impact of `R0`
+  obj$prms$alpha <- 0
+  obj$prms$R0    <- 1.5
+  
+  s0  = obj$simulate_epi(deterministic = TRUE)
+  obj$prms$R0 <- 2
+  s2  = obj$simulate_epi(deterministic = TRUE)
+  
+  df = rbind(
+    mutate(s0$sim, R0 = 'R0 = 1.5'),
+    mutate(s2$sim, R0 = 'R0 = 2'))
+  
+  
+  g.R0 = df %>% 
+    ggplot(aes(x=date, y = I, color = R0)) + 
+    geom_line(linewidth = 2) + scale_y_log10()+
+    coord_cartesian(ylim=c(1,1e3))+
+    theme(panel.grid.minor = element_blank()) +
+    scale_color_brewer(palette = 'Dark2')+
+    labs(title = 'impact of Ro', x='', y='incidence')
+  g.R0
   
 } 
