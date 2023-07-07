@@ -125,6 +125,18 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
 }
 
 
+
+add_ribbons_quantiles <- function(g, z, k,
+                                  col.fcst, alpha.ribbon) {
+  nz = length(z)
+  res = g + 
+    geom_ribbon(aes(ymin = .data[[z[k]]], 
+                    ymax = .data[[z[nz-k+1] ]]), 
+                fill = col.fcst, alpha = alpha.ribbon)
+  return(res)
+}
+
+
 #' Plot forecasts
 #'
 #' @param obj 
@@ -176,7 +188,10 @@ reem_plot_forecast <- function(
           vars = c('m','lo','hi')) %>%
     filter(date <= max(obs.cl$date))
   
+  # Retrieve the forecast summary
+  sf = fcst.obj$summary.fcst 
   # set the aggregation dates as 
+  
   # starting from `asof` and a time interval
   # equal to the one of the observations:
   dt = as.numeric(diff(obs.cl$date))[1]
@@ -186,15 +201,14 @@ reem_plot_forecast <- function(
   
   # --- Aggregation of clinical reports ---
   
-  # Retrieve the forecast summary
-  sf = fcst.obj$summary.fcst 
-  
   # Reformat to suit ggplot
   sf2 = sf %>% 
     pivot_wider(names_from = qprob, values_from = q, 
                 names_prefix = 'q_')
   
-  nm = names(sf2)
+  z  = names(sf2)
+  z  = z[grepl('^q_',z)]
+  nz = length(z)
   
   # ** WARNING **
   # HERE WE CALCULATE THE SUM OF THE QUANTILE WHICH IS 
@@ -204,7 +218,7 @@ reem_plot_forecast <- function(
   sf.cl = sf2 %>% 
     filter(name == 'Y') %>%
     aggcl(dt.aggr = dt.aggr.fcst, 
-          vars = c('mean',nm[grepl('^q',nm)])) %>% 
+          vars = c('mean', z)) %>% 
     filter(date > fcst.prm$asof)
   
   # - - - Plots - - - 
@@ -232,24 +246,13 @@ reem_plot_forecast <- function(
     xaxis + 
     labs(title = 'Forecast infections', 
          x = '', y = 'cases')
-  # g.cl
-  
-  z = names(sf2)
-  z = z[grepl('^q_',z)]
-  nz = length(z)
-  
-  add_ribbons_quantiles <- function(g.cl, z, k) {
-    res = g.cl + 
-      geom_ribbon(aes(ymin = .data[[z[k]]], 
-                      ymax = .data[[z[nz-k+1] ]]), 
-                  fill = col.fcst, alpha = alpha.ribbon)
-    return(res)
-  }
   
   # Add all the ribbons corresponding to each quantile
   for(k in 1:(nz/2)) {
-    g.cl = add_ribbons_quantiles(g.cl, z, k)
+    g.cl = add_ribbons_quantiles(g.cl, z, k, 
+                                 col.fcst, alpha.ribbon)
   }
+  g.cl
   
   # --- Wastewater 
   
@@ -282,7 +285,8 @@ reem_plot_forecast <- function(
     xaxis 
   
   for(k in 1:(nz/2)) {
-    g.ww = add_ribbons_quantiles(g.ww, z, k)
+    g.ww = add_ribbons_quantiles(g.ww, z, k, 
+                                 col.fcst, alpha.ribbon)
   }
   # g.ww
   
