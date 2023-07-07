@@ -3,7 +3,7 @@
 ###
 
 if(0){
-  
+  theme_set(theme_bw())
   obj = readRDS('obj-dev.rds')
   asof = ymd('2022-03-01') 
   
@@ -13,7 +13,7 @@ if(0){
     horizon.fcst = ymd('2022-06-01'),
     use.fit.post = TRUE,
     n.resample   = 20,
-    ci           = 0.95
+    ci           = seq(0.1,0.9, by = 0.1)
   )
   
   fcst = obj$forecast(prm = prm.fcst, verbose = 1)

@@ -85,9 +85,7 @@ if(0){
     start.delta = list('unif_int', -7, 7)  
   )
   
-  system.time({
-    foo = obj$fit_abc(prm.abc, prms.to.fit)  
-  })
+   foo = obj$fit_abc(prm.abc, prms.to.fit)  
   
   gg = obj$plot_fit()
   

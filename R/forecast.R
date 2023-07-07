@@ -1,78 +1,45 @@
 
 
-summarize_fcst <- function(simfwd, prm.fcst) {
+summarize_fcst <- function(simfwd, prm.fcst, vars) {
   
-  if(0){ 
-    ci = 0.95
+  if(0){  # --- DEBUG
+    simfwd = fcst$simfwd
+    ci = c(0.50, 0.80, 0.95)
+    vars = c('Y', 'Wr')
   }
-  message('\nSummarizing forecasts...',appendLF = FALSE)
-  ci = prm.fcst$ci
   
-  res = simfwd %>% 
-    bind_rows() %>% 
-    group_by(date) %>%
-    summarise(
-      across(.cols = c(Y,Wr), 
-             .fns = mean,
-             .names = '{.col}_mean',
-             na.rm = TRUE),
-      across(.cols = c(Y,Wr), 
-             .fns = quantile,
-             probs = 0.5 - ci/2, 
-             .names = '{.col}_lo',
-             na.rm = TRUE),
-      across(.cols = c(Y,Wr), 
-             .fns = quantile,
-             probs = 0.5 + ci/2, 
-             .names = '{.col}_hi',
-             na.rm = TRUE)
+  message('\nSummarizing forecasts...',appendLF = FALSE)
+  ci    = prm.fcst$ci
+  probs = sort(c(0.5 - ci/2, 0.5 + ci/2) )
+  
+  quantile_df <- function(x, probs) {
+    tibble(
+      q     = quantile(x, probs, na.rm = TRUE),
+      qprob = probs
     )
+  }
+  
+  res = bind_rows(simfwd) %>% 
+    select(date, !!vars) %>% 
+    pivot_longer(cols = !!vars) %>%
+    reframe(quantile_df(value, probs), 
+            mean = mean(value),
+            .by = c(name, date))
+  
   message(' done.')
   return(res)
-  
-  # Mon May 29 11:26:27 2023 ------------------------------
-  # do not delete. try to find an elegant way 
-  # to return multiple CIs (for nice plots)
-  if(0){
-    quantile_df <- function(x, probs = c(0.25, 0.5, 0.75)) {
-      tibble(
-        val = quantile(x, probs, na.rm = TRUE),
-        quant = probs
-      )
-    }
-    
-    tmp = simfwd %>% 
-      bind_rows() %>% 
-      reframe(
-        across(c(Y, Wr), quantile_df, .unpack = TRUE),
-        .by = date
-      )
-    
-    tmp %>% 
-      ggplot(aes(x=date)) + 
-      geom_line(aes(y=Y_mean))+ 
-      geom_ribbon(aes(ymin = Y_lo, ymax = Y_hi), alpha=0.2)
-    
-    
-    tmp %>%
-      drop_na(starts_with('Wr')) %>%
-      ggplot(aes(x=date)) + 
-      geom_point(aes(y=Wr_mean))+ 
-      geom_ribbon(aes(ymin = Wr_lo, ymax = Wr_hi), alpha=0.2)   
-  }
-  
 }
 
 
 reem_forecast <- function(obj, prm.fcst, verbose ) {
   
-  if(0){ # DEBUG
+  if(0){   #---  DEBUG
     prm.fcst = list(
       asof = ymd('2022-03-01'),
       horizon.fcst = ymd('2022-07-01'),
       use.fit.post = TRUE,
       n.resample = 20,
-      ci = 0.95
+      ci = c(0.50, 0.80, 0.95)
     )
   }
   
@@ -146,7 +113,9 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
     # to d it this way...
   }
   
-  summary.fcst = summarize_fcst(simfwd, prm.fcst)
+  summary.fcst = summarize_fcst(simfwd, 
+                                prm.fcst,
+                                vars = c('Y', 'Wr')) # TODO: remove hard code
   
   return( list(
     simfwd = simfwd, 
@@ -181,11 +150,9 @@ reem_plot_forecast <- function(
   xaxis = scale_x_date(
     date_breaks = date_breaks, 
     date_labels = date_labels)
-  alpha.ribbon = 0.20
+  alpha.ribbon = 0.10
   
   # - - - - Retrieve fitted curves
-  
-  sf = fcst.obj$summary.fcst 
   
   fitsim.ww = obj$fit.obj$post.simulations %>% 
     bind_rows() %>% 
@@ -217,60 +184,106 @@ reem_plot_forecast <- function(
                           to = max(sf$date), 
                           by = dt)
   
-  # aggregation of clinical reports
-  sf.cl = aggcl(df = sf, 
-                dt.aggr = dt.aggr.fcst, 
-                vars = c('Y_mean','Y_lo','Y_hi')) %>% 
-    filter(date >fcst.prm$asof)
+  # --- Aggregation of clinical reports ---
+  
+  # Retrieve the forecast summary
+  sf = fcst.obj$summary.fcst 
+  
+  # Reformat to suit ggplot
+  sf2 = sf %>% 
+    pivot_wider(names_from = qprob, values_from = q, 
+                names_prefix = 'q_')
+  
+  nm = names(sf2)
+  
+  # ** WARNING **
+  # HERE WE CALCULATE THE SUM OF THE QUANTILE WHICH IS 
+  # DIFFERENT FROM THE QUANTILE OF THE SUM (WHAT WE REALLY WANT!)
+  # TODO: CHANGE THAT!
+  
+  sf.cl = sf2 %>% 
+    filter(name == 'Y') %>%
+    aggcl(dt.aggr = dt.aggr.fcst, 
+          vars = c('mean',nm[grepl('^q',nm)])) %>% 
+    filter(date > fcst.prm$asof)
   
   # - - - Plots - - - 
   
   g.cl = ggplot(data = sf.cl,
                 aes(x=date))+ 
+    #
+    # --- Fit
+    #
     geom_line(data = fitsim.cl, aes(y=m), 
               color = col.fit, linetype = 'dashed') + 
     geom_ribbon(data = fitsim.cl, aes(ymin=lo, ymax=hi), 
                 fill=col.fit, alpha = alpha.ribbon / 2) + 
-    geom_point(data = obs.cl, aes(y=obs))+ 
-    geom_line( aes(y = Y_mean), color= col.fcst, 
+    geom_point(data = obs.cl, aes(y=obs)) + 
+    #
+    # --- Forecast
+    # 
+    geom_line( aes(y = mean), color= col.fcst, 
                linetype = 'dotted') + 
-    geom_ribbon(aes(ymin = Y_lo, ymax = Y_hi), 
-                alpha = alpha.ribbon, 
-                fill= col.fcst,
-                color= col.fcst) +
     geom_vline(xintercept = fcst.prm$asof, 
                linetype = 'dashed', 
                color = 'gray50') + 
     annotate(geom = 'text', y=1, x=fcst.prm$asof, 
              label = fcst.prm$asof, size = 2) + 
     xaxis + 
-    labs(title = 'Forecast clinical reports', 
+    labs(title = 'Forecast infections', 
          x = '', y = 'cases')
   # g.cl
   
-  g.ww = sf %>% 
-    drop_na(Wr_mean) %>%
+  z = names(sf2)
+  z = z[grepl('^q_',z)]
+  nz = length(z)
+  
+  add_ribbons_quantiles <- function(g.cl, z, k) {
+    res = g.cl + 
+      geom_ribbon(aes(ymin = .data[[z[k]]], 
+                      ymax = .data[[z[nz-k+1] ]]), 
+                  fill = col.fcst, alpha = alpha.ribbon)
+    return(res)
+  }
+  
+  # Add all the ribbons corresponding to each quantile
+  for(k in 1:(nz/2)) {
+    g.cl = add_ribbons_quantiles(g.cl, z, k)
+  }
+  
+  # --- Wastewater 
+  
+  sf.ww = filter(sf2, name == 'Wr')
+  
+  g.ww =  sf.ww %>%
+    drop_na(mean) %>%
     filter(date >= fcst.prm$asof) %>%
-    ggplot(aes(x=date))+ 
+    ggplot(aes(x=date)) + 
+    #
+    # --- Fit
+    # 
     geom_line(data = fitsim.ww, aes(y=m), 
               color = col.fit, linetype = 'dashed') + 
     geom_ribbon(data = fitsim.ww, aes(ymin=lo, ymax=hi), 
                 fill=col.fit, alpha = alpha.ribbon / 2) + 
-    geom_point(data = obs.ww, aes(y=obs))+ 
-    geom_line( aes(y = Wr_mean), color= col.fcst, 
+    geom_point(data = obs.ww, aes(y=obs)) + 
+    #
+    # --- Forecast
+    #
+    geom_line( aes(y = mean), color= col.fcst, 
                linetype = 'dotted') + 
-    geom_ribbon(aes(ymin = Wr_lo, ymax = Wr_hi), 
-                alpha = alpha.ribbon, 
-                fill= col.fcst,
-                color= col.fcst) +
     geom_vline(xintercept = fcst.prm$asof, 
                linetype = 'dashed', 
                color = 'gray50') + 
-    annotate(geom = 'text', y=1, x=fcst.prm$asof, 
+    annotate(geom = 'text', y = 0, x = fcst.prm$asof, 
              label = fcst.prm$asof, size = 2) + 
     labs(title = 'Forecast wastewater concentration', 
-         x = '', y = 'concentration') +
+         x = '', y = 'concentration (gcp/ml)') +
     xaxis 
+  
+  for(k in 1:(nz/2)) {
+    g.ww = add_ribbons_quantiles(g.ww, z, k)
+  }
   # g.ww
   
   return(list(
