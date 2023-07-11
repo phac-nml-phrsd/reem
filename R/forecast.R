@@ -31,7 +31,15 @@ summarize_fcst <- function(simfwd, prm.fcst, vars) {
 }
 
 
-aggregate.fcst <- function(var.to.aggregate, obj, simfwd) {
+#' Helper function to aggregate forecasts 
+#'
+#' @param var.to.aggregate 
+#' @param obj 
+#' @param simfwd 
+#'
+#' @return A list of dataframes.
+#'
+aggregate_fcst <- function(var.to.aggregate, obj, simfwd) {
 
   # retrieve the aggregation interval 
   # from the observation data set
@@ -151,7 +159,7 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
   summary.fcst.aggr = list()
   
   # TODO: make a function for these 2 function calls!
-  simfwd.aggr[['Y.aggr']] = aggregate.fcst(var.to.aggregate = 'Y', 
+  simfwd.aggr[['Y.aggr']] = aggregate_fcst(var.to.aggregate = 'Y', 
                                            obj = obj, 
                                            simfwd = simfwd)
   
@@ -234,6 +242,12 @@ reem_plot_forecast <- function(
               lo = min(Y), 
               hi = max(Y)) %>% 
     drop_na(m)
+  
+  # Tue Jul 11 13:49:02 2023 ------------------------------
+  # FIXME
+  # This should be redundant now that the 
+  # forecast object returns aggregated forecasts
+  # see function `aggregate_fcst()`
   
   # --- Aggregation of clinical reports ---
   
