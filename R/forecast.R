@@ -31,6 +31,34 @@ summarize_fcst <- function(simfwd, prm.fcst, vars) {
 }
 
 
+aggregate.fcst <- function(var.to.aggregate, obj, simfwd) {
+
+  # retrieve the aggregation interval 
+  # from the observation data set
+  dt = as.numeric(median(diff(obj$obs.cl$date)))
+  
+  res = list()
+  for(i in 1:length(simfwd)){
+    # Extract the daily forecasts for the variable
+    sf = select(simfwd[[i]], date, !!var.to.aggregate)
+    
+    # define the aggregation schedule
+    dateaggr = seq.Date(from = max(obj$obs.cl$date) , 
+                        to   = max(sf$date), 
+                        by   = dt)
+    
+    # Calculate the aggregated values
+    res[[i]] = sf %>% 
+      aggcl(dt.aggr = dateaggr, 
+            vars = var.to.aggregate) %>% 
+      filter(date > obj$fcst.prm$asof) 
+    
+    names(res[[i]])[names(res[[i]])==var.to.aggregate] <- paste0(var.to.aggregate,'.aggr')
+    
+  }
+  return(res)
+}
+
 reem_forecast <- function(obj, prm.fcst, verbose ) {
   
   if(0){   #---  DEBUG
@@ -117,15 +145,40 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
                                 prm.fcst,
                                 vars = c('Y', 'Wr')) # TODO: remove hard code
   
+  # Dealing with aggregated incidence
+  
+  simfwd.aggr = list()
+  summary.fcst.aggr = list()
+  
+  # TODO: make a function for these 2 function calls!
+  simfwd.aggr[['Y.aggr']] = aggregate.fcst(var.to.aggregate = 'Y', 
+                                           obj = obj, 
+                                           simfwd = simfwd)
+  
+  summary.fcst.aggr[['Y.aggr']] = summarize_fcst(simfwd.aggr, 
+                                                 prm.fcst,
+                                                 vars = c('Y.aggr'))  
+  
   return( list(
+    asof   = prm.fcst$asof,
     simfwd = simfwd, 
-    summary.fcst = summary.fcst
+    summary.fcst = summary.fcst,
+    simfwd.aggr = simfwd.aggr,
+    summary.fcst.aggr = summary.fcst.aggr
   ))
   
 }
 
 
-
+#' Helper function
+#'
+#' @param g 
+#' @param z 
+#' @param k 
+#' @param col.fcst 
+#' @param alpha.ribbon 
+#'
+#' @return A ggplot object
 add_ribbons_quantiles <- function(g, z, k,
                                   col.fcst, alpha.ribbon) {
   nz = length(z)
@@ -182,7 +235,9 @@ reem_plot_forecast <- function(
               hi = max(Y)) %>% 
     drop_na(m)
   
-  # Aggregate for clinical reports
+  # --- Aggregation of clinical reports ---
+  
+  # Aggregate clinical reports for the fitted part
   fitsim.cl = tmp.cl %>% 
     aggcl(dt.aggr = obs.cl$date, 
           vars = c('m','lo','hi')) %>%
@@ -190,16 +245,14 @@ reem_plot_forecast <- function(
   
   # Retrieve the forecast summary
   sf = fcst.obj$summary.fcst 
-  # set the aggregation dates as 
   
+  # set the aggregation dates as 
   # starting from `asof` and a time interval
   # equal to the one of the observations:
   dt = as.numeric(diff(obs.cl$date))[1]
   dt.aggr.fcst = seq.Date(from = fcst.prm$asof , 
                           to = max(sf$date), 
                           by = dt)
-  
-  # --- Aggregation of clinical reports ---
   
   # Reformat to suit ggplot
   sf2 = sf %>% 
@@ -252,7 +305,7 @@ reem_plot_forecast <- function(
     g.cl = add_ribbons_quantiles(g.cl, z, k, 
                                  col.fcst, alpha.ribbon)
   }
-  g.cl
+  # g.cl
   
   # --- Wastewater 
   
@@ -313,5 +366,60 @@ reem_forecast_peak <- function(var, fcst) {
               peak.value = max(.data[[var]],na.rm = TRUE))
   return(res)
 }
+
+
+#' Returns the probability that the forecasted variable
+#' is within a box defined by lower and upper dates and values.
+#'
+#' @param var 
+#' @param date.lower 
+#' @param date.upper 
+#' @param val.lower 
+#' @param val.upper 
+#' @param fcst 
+#'
+#' @return
+#'
+reem_proba_box <- function(var, 
+                           date.lower, 
+                           date.upper,
+                           val.lower, 
+                           val.upper, 
+                           fcst) {
+  # --- DEBUG
+  # var = 'Y.aggr' ; val.lower = 10 ; val.upper = 70
+  # date.lower = ymd('2022-03-01')
+  # date.upper = ymd('2022-03-20')
+  # aggr.interval = 7
+ 
+  is.aggregated = grepl('\\.aggr$', var)
+   
+  fs = fcst$simfwd
+  if(is.aggregated) fs = fcst$simfwd.aggr[[var]]
+  n = length(fs)
+  x = logical(n)
+  for(i in 1:n){
+    val = fs[[i]] %>% 
+      filter(between(date, date.lower, date.upper)) %>% 
+      select(date, !!var) %>% 
+      drop_na(!!var) 
+    x[i] = any(val.lower <= val & val <= val.upper)
+  }
+  x
+  return(mean(x))
+  
+  # --- DEBUG
+  df =  fcst$summary.fcst
+  if(is.aggregated) df = fcst$summary.fcst.aggr[[var]]
+  g = df %>% 
+    filter(name == !!var) %>% 
+    ggplot(aes(x=date, y=mean)) + 
+    geom_line(color = 'blue') + 
+    geom_hline(yintercept = c(val.lower, val.upper), linetype='dashed') +
+    geom_vline(xintercept = c(date.lower, date.upper), linetype='dashed')
+  plot(g)
+    
+}
+
 
 

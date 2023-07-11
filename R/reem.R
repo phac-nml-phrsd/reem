@@ -108,11 +108,12 @@ setRefClass(
         if(!.self$is.fitted) 
           stop('Model cannot forecast because it is not fitted.')
         
+        .self$fcst.prm <- prm.fcst
+        
         res = reem_forecast(obj      = .self, 
                             prm.fcst = prm.fcst,
                             verbose  = verbose) 
         
-        .self$fcst.prm <- prm.fcst
         .self$fcst.obj <- res
         
         return(res)
@@ -127,6 +128,42 @@ setRefClass(
           date_labels = date_labels
         )
        return(res) 
+      },
+      forecast_densities = function(
+                      var, 
+                      obs.new, 
+                      density.n = 100, 
+                      density.adjust = 0.4,
+                      aggr.window)
+      {
+        res = reem_forecast_densities(
+          var            = var,
+          obs.new        = obs.new,
+          fcst           = .self$fcst.obj,
+          density.n      = density.n,
+          density.adjust = density.adjust, 
+          aggr.window    = aggr.window
+          )
+        return(res)
+      },
+      
+      forecast_peak = function(var){
+        res = reem_forecast_peak(var = var, fcst = .self$fcst.obj)
+        return(res)
+      },
+      
+      proba_box = function(var, 
+                           date.lower, 
+                           date.upper,
+                           val.lower, 
+                           val.upper){
+        res = reem_proba_box(var = var, 
+                             date.lower = date.lower, 
+                             date.upper = date.upper,
+                             val.lower  = val.lower, 
+                             val.upper  = val.upper,
+                             fcst = .self$fcst.obj)
+        return(res)
       },
       
       # = = = = = = = = = = 
@@ -165,31 +202,7 @@ setRefClass(
               aggr.window    = aggr.window
             )
             return(res)
-      },
-      
-      forecast_densities = function(
-                      var, 
-                      obs.new, 
-                      density.n = 100, 
-                      density.adjust = 0.4,
-                      aggr.window)
-      {
-        res = reem_forecast_densities(
-          var            = var,
-          obs.new        = obs.new,
-          fcst           = .self$fcst.obj,
-          density.n      = density.n,
-          density.adjust = density.adjust, 
-          aggr.window    = aggr.window
-          )
-        return(res)
-      },
-      
-      forecast_peak = function(var){
-        res = reem_forecast_peak(var = var, fcst = .self$fcst.obj)
-        return(res)
       }
-    
     )
 )
 
