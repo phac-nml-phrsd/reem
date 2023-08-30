@@ -4,14 +4,16 @@
 \alias{reem_plot_forecast}
 \title{Plot forecasts}
 \usage{
-reem_plot_forecast(obj, date_breaks, date_labels)
+reem_plot_forecast(obj, date_breaks, date_labels, logscale)
 }
 \arguments{
-\item{obj}{}
+\item{obj}{List. Forecast object as returned by the function \code{forecast()}.}
 
-\item{date_breaks}{}
+\item{date_breaks}{String. Date breaks (as understood by \code{ggplot}).}
 
-\item{date_labels}{}
+\item{date_labels}{String. Date labels (as understood by \code{ggplot}).}
+
+\item{logscale}{Logical. Use logarithmic scale for y axis. Default is \code{FALSE}.}
 }
 \value{
 A ggplot object.

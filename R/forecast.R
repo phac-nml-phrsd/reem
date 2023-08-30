@@ -202,16 +202,18 @@ add_ribbons_quantiles <- function(g, z, k,
 
 #' Plot forecasts
 #'
-#' @param obj 
-#' @param date_breaks 
-#' @param date_labels 
+#' @param obj List. Forecast object as returned by the function \code{forecast()}.
+#' @param date_breaks String. Date breaks (as understood by \code{ggplot}).
+#' @param date_labels String. Date labels (as understood by \code{ggplot}).
+#' @param logscale Logical. Use logarithmic scale for y axis. Default is \code{FALSE}.
 #'
 #' @return A ggplot object.
 #'
 reem_plot_forecast <- function(
     obj,
     date_breaks,
-    date_labels  ) {
+    date_labels,
+    logscale) {
   
   obs.cl = obj$obs.cl
   obs.ww = obj$obs.ww
@@ -359,11 +361,15 @@ reem_plot_forecast <- function(
   }
   # g.ww
   
+  if(logscale){
+    g.cl = g.cl + scale_y_log10()
+    g.ww = g.ww + scale_y_log10()
+  }
+  
   return(list(
     cl = g.cl, 
     ww = g.ww
   ))
-  
 }
 
 

@@ -121,11 +121,13 @@ setRefClass(
       
       plot_forecast = function(
                         date_breaks = '2 months',
-                        date_labels = '%b`%y'){
+                        date_labels = '%b`%y', 
+                        logscale = FALSE){
         res = reem_plot_forecast(
-          obj = .self,
+          obj         = .self,
           date_breaks = date_breaks,
-          date_labels = date_labels
+          date_labels = date_labels,
+          logscale    = logscale
         )
        return(res) 
       },
