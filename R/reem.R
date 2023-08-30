@@ -131,6 +131,21 @@ setRefClass(
         )
        return(res) 
       },
+      
+      
+      plot_peak = function(var, 
+                           date_labels = '%d %b`%y', 
+                           logscale = FALSE){
+        res = reem_plot_peak(
+          var,
+          obj         = .self,
+          date_labels = date_labels,
+          logscale    = logscale
+        )
+        return(res)
+      },
+      
+      
       forecast_densities = function(
                       var, 
                       obs.new, 

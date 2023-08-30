@@ -373,6 +373,36 @@ reem_plot_forecast <- function(
 }
 
 
+#' Plot timing and level of peak forecast 
+#'
+#' @param var String. Name of the variable
+#' @param obj List. Object
+#' @param date_labels String. Date labels (as understood by \code{ggplot}).
+#' @param logscale Logical. Use logarithmic scale for y axis. Default is \code{FALSE}.
+#'
+#' @return
+#'
+reem_plot_peak <- function( var,
+    obj         ,
+    date_labels ,
+    logscale    ) {
+  
+  pk = obj$forecast_peak(var = var)
+
+  g.pk = pk %>% ggplot(aes(x=peak.date , y=peak.value)) +
+    geom_density_2d_filled(color = 'grey50', alpha = 0.6)+
+    theme(panel.grid.minor.y = element_blank(), 
+          panel.border = element_blank(),
+          axis.ticks   = element_blank())  +
+    scale_x_date(date_labels = date_labels)+
+    labs(title = paste0('Forecast peak for `', var,'`'),
+         x = 'Peak date', y = 'Peak value') + 
+    guides(fill = 'none')
+  
+  if(logscale) g.pk = g.pk + scale_y_log10()
+  return(g.pk)
+}
+
 #' Extract the forecasted peak values and timing.
 #' 
 #' @param var String. Name of the model variable. 
