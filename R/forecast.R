@@ -59,7 +59,8 @@ aggregate_fcst <- function(var.to.aggregate, obj, simfwd) {
     res[[i]] = sf %>% 
       aggcl(dt.aggr = dateaggr, 
             vars = var.to.aggregate) %>% 
-      filter(date > obj$fcst.prm$asof) 
+      filter(date > obj$fcst.prm$asof) %>%
+      mutate(index = row_number())
     
     names(res[[i]])[names(res[[i]])==var.to.aggregate] <- paste0(var.to.aggregate,'.aggr')
     
@@ -373,7 +374,17 @@ reem_plot_forecast <- function(
 #' @return A dataframe of the forecasted peaks.
 #'
 reem_forecast_peak <- function(var, fcst) {
-  res = fcst$simfwd %>% 
+  
+  is.aggregated = grepl('aggr', var)
+  
+  if(is.aggregated){
+    df = fcst$simfwd.aggr[[var]]
+  }
+  if(!is.aggregated){
+    df = fcst$simfwd
+  }
+  
+  res = df %>% 
     bind_rows() %>%
     group_by(index) %>% 
     summarise(peak.date = date[which.max(.data[[var]])[1]],

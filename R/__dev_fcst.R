@@ -32,11 +32,11 @@ if(0){
   plot(g)
   dev.off()
   
-  var = 'Y.aggr'
-  date.lower = ymd('2022-03-10')
+  var = 'Y.aggr'  # Y.aggr   Wr
+  date.lower = ymd('2022-02-10')
   date.upper = ymd('2099-01-01')
-  val.lower = 700
-  val.upper = 9900
+  val.lower = 0.2
+  val.upper = 9
   
   a = obj$proba_box(var        = var, 
                     date.lower = date.lower, 
@@ -44,6 +44,10 @@ if(0){
                     val.lower  = val.lower, 
                     val.upper  = val.upper)
   print(a)
+  
+  pk = obj$forecast_peak(var = 'Y.aggr')
+  mean(pk$peak.value > 105)
+  
   
   fcst.obj = obj$fcst.obj 
 }
