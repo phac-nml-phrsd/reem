@@ -8,17 +8,20 @@ is within a box defined by lower and upper dates and values.}
 reem_proba_box(var, date.lower, date.upper, val.lower, val.upper, fcst)
 }
 \arguments{
-\item{var}{}
+\item{var}{String. Name of the variable.}
 
-\item{date.lower}{}
+\item{date.lower}{Date. Lower date defining the box.}
 
-\item{date.upper}{}
+\item{date.upper}{Date. Upper date defining the box.}
 
-\item{val.lower}{}
+\item{val.lower}{Numeric. Lower value defining the box.}
 
-\item{val.upper}{}
+\item{val.upper}{Numeric. Upper value defining the box.}
 
-\item{fcst}{}
+\item{fcst}{Forecast object as returned by the function \code{forecast()}.}
+}
+\value{
+Numeric. The corresponding probability.
 }
 \description{
 Returns the probability that the forecasted variable

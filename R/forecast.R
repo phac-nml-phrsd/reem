@@ -33,9 +33,9 @@ summarize_fcst <- function(simfwd, prm.fcst, vars) {
 
 #' Helper function to aggregate forecasts 
 #'
-#' @param var.to.aggregate 
-#' @param obj 
-#' @param simfwd 
+#' @param var.to.aggregate String. Name of the variable to aggregate.
+#' @param obj REEM object.
+#' @param simfwd Object of forward simulations, , as returned by the function \code{forecast()}.
 #'
 #' @return A list of dataframes.
 #'
@@ -62,8 +62,9 @@ aggregate_fcst <- function(var.to.aggregate, obj, simfwd) {
       filter(date > obj$fcst.prm$asof) %>%
       mutate(index = row_number())
     
-    names(res[[i]])[names(res[[i]])==var.to.aggregate] <- paste0(var.to.aggregate,'.aggr')
-    
+    # Set proper name
+    idx = names(res[[i]])==var.to.aggregate
+    names(res[[i]])[idx] <- paste0(var.to.aggregate,'.aggr')
   }
   return(res)
 }
@@ -375,7 +376,7 @@ reem_plot_forecast <- function(
 #'
 reem_forecast_peak <- function(var, fcst) {
   
-  is.aggregated = grepl('aggr', var)
+  is.aggregated = grepl('aggr$', var)
   
   if(is.aggregated){
     df = fcst$simfwd.aggr[[var]]
@@ -396,14 +397,14 @@ reem_forecast_peak <- function(var, fcst) {
 #' Returns the probability that the forecasted variable
 #' is within a box defined by lower and upper dates and values.
 #'
-#' @param var 
-#' @param date.lower 
-#' @param date.upper 
-#' @param val.lower 
-#' @param val.upper 
-#' @param fcst 
+#' @param var String. Name of the variable.
+#' @param date.lower Date. Lower date defining the box.
+#' @param date.upper Date. Upper date defining the box.
+#' @param val.lower Numeric. Lower value defining the box.
+#' @param val.upper Numeric. Upper value defining the box.
+#' @param fcst Forecast object as returned by the function \code{forecast()}.
 #'
-#' @return
+#' @return Numeric. The corresponding probability.
 #'
 reem_proba_box <- function(var, 
                            date.lower, 
@@ -430,20 +431,7 @@ reem_proba_box <- function(var,
       drop_na(!!var) 
     x[i] = any(val.lower <= val & val <= val.upper)
   }
-  x
   return(mean(x))
-  
-  # --- DEBUG
-  df =  fcst$summary.fcst
-  if(is.aggregated) df = fcst$summary.fcst.aggr[[var]]
-  g = df %>% 
-    filter(name == !!var) %>% 
-    ggplot(aes(x=date, y=mean)) + 
-    geom_line(color = 'blue') + 
-    geom_hline(yintercept = c(val.lower, val.upper), linetype='dashed') +
-    geom_vline(xintercept = c(date.lower, date.upper), linetype='dashed')
-  plot(g)
-    
 }
 
 
