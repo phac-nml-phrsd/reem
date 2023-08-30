@@ -416,7 +416,6 @@ reem_proba_box <- function(var,
   # var = 'Y.aggr' ; val.lower = 10 ; val.upper = 70
   # date.lower = ymd('2022-03-01')
   # date.upper = ymd('2022-03-20')
-  # aggr.interval = 7
  
   is.aggregated = grepl('\\.aggr$', var)
    
@@ -429,7 +428,7 @@ reem_proba_box <- function(var,
       filter(between(date, date.lower, date.upper)) %>% 
       select(date, !!var) %>% 
       drop_na(!!var) 
-    x[i] = any(val.lower <= val & val <= val.upper)
+    x[i] = any(val.lower <= val[[var]] & val[[var]] <= val.upper)
   }
   return(mean(x))
 }
