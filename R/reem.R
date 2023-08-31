@@ -82,11 +82,13 @@ setRefClass(
       },
       
       fit_abc = function(prm.abc,
-                         prms.to.fit){
+                         prms.to.fit,
+                         verbose = FALSE){
         res = reem_fit_abc(
           obj         = .self,
           prm.abc     = prm.abc,
-          prms.to.fit = prms.to.fit)
+          prms.to.fit = prms.to.fit,
+          verbose     = verbose)
         
         .self$is.fitted = TRUE
         .self$fit.obj   = res
