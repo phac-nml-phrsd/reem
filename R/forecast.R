@@ -422,11 +422,20 @@ reem_forecast_peak <- function(var, fcst) {
   }
   
   res = df %>% 
-    bind_rows() %>%
-    group_by(index) %>% 
+    bind_rows(.id = 'post') %>%
+    group_by(post) %>% 
     summarise(peak.date = date[which.max(.data[[var]])[1]],
               peak.value = max(.data[[var]],na.rm = TRUE))
+  
   return(res)
+  
+  if(FALSE){ # DEBUG
+    df %>% 
+      bind_rows(.id = 'post') %>% 
+      ggplot(aes(x=date, y=.data[[var]])) + 
+      geom_line(aes(group = post), alpha = 0.4) + 
+      geom_point(data = res, aes(x=peak.date, y=peak.value), size=3)
+  }
 }
 
 
