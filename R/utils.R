@@ -13,7 +13,8 @@
 timestamp_short <- function() {
   stamp = lubridate::now() %>%
     stringr::str_replace_all('\\s','a') %>%
-    stringr::str_replace_all('\\:','\\_')
+    stringr::str_replace_all('\\:','\\_') %>% 
+    stringr::str_remove('.\\d+$')
   return(stamp)
 }
 
