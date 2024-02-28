@@ -14,8 +14,6 @@ Imports:
     lubridate,
     magrittr,
     patchwork,
-    rjags,
-    runjags,
     stats,
     tibble,
     tidyr,
