@@ -11,6 +11,7 @@
 #' 
 #' 
 reem_simulate <- function(prms, deterministic) {
+  
   # Unpack parameters
   R0      = prms$R0
   B       = prms$B
@@ -29,12 +30,12 @@ reem_simulate <- function(prms, deterministic) {
   
   ni = length(I.init)
   
-  m = numeric(horizon)
-  I = rep(NA, horizon)
-  S = rep(NA, horizon)
-  A = rep(NA, horizon)
-  Y = rep(NA, horizon)
-  Wd = rep(NA, horizon)
+  m  = numeric(horizon)
+  I  = rep(NA, horizon)   # daily incidence
+  S  = rep(NA, horizon)   # daily number of susceptible
+  A  = rep(NA, horizon)   # rolling sum of daily incidence aggregated over `lag`
+  Y  = rep(NA, horizon)   # observed aggregated incidence (:stochastic fraction of `A`)
+  Wd = rep(NA, horizon)   # wastewater concentration deposited
   
   # Initial period when incidence is known:
   m[1:ni] = I.init
@@ -114,8 +115,8 @@ reem_simulate <- function(prms, deterministic) {
     Wd = Wd, 
     Wp = Wp)
   
-  # This is equivalent as but quicker than a `left_join()`
-  # and we want this code to be as fast as possible!
+  # This is equivalent as, but quicker than, a `left_join()`
+  # because we want this code to be as fast as possible!
   df$Wr <- NA
   idx = df$t %in% t.obs.ww
   df$Wr[idx] <- Wr
