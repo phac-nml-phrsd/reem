@@ -480,3 +480,64 @@ reem_proba_box <- function(var,
 
 
 
+#' @title Retrieve the forecast posterior distribution
+#' 
+#' @description After the REEM model is fitted to the data,
+#' epidemic trajectories are simulated by drawing the model 
+#' parameters from their posterior distributions. This generates
+#' "posterior trajectories" that are used for forecasting. 
+#' This function returns, at given future time "slices", 
+#' using the posterior trajectories, the forecasted (posterior) distribution
+#' of the variable `var`. 
+#'
+#' @param var String. Name of the variable forecasted. Typical choices are
+#' `Y`, `Y.aggr` and `Wr`
+#' @param date.future Vector of dates. Future dates where the variable `var` is forecasted.
+#' @param fcst Forecast `reem` object.
+#' @param density.n Integer. Number of equally spaced points at which 
+#' the density is to be estimated. see \code{?density}.
+#' @param density.adjust Numerical. Bandwidth adjustment. see \code{?density}.
+#' @param aggr.window Integer or NULL. Time window to aggregate the values 
+#' of the variable `var`. No aggregation if NULL. 
+#'
+#' @return List of dataframes defining the densities as `y=f(x)`.
+#' @export
+#'
+#' @seealso \code{density()}
+#'
+#' 
+reem_get_fcst_density <- function(
+    var, 
+    date.future, 
+    fcst,
+    density.n , 
+    density.adjust,
+    aggr.window) {
+  
+  res = list()
+  
+  # Loop through all dates
+  df = data.frame(date = date.future)
+  
+  for(i in seq_along(date.future)){
+   # print(i) # DEBUG
+    fcst.vals = extract_helper(
+      i = i, 
+      fcst = fcst, 
+      aggr.window = aggr.window, 
+      obs.new = df, 
+      var = var)
+    
+    tmp  = calc_density_one(
+      fcst.vals = fcst.vals,
+      density.n = density.n, 
+      density.adjust = density.adjust)
+    
+    res[[i]] = tmp  %>% 
+      mutate(date = date.future[i])
+  }
+  return(res)
+}
+
+
+

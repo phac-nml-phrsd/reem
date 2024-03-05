@@ -148,6 +148,25 @@ setRefClass(
       },
       
       
+      get_fcst_density = function(
+              var, 
+              date.future, 
+              density.n = 100, 
+              density.adjust = 0.4,
+              aggr.window = NULL)
+      {
+        res = reem_get_fcst_density(
+          var            = var,
+          date.future    = date.future,
+          fcst           = .self$fcst.obj,
+          density.n      = density.n,
+          density.adjust = density.adjust, 
+          aggr.window    = aggr.window
+        )
+        return(res)
+      },
+      
+      # ???DELETE BECAUSE DUPLICATES `get_fcst_density`???
       forecast_densities = function(
                       var, 
                       obs.new, 

@@ -1,7 +1,7 @@
 Package: reem
 Type: Package
 Title: Renewal Equation based Epidemic Model 
-Version: 0.3.4
+Version: 0.3.5
 Date: 2023-11-22
 Author: David Champredon
 Maintainer: David Champredon <david.champredon@canada.ca>
@@ -18,4 +18,4 @@ Imports:
     tibble,
     tidyr,
     snowfall
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
