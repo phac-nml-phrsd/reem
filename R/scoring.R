@@ -2,7 +2,13 @@
 # Retrieve the forecasted value at a 
 # single date for a single simulation
 extract_fcst_value <- function(i, fcst, d, var) {
-  tmp = fcst$simfwd[[i]] %>% 
+  
+  is.aggr = (var == 'Y.aggr')
+  
+  if(is.aggr)  a = fcst$simfwd.aggr$Y.aggr[[i]]
+  if(!is.aggr) a = fcst$simfwd[[i]]
+  
+  tmp = a %>%
     select(date, !!var) %>% 
     filter(date == d) 
   
@@ -10,7 +16,9 @@ extract_fcst_value <- function(i, fcst, d, var) {
     stop('Date ',d,' not found in the simulated forecasts.\n',
          'Cannot extract the forecasted value. ',
          'Maybe your forcast horizon is earlier than the new observation dates?\n ',
-         'Aborting!')
+         'These are the available dates:\n',
+         paste(fcst$simfwd.aggr$Y.aggr[[i]]$date, sep= ' ; '),
+         '\nAborting!\n')
   }
   
   tmp = tmp %>% 
@@ -90,7 +98,12 @@ extract_helper <- function(i, fcst, aggr.window, obs.new, var) {
       tmp[k,] = sapply(X    = 1:nfs, 
                        FUN  = extract_fcst_value, 
                        fcst = fcst, 
-                       d    = obs.new$date[i] - k+1, # `+1` bc we want `-k+1=0` 
+                       # TODO FIXME
+                       # 
+                       # The 1st line (commented) works with variables other than `Y.aggr`
+                       # The 2nd line (uncommented) works with `Y.aggr` 
+                       #d    = obs.new$date[i] - k+1, # `+1` bc we want `-k+1=0` 
+                       d    = obs.new$date[i],  
                        var  = var)
     }
     res = apply(tmp, MARGIN = 2, FUN = sum)
