@@ -10,6 +10,7 @@ extract_fcst_value <- function(i, fcst, d, var) {
   
   tmp = a %>%
     select(date, !!var) %>% 
+    ungroup() %>%
     filter(date == d) 
   
   if(nrow(tmp)==0){
