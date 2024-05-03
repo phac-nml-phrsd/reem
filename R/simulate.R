@@ -1,4 +1,104 @@
 
+
+#' Check (and potentially set) the simulation start date
+#'
+#' @param obj 
+#'
+#' @return
+#' 
+check_date_start <- function(obj) {
+  
+  prms = obj$prms
+  
+  # When working with real data, 
+  # we usually are in "date mode"
+  has.date.start = !is.null(prms$date.start)
+  
+  if(!has.date.start){
+    prms$date.start <- lubridate::ymd('2020-01-01')
+    
+    warning('The start date (`prms$date.start`) of ',
+            'the REEM model has not been specified.',
+            ' Setting it to 2020-01-01. ')
+  }
+  return(prms)
+}
+
+
+#' Check observations (data) times
+#'
+#' @param obj 
+#'
+#' @return
+#'
+check_obs_schedule <- function(obj) {
+ 
+  prms = obj$prms
+   
+  # If observation times/dates not specified:
+  # - if `[t/date].obs.xx` exists, set obs date/times to the ones already existing of this object.
+  # - if `[t/date].obs.xx` does not exist, assume observation at every time step.
+  
+  # Check if dates or times are missing as input 
+  miss.obs.dt.cl = is.null(prms$t.obs.cl) & is.null(prms$date.obs.cl)
+  miss.obs.dt.ww = is.null(prms$t.obs.ww) & is.null(prms$date.obs.ww)
+  
+  if(is.null(prms$date.start)) stop('`date.start` must be specified. ABORTING!')
+  if(is.null(prms$horizon)) stop('`horizon` must be specified. ABORTING!')
+  
+  # -- Wastewater data
+  if(miss.obs.dt.ww){
+    # If not specified, then assumed 
+    # observed at all time steps:
+    date.obs.ww = prms$date.start + 1:prms$horizon
+    t.obs.ww    = 1:prms$horizon
+    
+    prms = c(prms, 
+             t.obs.ww    = list(t.obs.ww),
+             date.obs.ww = list(date.obs.ww))
+    
+    warning('Observation times/dates for wastewater data not specified: ',
+            'assuming ww observation schedule at every time step.')
+  }
+  
+  # -- Clinical data
+  if(miss.obs.dt.cl){
+    
+    if(nrow(obj$obs.cl) == 0){
+      h = prms$horizon
+      obscl = data.frame(t = 0:(h-1), 
+                         date = lubridate::ymd('2020-01-01')+0:(h-1), 
+                         inc = NA)
+      prms$obs.cl = obscl
+      warning('No clinical observations (`prms$obs.cl`) attached to the REEM object. ',
+              'Setting an empty one. ')
+    }
+    if(nrow(obj$obs.cl) > 0){
+      obscl = obj$obs.cl
+    }
+    
+    # same times as when clinical is observed:
+    date.obs.cl = obscl$date
+    
+    # if clinical observation _times_ are not defined
+    times.cl.def = 't' %in% names(obscl)
+    if(! times.cl.def){
+      t.obs.cl = as.integer(obscl$date - prms$date.start)
+    }
+    if(times.cl.def) t.obs.cl = obscl$t
+    
+    prms = c(prms, 
+             t.obs.cl    = list(t.obs.cl),
+             date.obs.cl = list(date.obs.cl))
+    
+    warning('Observation times/dates for clinical data not specified: ',
+            'assuming clinical observation schedule at every time step.')
+  }
+  
+  return(prms)
+}
+
+
 #' Simulate an epidemic with a REEM.
 #'
 #' @param deterministic 
@@ -138,53 +238,11 @@ reem_simulate <- function(prms, deterministic) {
 reem_simulate_epi <- function(obj, 
                               deterministic) {
   
+  # -- Checks 
+  obj$prms = check_date_start(obj)
+  obj$prms = check_obs_schedule(obj)
+  
   prms = obj$prms
-  
-  # == Build times ==
-   
-  # When working with real data, 
-  # we usually are in "date mode"
-  has.date.start = !is.null(prms$date.start)
-  
-  if(!has.date.start){
-    prms$date.start <- lubridate::ymd('2020-01-01')
-    
-    warning('The start date (prms$date.start) of ',
-            'the REEM model has not been specified.',
-            ' Setting it to 2020-01-01. ')
-  }
-  
-  # -- Observation times 
-  
-  # If observation times/dates not specified:
-  # - if `obs.xx` exists, set obs date/times to the ones of this object.
-  # - if `obs.xx` does not exist, assume observation at every time step.
-  
-  # Check if dates or times are missing as input 
-  miss.obs.dt.cl = is.null(prms$t.obs.cl) & is.null(prms$date.obs.cl)
-  miss.obs.dt.ww = is.null(prms$t.obs.ww) & is.null(prms$date.obs.ww)
-  
-  if(miss.obs.dt.ww){
-    # If not specified, then assumed 
-    # observed at all time steps:
-    date.obs.ww  = prms$date.start + 1:prms$horizon
-    t.obs.ww     = 1:prms$horizon
-    prms = c(prms, 
-             t.obs.ww    = list(t.obs.ww),
-             date.obs.ww = list(date.obs.ww))
-  }
-  
-  if(miss.obs.dt.cl){
-    # same times as when clinical is observed:
-    date.obs.cl = obj$obs.cl$date
-    
-    # if clinical observation times are not defined
-    times.cl.def = 't' %in% names(obj$obs.cl)
-    if(! times.cl.def){
-      t.obs.cl = as.integer(obj$obs.cl$date - prms$date.start)
-    }
-    if(times.cl.def) t.obs.cl = obj$obs.cl$t
-  }
   
   # For simulations (TODO: change that...)
   if(!is.null(prms$t.obs.cl)) {
@@ -219,7 +277,7 @@ reem_simulate_epi <- function(obj,
                   !is.na(Wr)) %>%   # filtering out NA keeps observed times only.
     dplyr::rename(obs = Wr) %>%
     dplyr::mutate(date = prms$date.start + t) %>%
-    select(t, date, obs)
+    dplyr::select(t, date, obs)
   
   return(list(
     sim    = sim, 
