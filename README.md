@@ -22,7 +22,10 @@ SEIR Epidemic Model and the Renewal Equation, SIAM J. Appl. Math., 78
 
 The renewal equation of the pathogen transmission process is as follows:
 
-where is the incidence at time , TO FINISH…
+$$i(t) = e^{-\alpha}\, \mathcal{R}_0 \, B(t) 
+        \sum_{k=1}^\ell g(k)i(t-k) $$
+
+where $i(t)$ is the incidence at time $t$, TO FINISH…
 
 ## Simulation example
 

@@ -27,9 +27,10 @@ See for example: D. Fargue, Reducibilite des systemes hereditaires, Int. J. Nonl
 
 The renewal equation of the pathogen transmission process is as follows:
 
-\deqn{i(t) = e^{-\alpha} \mathcal{R}_0 \sum_{k=1}^\ell g(k)i(t-k)}
+$$i(t) = e^{-\alpha}\, \mathcal{R}_0 \, B(t) 
+        \sum_{k=1}^\ell g(k)i(t-k) $$
 
-where \eqn{i(t)} is the incidence at time \eqn{t}, TO FINISH...
+where $i(t)$ is the incidence at time $t$, TO FINISH...
 
 
 
