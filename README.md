@@ -9,7 +9,20 @@ To install: `devtools::install_github("phac-nml-phrsd/reem")`
 
 ## Model description
 
-((TO DO))
+The epidemic model is a traditional SIR model but implemented as a
+renewal equation instead of the more populate ordinary differential
+equations (ODE). It has been shown that the renewal equation
+implementation is equivalent to the ODE one. See for example: D. Fargue,
+Reducibilite des systemes hereditaires, Int. J. Nonlinear Mech., 9
+(1974), pp. 331–338, D. Breda et al On the formulation of epidemic
+models (an appraisal of Kermack and McKendrick), J. Biol. Dyn.,6 (2012),
+pp. 103–117, and Champredon et al. Equivalence of the Erlang-Distributed
+SEIR Epidemic Model and the Renewal Equation, SIAM J. Appl. Math., 78
+(2018).
+
+The renewal equation of the pathogen transmission process is as follows:
+
+where is the incidence at time , TO FINISH…
 
 ## Simulation example
 
@@ -34,11 +47,11 @@ library(patchwork)
 # Define model parameters
 
 prms = list(
-  horizon  = 300,  # horizon of the simulation
-  last.obs = 299,  # last observation time (must be < horizon)
-  B        = rep(1,300), # time dependent multiplicative factor for transmission
+  horizon  = 90,  # horizon of the simulation
+  last.obs = 88,  # last observation time (must be < horizon)
+  B        = rep(1,90), # time dependent multiplicative factor for transmission
   i0prop  = 1e-3,  # initial proportion of the population infected
-  date.start = lubridate::ymd('2022-01-01'), #start date ofthe epidemic
+  date.start = lubridate::ymd('2022-01-01'), # start date of the epidemic
   start.delta = 0, 
   R0      = 1.5, # Basic reproduction number
   N       = 1e4, # population size
@@ -65,9 +78,9 @@ obj$print_prms()
 
     ## 
     ## --- Parameters for REEM ` foo `
-    ## horizon  =  300 
-    ## last.obs  =  299 
-    ## B  =  1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 
+    ## horizon  =  90 
+    ## last.obs  =  88 
+    ## B  =  1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 
     ## i0prop  =  0.001 
     ## date.start  =  18993 
     ## start.delta  =  0 
