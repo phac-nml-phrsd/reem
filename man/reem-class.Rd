@@ -10,9 +10,29 @@ Class to represent a Renewal Equation Epidemic Model.
 \section{Fields}{
 
 \describe{
-\item{\code{name}}{Character for the name of the model.}
+\item{\code{name}}{String for the name of the model. 
+Just for convenience when working with multiple models,
+this does not affect any calculation.}
 
-\item{\code{prms}}{List of model parameters.}
+\item{\code{prms}}{List of model parameters. (NEEDS TO BE CHECKED!)
+\itemize{
+  \item{\code{horizon}: }{horizon time of the simulation.}
+  \item{\code{last.obs}: }{last observation time (must be < \code{horizon}).}
+  \item{\code{B}: }{numerical vector representing the time 
+  dependent multiplicative factor for transmission.}
+  \item{\code{date.start}: }{start date of the epidemic.}
+  \item{\code{R0}: }{basic reproduction number.}
+  \item{\code{N}: }{population size.}
+  \item{\code{alpha}: }{transmission heterogeneity (alpha=-Inf: homogeneous).}
+  \item{\code{I.init}: }{initial incidence (overwritten in fit ABC).}
+  \item{\code{lag}: }{aggregation window for clinical reports}
+  \item{\code{rho}: }{ mean reporting ratio.}
+  \item{\code{g}: }{intrinsic generation interval distribution.}
+  \item{\code{fec}: }{fecal shedding kinetics.}
+  \item{\code{kappa}: }{pathogen decay in wastewater.}
+  \item{\code{psi}: }{plug flow simulation.}
+  \item{\code{shed.mult}: }{deposited fecal shedding multiplier.}
+}}
 
 \item{\code{is.fitted}}{Logical. Is the model fitted to the observation
 data attached (\code{obs.cl} and/or \code{obs.ww})?}
