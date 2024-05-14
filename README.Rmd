@@ -29,7 +29,7 @@ To install: `devtools::install_github("phac-nml-phrsd/reem")`
 The code below simulates an epidemic, tracking the spread in the population
 and the pathogen concentration in the wastewater.
 
-```{r define_model, warning=FALSE,echo=FALSE}
+```{r define_model, warning=FALSE, echo=TRUE}
 library(reem)
 library(lubridate)
 library(patchwork)
@@ -41,7 +41,7 @@ prms = list(
   last.obs = 299,  # last observation time (must be < horizon)
   B        = rep(1,300), # time dependent multiplicative factor for transmission
   i0prop  = 1e-3,  # initial proportion of the population infected
-  date.start = lubridate::ymd('2022-01-01'), #start date ofthe epidemic
+  date.start = lubridate::ymd('2022-01-01'), # start date of the epidemic
   start.delta = 0, 
   R0      = 1.5, # Basic reproduction number
   N       = 1e4, # population size

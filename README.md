@@ -16,12 +16,52 @@ To install: `devtools::install_github("phac-nml-phrsd/reem")`
 The code below simulates an epidemic, tracking the spread in the
 population and the pathogen concentration in the wastewater.
 
+``` r
+library(reem)
+library(lubridate)
+```
+
     ## 
     ## Attaching package: 'lubridate'
 
     ## The following objects are masked from 'package:base':
     ## 
     ##     date, intersect, setdiff, union
+
+``` r
+library(patchwork)
+
+# Define model parameters
+
+prms = list(
+  horizon  = 300,  # horizon of the simulation
+  last.obs = 299,  # last observation time (must be < horizon)
+  B        = rep(1,300), # time dependent multiplicative factor for transmission
+  i0prop  = 1e-3,  # initial proportion of the population infected
+  date.start = lubridate::ymd('2022-01-01'), #start date ofthe epidemic
+  start.delta = 0, 
+  R0      = 1.5, # Basic reproduction number
+  N       = 1e4, # population size
+  alpha   = -10, # transmission heterogeneity (alpha=-Inf: homogeneous)
+  I.init  = c(1,1,3,5), # initial incidence (overwritten in fit ABC)
+  lag     = 7,   # Aggregation window for clinical reports
+  rho     = 0.1, # mean reporting ratio
+  g       = get_gi(), # Generation interval distribution
+  fec     = get_fecalshed(), # fecal shedding kinetics
+  kappa   = 0.18, # pathogen decay in ww
+  psi     = get_psi(), # plug flow simulation,
+  shed.mult = 0.2 # deposited fecal shedding multiplier  
+)
+
+# Create the model object instance
+obj = new('reem', 
+          name = 'foo', 
+          prms = prms, 
+          is.fitted = FALSE)
+
+# Print (formatted) the model parameters
+obj$print_prms()
+```
 
     ## 
     ## --- Parameters for REEM ` foo `
@@ -43,6 +83,11 @@ population and the pathogen concentration in the wastewater.
     ## psi  =  0.85 0.1 0.05 
     ## shed.mult  =  0.2 
     ##  --------------------------
+
+``` r
+# Simulate an epidemic based on the parameters
+simepi  = obj$simulate_epi(deterministic = FALSE)
+```
 
 We can use the built-in function `plot_epi()` to plot the epidemic
 
