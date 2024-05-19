@@ -16,6 +16,7 @@ Imports:
     patchwork,
     stats,
     tibble,
-    tidyr,
+    tidyr
+Depends:
     snowfall
 RoxygenNote: 7.3.1
