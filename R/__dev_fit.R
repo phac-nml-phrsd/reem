@@ -1,5 +1,5 @@
 
-if(0){
+if(1){
   
   library(dplyr)
   library(tidyr)
@@ -71,7 +71,7 @@ if(0){
     n.abc = 500,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
     p.abc = 0.02, #1e-2,
-    n.cores = 1, #min(12, parallel::detectCores() - 1),
+    n.cores = 4, #min(12, parallel::detectCores() - 1),
     use.cl = 1, 
     use.ww = 1,
     err.type = 'L2'
@@ -90,6 +90,12 @@ if(0){
   
   fname = paste0('plot-',timestamp_short(),'.pdf')
   
+  plot(gg$traj.cl)
+  plot(gg$traj.ww)
+  plot(gg$post.prms)
+  plot(gg$post.prms.2d)
+  
+  
   pdf(file = fname, width = 25, height = 10)
   plot(gg$all)
   dev.off()
@@ -99,7 +105,7 @@ if(0){
   
   saveRDS(object = obj, file = 'obj-dev.rds')
   
-
+ message('\nDONE.\n')
   # - - - - - - - - - -  - - - - - - - - 
   # --- other stuff  ----
   if(0){
