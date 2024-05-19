@@ -3,7 +3,7 @@
 \name{generate_priors}
 \alias{generate_priors}
 \title{Generate prior samples given 
-paramter names and range.}
+parameter names and ranges.}
 \usage{
 generate_priors(prms.to.fit, n.priors)
 }
@@ -13,7 +13,11 @@ prior distribution and parameters}
 
 \item{n.priors}{Integer. Number of sample to generate for each parameter.}
 }
+\value{
+Dataframe of prior samples (each column 
+represents a variable).
+}
 \description{
 Generate prior samples given 
-paramter names and range.
+parameter names and ranges.
 }

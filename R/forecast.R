@@ -26,17 +26,18 @@ summarize_fcst <- function(simfwd, prm.fcst, vars) {
   
   quantile_df <- function(x, probs) {
     tibble(
-      q     = quantile(x, probs, na.rm = TRUE),
+      q     = stats::quantile(x, probs, na.rm = TRUE),
       qprob = probs
     )
   }
   
-  res = bind_rows(simfwd) %>% 
-    select(date, !!vars) %>% 
-    pivot_longer(cols = !!vars) %>%
-    reframe(quantile_df(value, probs), 
-            mean = mean(value),
-            .by = c(name, date))
+  res = dplyr::bind_rows(simfwd) %>% 
+    dplyr::select(date, !!vars) %>% 
+    tidyr::pivot_longer(cols = !!vars) %>%
+    dplyr::reframe(
+      quantile_df(value, probs), 
+      mean = mean(value),
+      .by = c(name, date))
   
   message(' done.')
   return(res)
