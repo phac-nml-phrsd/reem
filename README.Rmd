@@ -27,11 +27,11 @@ See for example: D. Fargue, Reducibilite des systemes hereditaires, Int. J. Nonl
 
 The renewal equation of the pathogen transmission process is as follows:
 
-$$i(t) = e^{-\alpha}\, \mathcal{R}_0 \, B(t) \sum_{k=1}^\ell g(k)i(t-k)$$
+$$i(t) = \left(\frac{S(t)}{N}\right)^{\alpha}\, \mathcal{R}_0 \, B(t) \sum_{k=1}^\ell g(k)i(t-k)$$
 
-where $i(t)$ is the incidence at time $t$,  
-$\mathcal{R}_0$ is the basic reproduction number, 
-TO FINISH...
+$$S(t) = \max(0, S(t-1) - i(t))$$
+
+where $i(t)$ is the incidence at time $t$,  $\mathcal{R}_0$ is the basic reproduction number, $S_t$ are the number of susceptible individuals at time $t$, $N$ is the total population size, $g$ is the intrinsic generation interval distribution and $B$ a function to change the transmission rate with respect to time (e.g., to implement public health measures, vaccination campaigns, etc.). 
 
 
 
@@ -123,7 +123,6 @@ obs.cl$date <- obs.cl$date + 1
 
 # Attached simulated data to new `reem` object:
 
-prms = prms0
 prms$t.obs.cl <- NULL
 prms$t.obs.ww <- NULL
 obj  = new('reem', 
@@ -138,7 +137,7 @@ prm.abc = list(
   n.abc = 500,
   n.sim = 0,     #`0` for deterministic, else`8` should be enough
   p.abc = 0.02, #1e-2,
-  n.cores = 1, #min(12, parallel::detectCores() - 1),
+  n.cores = 4, #min(12, parallel::detectCores() - 1),
   use.cl = 1, 
   use.ww = 1,
   err.type = 'L2'
