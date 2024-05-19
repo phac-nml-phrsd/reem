@@ -34,16 +34,19 @@ $$S(t) = \max(0, S(t-1) - i(t))$$
 where $i(t)$ is the incidence at time $t$,  $\mathcal{R}_0$ is the basic reproduction number, $S_t$ are the number of susceptible individuals at time $t$, $N$ is the total population size, $g$ is the intrinsic generation interval distribution and $B$ a function to change the transmission rate with respect to time (e.g., to implement public health measures, vaccination campaigns, etc.). 
 
 
-
 ## Simulation example
 
 The code below simulates an epidemic, tracking the spread in the population
 and the pathogen concentration in the wastewater.
 
-```{r define_model, warning=FALSE, echo=TRUE}
+```{r libraries, warning=FALSE, message=FALSE}
 library(reem)
-library(lubridate)
-library(patchwork)
+library(snowfall)
+```
+
+
+
+```{r define_model, warning=FALSE, echo=TRUE}
 
 # Define model parameters
 
@@ -54,9 +57,9 @@ prms = list(
   i0prop  = 1e-3,  # initial proportion of the population infected
   date.start = lubridate::ymd('2022-01-01'), # start date of the epidemic
   start.delta = 0, 
-  R0      = 1.5, # Basic reproduction number
+  R0      = 2.0, # Basic reproduction number
   N       = 1e4, # population size
-  alpha   = -10, # transmission heterogeneity (alpha=-Inf: homogeneous)
+  alpha   = 0, # transmission heterogeneity (alpha=0: homogeneous)
   I.init  = c(1,1,3,5), # initial incidence (overwritten in fit ABC)
   lag     = 7,   # Aggregation window for clinical reports
   rho     = 0.1, # mean reporting ratio
@@ -88,41 +91,32 @@ g = plot_epi(simepi)
 plot(patchwork::wrap_plots(g, ncol = 1))
 ```
 
-
-`devtools::build_readme()`
-
-
 ## Fit example
 
 If we attach observation data (from clinical and/or wastewater surveillance),
 to a `reem` object, then it is possible to fit its model parameters to these data. The example below shows how to do this.
 
-
 First, let's create synthetic observation data from the simulation example above. We use synthetic data (as opposed to real data) because we to assess the accuracy of the fit. The synthetic data are generated from the vey same model `reem` where we know all the parameters. 
 
-```{r}
+```{r simulate data}
 # we use the example above and make a copy of its
 # simulated epidemics. The time series will be the "observations".
 
-#FIXME
-# thecopy below may not update the new object `sim.data`
-# ==> redefine `sim.data` from scratch
 sim.data = simepi
 
 # Set the date for "today"
-asof = ymd('2023-03-01') 
+asof = lubridate::ymd('2023-03-01') 
 
 # Retrieve the simulated observations
-obs.cl = filter(sim.data$obs.cl, date <= asof)
-obs.ww = filter(simepi$obs.ww, date <= asof)
+obs.cl = dplyr::filter(sim.data$obs.cl, date <= asof)
+obs.ww = dplyr::filter(simepi$obs.ww, date <= asof)
 
 # shift the dates such that they 
 # do not perfectly align with the simulation
 obs.cl$t <- obs.cl$t + 1
 obs.cl$date <- obs.cl$date + 1
 
-# Attached simulated data to new `reem` object:
-
+# Attached (simulated) data to new `reem` object:
 prms$t.obs.cl <- NULL
 prms$t.obs.ww <- NULL
 obj  = new('reem', 
@@ -131,34 +125,65 @@ obj  = new('reem',
            obs.cl = obs.cl,
            obs.ww = obs.ww,
            is.fitted = FALSE)
-
-# Define the parameters for the ABC fitting algorithm
-prm.abc = list(
-  n.abc = 500,
-  n.sim = 0,     #`0` for deterministic, else`8` should be enough
-  p.abc = 0.02, #1e-2,
-  n.cores = 4, #min(12, parallel::detectCores() - 1),
-  use.cl = 1, 
-  use.ww = 1,
-  err.type = 'L2'
-)
-
-# Definethe priors of the parameters to be fitted:
-  prms.to.fit = list(
-    R0          = list('gamma', 2.5, 0.251),
-    alpha       = list('normp', 2, 1),
-    i0prop      = list('unif', -5, -2),
-    start.delta = list('unif_int', -7, 7)  
-  )
-
-  #  Launch the actual fit 
-   thefit = obj$fit_abc(prm.abc, prms.to.fit)  
-  
-  gg = obj$plot_fit()
- 
-  plot(gg$all) 
-  
-  
 ```
 
+Now, we set up the fitting algorithm. This algorithm is an Approximate Bayesian Computation (ABC), which is a very straightforward and robust Bayesian method but not very efficient.
 
+```{r define ABC parameters}
+# Define the parameters for the ABC fitting algorithm
+prm.abc = list(
+  n.abc = 500,   # Total number of ABC iterations (the larger the better)
+  n.sim = 0,     # Number of simulation for a given set of prior parameters. `0` for deterministic, else`8` should be enough
+  p.abc = 0.02,  # Acceptance probability (the lower the better)
+  n.cores = 4,   # number of cores used for parallel computing
+  use.cl = TRUE, # use clinical observations in the fit?
+  use.ww = TRUE, # use wastewater observation in the fit?
+  err.type = 'L2'# Type of error calculated during the fit.
+)
+
+# Define the priors of the parameters to be fitted:
+prms.to.fit = list(
+  # Gamma distrib. with mean 2.5 and variance 0.25:
+  R0          = list('gamma', 2.5, 0.251), 
+  # Other prior distributions definition self-explanatory:
+  alpha       = list('norm', 2, 3),
+  i0prop      = list('unif', -5, -2),
+  start.delta = list('unif_int', -7, 7) # `unif_int` = uniform with integers
+)
+```
+
+Now that all the parameters for the ABC fit have been defined, we can launch the actual fit. Note that we use the object `obj` already built and we call its _member function_ named `fit_abc()`:
+
+```{r fit ABC}
+#  Launch the fit 
+thefit = obj$fit_abc(prm.abc, prms.to.fit)  
+```  
+
+Once the ABC fit is completed, we can call built-in functions to assess the goodness of fit.
+
+First, lets visualize the posterior time series trajectories for the the clinical cases and wastewater concentrations.
+
+```{r plot_fit_results, fig.width=11}
+gg = obj$plot_fit()
+
+plot(gg$traj.cl)
+plot(gg$traj.ww)
+```
+
+We can also plot the posterior distributions of the fitted parameters (with their prior distribution overlayed in grey):
+
+```{r plot posteriors, fig.width = 11}
+plot(gg$post.prms)
+```
+
+This is plotting the pairwise 2D posterior densities, to check for any strong correlations between fitted parameters
+
+```{r plot 2D posteriors, fig.width=11}
+plot(gg$post.prms.2d)
+```
+
+And finally, we can assess the efficiency of the ABC algorithm by plotting the posterior distance values as a function of the sorted iterations
+
+```{r plot fitted distances, fig.width=11}
+plot(gg$dist)
+```
