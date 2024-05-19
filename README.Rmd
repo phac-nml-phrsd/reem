@@ -94,5 +94,72 @@ plot(patchwork::wrap_plots(g, ncol = 1))
 
 ## Fit example
 
-((TO DO))
+If we attach observation data (from clinical and/or wastewater surveillance),
+to a `reem` object, then it is possible to fit its model parameters to these data. The example below shows how to do this.
+
+
+First, let's create synthetic observation data from the simulation example above. We use synthetic data (as opposed to real data) because we to assess the accuracy of the fit. The synthetic data are generated from the vey same model `reem` where we know all the parameters. 
+
+```{r}
+# we use the example above and make a copy of its
+# simulated epidemics. The time series will be the "observations".
+
+#FIXME
+# thecopy below may not update the new object `sim.data`
+# ==> redefine `sim.data` from scratch
+sim.data = simepi
+
+# Set the date for "today"
+asof = ymd('2023-03-01') 
+
+# Retrieve the simulated observations
+obs.cl = filter(sim.data$obs.cl, date <= asof)
+obs.ww = filter(simepi$obs.ww, date <= asof)
+
+# shift the dates such that they 
+# do not perfectly align with the simulation
+obs.cl$t <- obs.cl$t + 1
+obs.cl$date <- obs.cl$date + 1
+
+# Attached simulated data to new `reem` object:
+
+prms = prms0
+prms$t.obs.cl <- NULL
+prms$t.obs.ww <- NULL
+obj  = new('reem', 
+           name = 'foo2', 
+           prms = prms, 
+           obs.cl = obs.cl,
+           obs.ww = obs.ww,
+           is.fitted = FALSE)
+
+# Define the parameters for the ABC fitting algorithm
+prm.abc = list(
+  n.abc = 500,
+  n.sim = 0,     #`0` for deterministic, else`8` should be enough
+  p.abc = 0.02, #1e-2,
+  n.cores = 1, #min(12, parallel::detectCores() - 1),
+  use.cl = 1, 
+  use.ww = 1,
+  err.type = 'L2'
+)
+
+# Definethe priors of the parameters to be fitted:
+  prms.to.fit = list(
+    R0          = list('gamma', 2.5, 0.251),
+    alpha       = list('normp', 2, 1),
+    i0prop      = list('unif', -5, -2),
+    start.delta = list('unif_int', -7, 7)  
+  )
+
+  #  Launch the actual fit 
+   thefit = obj$fit_abc(prm.abc, prms.to.fit)  
+  
+  gg = obj$plot_fit()
+ 
+  plot(gg$all) 
+  
+  
+```
+
 

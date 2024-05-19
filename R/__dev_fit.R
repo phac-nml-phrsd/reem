@@ -51,7 +51,6 @@ if(0){
   obs.cl$t <- obs.cl$t + 1
   obs.cl$date <- obs.cl$date + 1
    
-  
   # Attached simulated data to new `reem` object:
   
   prms = prms0

@@ -22,10 +22,14 @@ SEIR Epidemic Model and the Renewal Equation, SIAM J. Appl. Math., 78
 
 The renewal equation of the pathogen transmission process is as follows:
 
-$$i(t) = e^{-\alpha}\, \mathcal{R}_0 \, B(t) \sum_{k=1}^\ell g(k)i(t-k)$$
+![i(t) = e^{-\alpha}\\ \mathcal{R}\_0 \\ B(t) \sum\_{k=1}^\ell g(k)i(t-k)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;i%28t%29%20%3D%20e%5E%7B-%5Calpha%7D%5C%2C%20%5Cmathcal%7BR%7D_0%20%5C%2C%20B%28t%29%20%5Csum_%7Bk%3D1%7D%5E%5Cell%20g%28k%29i%28t-k%29 "i(t) = e^{-\alpha}\, \mathcal{R}_0 \, B(t) \sum_{k=1}^\ell g(k)i(t-k)")
 
-where $i(t)$ is the incidence at time $t$,  
-$\mathcal{R}_0$ is the basic reproduction number, TO FINISH…
+where
+![i(t)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;i%28t%29 "i(t)")
+is the incidence at time
+![t](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;t "t"),  
+![\mathcal{R}\_0](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cmathcal%7BR%7D_0 "\mathcal{R}_0")
+is the basic reproduction number, TO FINISH…
 
 ## Simulation example
 
