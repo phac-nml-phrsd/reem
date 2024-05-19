@@ -4,6 +4,9 @@
 \name{reem-class}
 \alias{reem-class}
 \title{Class to represent a Renewal Equation Epidemic Model.}
+\value{
+An object of class \code{reem}.
+}
 \description{
 Class to represent a Renewal Equation Epidemic Model.
 }
