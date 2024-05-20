@@ -229,12 +229,11 @@ reem_simulate <- function(prms, deterministic) {
 #' Simulate a full epidemic with a REEM
 #' including clinical and wastewater "observations".
 #'
-#' @param variables 
+#' @param obj A object of class `reem`
+#' @param deterministic Logical. Is the simulation deterministic? (or stochastic) 
 #'
-#' @return
-#' @export
+#' @return A list
 #'
-#' @examples
 reem_simulate_epi <- function(obj, 
                               deterministic) {
   
