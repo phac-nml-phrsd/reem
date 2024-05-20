@@ -67,7 +67,7 @@ calc_density_one <- function(fcst.vals,
 }
 
 
-#' Helper function that extract forecasted values
+#' @title Helper function that extract forecasted values
 #' with the option to aggregate them (e.g. clinical cases) 
 #'
 #' @param i 
@@ -76,7 +76,9 @@ calc_density_one <- function(fcst.vals,
 #' @param obs.new 
 #' @param var 
 #'
-#' @return
+#' @return Numerical vector.
+#' 
+#' @keywords internal
 #' 
 extract_helper <- function(i, fcst, aggr.window, obs.new, var) {
   

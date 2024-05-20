@@ -2,7 +2,7 @@
 % Please edit documentation in R/forecast.R
 \name{add_ribbons_quantiles}
 \alias{add_ribbons_quantiles}
-\title{Helper function}
+\title{Helper function to add ribbons for forecasts.}
 \usage{
 add_ribbons_quantiles(g, z, k, col.fcst, alpha.ribbon)
 }
@@ -21,5 +21,6 @@ add_ribbons_quantiles(g, z, k, col.fcst, alpha.ribbon)
 A ggplot object
 }
 \description{
-Helper function
+Helper function to add ribbons for forecasts.
 }
+\keyword{internal}

@@ -17,3 +17,4 @@ Numerical. The sum of squared difference
 \description{
 sqrt sum of squared difference
 }
+\keyword{internal}

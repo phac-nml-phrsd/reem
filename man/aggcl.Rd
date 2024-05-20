@@ -2,10 +2,11 @@
 % Please edit documentation in R/utils.R
 \name{aggcl}
 \alias{aggcl}
-\title{Helper function}
+\title{Helper function to aggregate clinical data}
 \usage{
 aggcl(df, dt.aggr, vars)
 }
 \description{
-Helper function
+Helper function to aggregate clinical data
 }
+\keyword{internal}

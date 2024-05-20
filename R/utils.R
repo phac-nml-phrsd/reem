@@ -28,7 +28,6 @@ timestamp_short <- function() {
 #'
 #' @return
 #'
-#' @examples
 set_I_init <- function(prm) {
   i0val = round(prm$N * 10^prm$i0prop)
   prm$I.init <- rep(i0val, prm$lag)
@@ -49,9 +48,8 @@ set_I_init <- function(prm) {
 #' @param g Numerical vector representing the intrinsic generation interval distribution.
 #' @param I Numerical vector. Incidence at each time step.
 #'
-#' @return
-#'
-#' @examples
+#' @return Numerical. Mean incidence.
+#' @keywords internal
 #' 
 mean_inc <- function(t, R0, B, S, N, alpha, g, I) {
   
@@ -101,7 +99,7 @@ is_prm_integer <- function(prm.name) {
 
 
 
-#' Aggregate values across time 
+#' @title Aggregate values across time 
 #'
 #' @param df Dataframe oftemporal data. 
 #' Must have a variable named 
@@ -113,10 +111,8 @@ is_prm_integer <- function(prm.name) {
 #' @return A dataframe where the values of the 
 #' variable \code{var.name} has been aggregated (summed).
 #' 
-#' @export
+#' @keywords internal
 #'
-#' @examples
-#' 
 aggregate_time <- function(df, 
                            dt.aggr, 
                            var.name,
@@ -167,9 +163,10 @@ aggregate_time <- function(df,
   return(res) 
 }
 
-#' Helper function
+#' @title Helper function to aggregate clinical data
+#' @keywords internal
 #' 
-aggcl <- function(df, dt.aggr, vars ) {
+aggcl <- function(df, dt.aggr, vars) {
   tmp = list()
   for(v in vars){
     a = aggregate_time(df = df, 

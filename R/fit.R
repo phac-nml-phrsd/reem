@@ -1,11 +1,12 @@
 
-#' sqrt sum of squared difference
+#' @title sqrt sum of squared difference
 #'
 #' @param x 
 #' @param y 
 #'
 #' @return Numerical. The sum of squared difference
-#' 
+#' @keywords internal
+#'  
 sss <- function(x,y) {
   return(sqrt( sum( (x-y)^2 ) ))
 }

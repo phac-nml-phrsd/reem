@@ -211,7 +211,7 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
 }
 
 
-#' Helper function
+#' @title Helper function to add ribbons for forecasts.
 #'
 #' @param g 
 #' @param z 
@@ -220,7 +220,7 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
 #' @param alpha.ribbon 
 #'
 #' @return A ggplot object
-#' 
+#' @keywords internal
 add_ribbons_quantiles <- function(g, z, k,
                                   col.fcst, alpha.ribbon) {
   nz = length(z)
