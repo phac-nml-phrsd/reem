@@ -224,7 +224,10 @@ calc_dist_parallel <- function(i,
                                deterministic,
                                n.sim = 10, 
                                verbose = FALSE ) {
-  if(i%%50 == 0) cat('ABC iteration #',i,'\n') 
+  
+  if(i == 1)      cat('ABC iteration # 1 /',nrow(priors),'\n') 
+  if(i%%500 == 0) cat('ABC iteration #',i,'/',nrow(priors),'\n') 
+  
   pp = priors[i,]
   
   if('i0prop' %in% names(priors)){
@@ -358,9 +361,9 @@ reem_fit_abc <- function(obj,
   # calculate distance from observations
   # for each parameter prior value
   snowfall::sfInit(parallel = n.cores > 1, cpus = n.cores)
-  snowfall::sfExportAll()
   snowfall::sfLibrary(dplyr)
   snowfall::sfLibrary(purrr)
+  snowfall::sfExportAll()
   
   z = snowfall::sfLapply(
     x         = 1:n.abc, 
