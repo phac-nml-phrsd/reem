@@ -2,10 +2,20 @@
 % Please edit documentation in R/gi.R
 \name{gi_gamma}
 \alias{gi_gamma}
-\title{Generation interval distribution}
+\title{Generation interval as a Gamma distribution}
 \usage{
 gi_gamma(m, v, tmax)
 }
+\arguments{
+\item{m}{Numerical. Mean.}
+
+\item{v}{Numerical. Variance}
+
+\item{tmax}{Numerical. Maximum value (support)}
+}
+\value{
+A numerical vector representing the probability density (sums to 1)
+}
 \description{
-Generation interval distribution
+Generation interval as a Gamma distribution
 }

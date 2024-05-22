@@ -18,7 +18,11 @@ extract_helper(i, fcst, aggr.window, obs.new, var)
 
 \item{var}{}
 }
+\value{
+Numerical vector.
+}
 \description{
 Helper function that extract forecasted values
 with the option to aggregate them (e.g. clinical cases)
 }
+\keyword{internal}

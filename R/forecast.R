@@ -1,5 +1,17 @@
 
 
+#' @title Calculate quantiles of forecast trajectories
+#'
+#' @param simfwd Object of forecast trajectories.
+#' @param prm.fcst List of forecast parameters. 
+#' In particular, must contain an element named `ci`
+#' specifying the quantiles probabilities to calculate.
+#' @param vars String vector. Names of the variables
+#' forecasted to calculate the quantiles.
+#'
+#' @return Dataframe of quantiles.
+#' @keywords internal
+#'
 summarize_fcst <- function(simfwd, prm.fcst, vars) {
   
   if(0){  # --- DEBUG
@@ -14,17 +26,18 @@ summarize_fcst <- function(simfwd, prm.fcst, vars) {
   
   quantile_df <- function(x, probs) {
     tibble(
-      q     = quantile(x, probs, na.rm = TRUE),
+      q     = stats::quantile(x, probs, na.rm = TRUE),
       qprob = probs
     )
   }
   
-  res = bind_rows(simfwd) %>% 
-    select(date, !!vars) %>% 
-    pivot_longer(cols = !!vars) %>%
-    reframe(quantile_df(value, probs), 
-            mean = mean(value),
-            .by = c(name, date))
+  res = dplyr::bind_rows(simfwd) %>% 
+    dplyr::select(date, !!vars) %>% 
+    tidyr::pivot_longer(cols = !!vars) %>%
+    dplyr::reframe(
+      quantile_df(value, probs), 
+      mean = mean(value),
+      .by = c(name, date))
   
   message(' done.')
   return(res)
@@ -35,7 +48,8 @@ summarize_fcst <- function(simfwd, prm.fcst, vars) {
 #'
 #' @param var.to.aggregate String. Name of the variable to aggregate.
 #' @param obj REEM object.
-#' @param simfwd Object of forward simulations, , as returned by the function \code{forecast()}.
+#' @param simfwd Object of forward simulations, 
+#' as returned by the function \code{forecast()}.
 #'
 #' @return A list of dataframes.
 #'
@@ -69,6 +83,22 @@ aggregate_fcst <- function(var.to.aggregate, obj, simfwd) {
   return(res)
 }
 
+
+
+
+#' @title Forecast a fitted epidemic 
+#'
+#' @param obj REEM object.
+#' @param prm.fcst List. Forecast parameters.
+#' @param verbose Logical. If \code{TRUE}, prints details.
+#'
+#' @return List containing forecast objects, 
+#' with the following elements:
+#' \item{asof: }{date when the forecast is done.}
+#' \item{simfwd: }{object containing the forecasted trajectories} 
+#' 
+#' @export
+#'
 reem_forecast <- function(obj, prm.fcst, verbose ) {
   
   if(0){   #---  DEBUG
@@ -144,30 +174,31 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
                     tpb = tpb)
   }
   
-  
   if(! prm.fcst$use.fit.post){
     stop('`use.fit.post = FALSE` is not implemented!')
     # TODO: finish if you think it makes sense 
     # to d it this way...
   }
   
-  summary.fcst = summarize_fcst(simfwd, 
-                                prm.fcst,
-                                vars = c('Y', 'Wr')) # TODO: remove hard code
+  summary.fcst = summarize_fcst(
+    simfwd   = simfwd, 
+    prm.fcst = prm.fcst,
+    vars     = c('Y', 'Wr')) # TODO: remove hard code
   
   # Dealing with aggregated incidence
-  
   simfwd.aggr = list()
   summary.fcst.aggr = list()
   
   # TODO: make a function for these 2 function calls!
-  simfwd.aggr[['Y.aggr']] = aggregate_fcst(var.to.aggregate = 'Y', 
-                                           obj = obj, 
-                                           simfwd = simfwd)
+  simfwd.aggr[['Y.aggr']] = aggregate_fcst(
+    var.to.aggregate = 'Y', 
+    obj              = obj, 
+    simfwd           = simfwd)
   
-  summary.fcst.aggr[['Y.aggr']] = summarize_fcst(simfwd.aggr, 
-                                                 prm.fcst,
-                                                 vars = c('Y.aggr'))  
+  summary.fcst.aggr[['Y.aggr']] = summarize_fcst(
+    simfwd   = simfwd.aggr, 
+    prm.fcst = prm.fcst,
+    vars     = c('Y.aggr'))  
   
   return( list(
     asof   = prm.fcst$asof,
@@ -180,7 +211,7 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
 }
 
 
-#' Helper function
+#' @title Helper function to add ribbons for forecasts.
 #'
 #' @param g 
 #' @param z 
@@ -189,6 +220,7 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
 #' @param alpha.ribbon 
 #'
 #' @return A ggplot object
+#' @keywords internal
 add_ribbons_quantiles <- function(g, z, k,
                                   col.fcst, alpha.ribbon) {
   nz = length(z)

@@ -11,7 +11,8 @@ aggregate_fcst(var.to.aggregate, obj, simfwd)
 
 \item{obj}{REEM object.}
 
-\item{simfwd}{Object of forward simulations, , as returned by the function \code{forecast()}.}
+\item{simfwd}{Object of forward simulations, 
+as returned by the function \code{forecast()}.}
 }
 \value{
 A list of dataframes.

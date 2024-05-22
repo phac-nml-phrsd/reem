@@ -25,6 +25,10 @@ mean_inc(t, R0, B, S, N, alpha, g, I)
 
 \item{I}{Numerical vector. Incidence at each time step.}
 }
+\value{
+Numerical. Mean incidence.
+}
 \description{
 Mean incidence from the renewal equation.
 }
+\keyword{internal}

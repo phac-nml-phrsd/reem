@@ -1,10 +1,12 @@
 
-#' sqrt sum of squared difference
+#' @title sqrt sum of squared difference
 #'
 #' @param x 
 #' @param y 
 #'
-#' @return
+#' @return Numerical. The sum of squared difference
+#' @keywords internal
+#'  
 sss <- function(x,y) {
   return(sqrt( sum( (x-y)^2 ) ))
 }
@@ -117,11 +119,13 @@ err_fct <- function(cl.i, ww.i,
 #' @param verbose 
 #' @param prms 
 #'
-#' @return
+#' @return List containing:
+#' \item{distance: }{Numerical. The distance ofthe simulation from observations}
+#' \item{sim: }{Dataframe of the simulations.}
+#' 
 #' @export
 #'
-#' @examples
-#' 
+#'
 reem_traj_dist_obs <- function(
     obj,
     use.cl, 
@@ -244,13 +248,15 @@ calc_dist_parallel <- function(i,
 
 
 #' Generate prior samples given 
-#' paramter names and range.
+#' parameter names and ranges.
 #'
 #' @param prms.to.fit List of parameters name with their 
 #' prior distribution and parameters
 #' @param n.priors Integer. Number of sample to generate for each parameter.
 #'
-#' @return
+#' @return Dataframe of prior samples (each column 
+#' represents a variable).
+#' 
 #' @export
 #'
 generate_priors <- function(prms.to.fit, n.priors) {
@@ -324,7 +330,6 @@ reem_fit_abc <- function(obj,
          'max date obs cl & ww : ', d.max,'\n',
          'model start date     : ',obj$prms$date.start,
          '\n ABORTING!\n')
-    
   }
   
   obj$prms$horizon <- hz 
@@ -355,6 +360,7 @@ reem_fit_abc <- function(obj,
   snowfall::sfInit(parallel = n.cores > 1, cpus = n.cores)
   snowfall::sfExportAll()
   snowfall::sfLibrary(dplyr)
+  snowfall::sfLibrary(purrr)
   
   z = snowfall::sfLapply(
     x         = 1:n.abc, 
@@ -378,8 +384,8 @@ reem_fit_abc <- function(obj,
   # -- Posteriors
   
   df.abc = cbind(priors, abc.err) %>% 
-    mutate(abc.index = 1:nrow(priors)) %>%
-    arrange(abc.err)
+    dplyr::mutate(abc.index = 1:nrow(priors)) %>%
+    dplyr::arrange(abc.err)
   
   n.post  = round(n.abc*p.abc)
   df.post = df.abc[1:n.post,]
@@ -433,11 +439,11 @@ reem_plot_fit <- function(obj) {
     ggplot2::geom_ribbon(ggplot2::aes(ymin=Y.lo, ymax=Y.hi), 
                          alpha=0.2, fill='chartreuse')+
     ggplot2::geom_point(data = obs.cl, ggplot2::aes(y=obs)) +
-    labs(title = 'Fit to clinical data', y = 'cases')
+    ggplot2::labs(title = 'Fit to clinical data', y = 'cases')
   # g.cl
   
   g.ww = ps.ww %>%
-    drop_na(starts_with('Wr')) %>%
+    tidyr::drop_na(starts_with('Wr')) %>%
     ggplot2::ggplot(ggplot2::aes(x=date)) + 
     ggplot2::geom_line(ggplot2::aes(y = Wr.m), 
                        color = 'chocolate3')+
@@ -446,20 +452,21 @@ reem_plot_fit <- function(obj) {
       ymax = Wr.hi), 
       alpha=0.2, fill='chocolate')+
     ggplot2::geom_point(data = obs.ww, ggplot2::aes(y=obs)) +
-    labs(title = 'Fit to wastewater data', y = 'concentration')
+    ggplot2::labs(title = 'Fit to wastewater data', y = 'concentration')
   # g.ww
   
   # ---- Posterior parameters
   
   # -- 1D density
   
-  dp = rbind(mutate(fit.obj$all.distances, type = 'prior'),
-             mutate(fit.obj$post.prms, type = 'posterior')) %>%
-    select(-starts_with('abc')) %>% 
-    pivot_longer(cols = -type)
+  dp = rbind(
+    dplyr::mutate(fit.obj$all.distances, type = 'prior'),
+    dplyr::mutate(fit.obj$post.prms, type = 'posterior')) %>%
+    dplyr::select(-starts_with('abc')) %>% 
+    tidyr::pivot_longer(cols = -type)
   
   col.pp =  c(posterior = 'indianred3', 
-              prior = 'gray70')
+              prior     = 'gray70')
   
   g.post = dp %>% 
     ggplot2::ggplot(ggplot2::aes(x     = value, 
@@ -470,9 +477,9 @@ reem_plot_fit <- function(obj) {
     ggplot2::scale_fill_manual(values = col.pp)+
     ggplot2::facet_wrap(~name, scales = 'free')+
     ggplot2::theme(
-      axis.text.y = element_blank(),
-      axis.ticks.y = element_blank(),
-      panel.grid.minor = element_blank())+
+      axis.text.y      = ggplot2::element_blank(),
+      axis.ticks.y     = ggplot2::element_blank(),
+      panel.grid.minor = ggplot2::element_blank())+
     ggplot2::labs(title = 'Posterior parameters density')
   
   # -- 2D density
@@ -492,7 +499,7 @@ reem_plot_fit <- function(obj) {
           ggplot2::geom_density_2d_filled()+
           ggplot2::theme(
             panel.grid = ggplot2::element_blank(),
-            axis.text = ggplot2::element_text(size = ggplot2::rel(0.6))
+            axis.text  = ggplot2::element_text(size = ggplot2::rel(0.6))
           )+
           ggplot2::labs(x=nam[i], y=nam[j]) + 
           ggplot2::guides(fill = 'none')
@@ -501,6 +508,8 @@ reem_plot_fit <- function(obj) {
       }
     }
   }
+  
+  
   gpall2d = patchwork::wrap_plots(gp) +
     patchwork::plot_annotation(title = 'Posterior parameters 2D density')
   
@@ -532,13 +541,12 @@ reem_plot_fit <- function(obj) {
       y = 'distance'
     )
   
-  
   g.list = list(
-    traj.cl = g.cl,
-    traj.ww = g.ww,
-    post.prms = g.post,
+    traj.cl      = g.cl,
+    traj.ww      = g.ww,
+    post.prms    = g.post,
     post.prms.2d = gpall2d,
-    dist = g.dist
+    dist         = g.dist
   )
   g.all = patchwork::wrap_plots(g.list) 
   

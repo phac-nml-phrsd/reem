@@ -1,0 +1,189 @@
+---
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+The name of this R package, `reem`, stands for:
+**R**enewal **E**quation based **E**pidemic **M**odel
+
+This package simulates and fits infectious disease epidemic to 
+clinical and wastewater data.
+
+To install: `devtools::install_github("phac-nml-phrsd/reem")`
+
+
+## Model description
+
+The epidemic model is a traditional SIR model but implemented as a
+renewal equation instead of the more populate ordinary differential
+equations (ODE).
+It has been shown that the renewal equation implementation is 
+\emph{mathematically} equivalent to the ODE one. 
+See for example: D. Fargue, Reducibilite des systemes hereditaires, Int. J. Nonlinear Mech., 9 (1974), pp. 331--338, D. Breda et al On  the  formulation  of  epidemic  models  (an  appraisal  of  Kermack  and  McKendrick), J. Biol. Dyn.,6 (2012), pp. 103--117, and Champredon et al. Equivalence of the Erlang-Distributed SEIR Epidemic Model and the Renewal Equation, SIAM J. Appl. Math., 78 (2018).
+
+The renewal equation of the pathogen transmission process is as follows:
+
+$$i(t) = \left(\frac{S(t)}{N}\right)^{\alpha}\, \mathcal{R}_0 \, B(t) \sum_{k=1}^\ell g(k)i(t-k)$$
+
+$$S(t) = \max(0, S(t-1) - i(t))$$
+
+where $i(t)$ is the incidence at time $t$,  $\mathcal{R}_0$ is the basic reproduction number, $S_t$ are the number of susceptible individuals at time $t$, $N$ is the total population size, $g$ is the intrinsic generation interval distribution and $B$ a function to change the transmission rate with respect to time (e.g., to implement public health measures, vaccination campaigns, etc.). 
+
+
+## Simulation example
+
+The code below simulates an epidemic, tracking the spread in the population
+and the pathogen concentration in the wastewater.
+
+```{r libraries, warning=FALSE, message=FALSE}
+library(reem)
+library(snowfall)
+```
+
+
+
+```{r define_model, warning=FALSE, echo=TRUE}
+
+# Define model parameters
+
+prms = list(
+  horizon  = 90,  # horizon of the simulation
+  last.obs = 88,  # last observation time (must be < horizon)
+  B        = rep(1,90), # time dependent multiplicative factor for transmission
+  i0prop  = 1e-3,  # initial proportion of the population infected
+  date.start = lubridate::ymd('2022-01-01'), # start date of the epidemic
+  start.delta = 0, 
+  R0      = 2.0, # Basic reproduction number
+  N       = 1e4, # population size
+  alpha   = 0, # transmission heterogeneity (alpha=0: homogeneous)
+  I.init  = c(1,1,3,5), # initial incidence (overwritten in fit ABC)
+  lag     = 7,   # Aggregation window for clinical reports
+  rho     = 0.1, # mean reporting ratio
+  g       = get_gi(), # Generation interval distribution
+  fec     = get_fecalshed(), # fecal shedding kinetics
+  kappa   = 0.18, # pathogen decay in ww
+  psi     = get_psi(), # plug flow simulation,
+  shed.mult = 0.2 # deposited fecal shedding multiplier  
+)
+
+# Create the model object instance
+obj = new('reem', 
+          name = 'foo', 
+          prms = prms, 
+          is.fitted = FALSE)
+
+# Print (formatted) the model parameters
+obj$print_prms()
+
+# Simulate an epidemic based on the parameters
+simepi  = obj$simulate_epi(deterministic = FALSE)
+
+```
+
+We can use the built-in function `plot_epi()` to plot the epidemic
+
+```{r plot_epi, fig.width=12, warning=FALSE}
+g = plot_epi(simepi)
+plot(patchwork::wrap_plots(g, ncol = 1))
+```
+
+## Fit example
+
+If we attach observation data (from clinical and/or wastewater surveillance),
+to a `reem` object, then it is possible to fit its model parameters to these data. The example below shows how to do this.
+
+First, let's create synthetic observation data from the simulation example above. We use synthetic data (as opposed to real data) because we to assess the accuracy of the fit. The synthetic data are generated from the vey same model `reem` where we know all the parameters. 
+
+```{r simulate data}
+# we use the example above and make a copy of its
+# simulated epidemics. The time series will be the "observations".
+
+sim.data = simepi
+
+# Set the date for "today"
+asof = lubridate::ymd('2023-03-01') 
+
+# Retrieve the simulated observations
+obs.cl = dplyr::filter(sim.data$obs.cl, date <= asof)
+obs.ww = dplyr::filter(simepi$obs.ww, date <= asof)
+
+# shift the dates such that they 
+# do not perfectly align with the simulation
+obs.cl$t <- obs.cl$t + 1
+obs.cl$date <- obs.cl$date + 1
+
+# Attached (simulated) data to new `reem` object:
+prms$t.obs.cl <- NULL
+prms$t.obs.ww <- NULL
+obj  = new('reem', 
+           name = 'foo2', 
+           prms = prms, 
+           obs.cl = obs.cl,
+           obs.ww = obs.ww,
+           is.fitted = FALSE)
+```
+
+Now, we set up the fitting algorithm. This algorithm is an Approximate Bayesian Computation (ABC), which is a very straightforward and robust Bayesian method but not very efficient.
+
+```{r define ABC parameters}
+# Define the parameters for the ABC fitting algorithm
+prm.abc = list(
+  n.abc = 500,   # Total number of ABC iterations (the larger the better)
+  n.sim = 0,     # Number of simulation for a given set of prior parameters. `0` for deterministic, else`8` should be enough
+  p.abc = 0.02,  # Acceptance probability (the lower the better)
+  n.cores = 4,   # number of cores used for parallel computing
+  use.cl = TRUE, # use clinical observations in the fit?
+  use.ww = TRUE, # use wastewater observation in the fit?
+  err.type = 'L2'# Type of error calculated during the fit.
+)
+
+# Define the priors of the parameters to be fitted:
+prms.to.fit = list(
+  # Gamma distrib. with mean 2.5 and variance 0.25:
+  R0          = list('gamma', 2.5, 0.251), 
+  # Other prior distributions definition self-explanatory:
+  alpha       = list('norm', 2, 3),
+  i0prop      = list('unif', -5, -2),
+  start.delta = list('unif_int', -7, 7) # `unif_int` = uniform with integers
+)
+```
+
+Now that all the parameters for the ABC fit have been defined, we can launch the actual fit. Note that we use the object `obj` already built and we call its _member function_ named `fit_abc()`:
+
+```{r fit ABC}
+#  Launch the fit 
+thefit = obj$fit_abc(prm.abc, prms.to.fit)  
+```  
+
+Once the ABC fit is completed, we can call built-in functions to assess the goodness of fit.
+
+First, lets visualize the posterior time series trajectories for the the clinical cases and wastewater concentrations.
+
+```{r plot_fit_results, fig.width=11}
+gg = obj$plot_fit()
+
+plot(gg$traj.cl)
+plot(gg$traj.ww)
+```
+
+We can also plot the posterior distributions of the fitted parameters (with their prior distribution overlayed in grey):
+
+```{r plot posteriors, fig.width = 11}
+plot(gg$post.prms)
+```
+
+This is plotting the pairwise 2D posterior densities, to check for any strong correlations between fitted parameters
+
+```{r plot 2D posteriors, fig.width=11}
+plot(gg$post.prms.2d)
+```
+
+And finally, we can assess the efficiency of the ABC algorithm by plotting the posterior distance values as a function of the sorted iterations
+
+```{r plot fitted distances, fig.width=11}
+plot(gg$dist)
+```

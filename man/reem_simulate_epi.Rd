@@ -8,7 +8,12 @@ including clinical and wastewater "observations".}
 reem_simulate_epi(obj, deterministic)
 }
 \arguments{
-\item{variables}{}
+\item{obj}{A object of class `reem`}
+
+\item{deterministic}{Logical. Is the simulation deterministic? (or stochastic)}
+}
+\value{
+A list
 }
 \description{
 Simulate a full epidemic with a REEM

@@ -23,3 +23,4 @@ variable \code{var.name} has been aggregated (summed).
 \description{
 Aggregate values across time
 }
+\keyword{internal}

@@ -2,19 +2,41 @@
 % Please edit documentation in R/gi.R
 \name{get_gi}
 \alias{get_gi}
-\title{Title}
+\title{Generation interval distribution definition.}
 \usage{
 get_gi(prms = list(m = 3, v = 1, tmax = 10), type = "gamma")
 }
 \arguments{
-\item{prms}{List of distribution parameters}
+\item{prms}{List of distribution parameters.
+The names of elements depends on \code{type}. 
+If \code{type = "manual"}, then only one element named \code{values} is 
+expected. The values must sum to 1. 
+ If \code{type = "gamma"}, then elements named \code{m, v} 
+ and \code{tmax} are expected to respectively define the mean, variance and maximum
+ values of the Gamma distribution.}
 
-\item{type}{String. Distribution family (e.g., gamma)}
+\item{type}{String. Distribution family. Implemented: 
+\code{manual} to define the distribution manually, 
+\code{gamma} for a Gamma shape distribution}
 }
 \value{
-Numerical vector representing 
+Numerical vector representing the probability densities of
 the intrinsic generation interval distribution.
 }
 \description{
-Title
+Generation interval distribution definition.
+}
+\examples{
+
+# Defined as Gamma
+gg = get_gi(type = 'gamma', prms = list(m=5, v=2, tmax = 12)) 
+plot(gg, typ = 'b')
+
+# Defined manually
+y = c(0.01, 0.1, 0.5, 0.2, 0.15, 0.04)
+gm = get_gi(type = 'manual', prms = list(values = y/sum(y)))
+plot(gm, typ = 'b')
+
+
+
 }

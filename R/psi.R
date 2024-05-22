@@ -1,4 +1,4 @@
-#' Title
+#' @title Pathogen decay in wastewater
 #'
 #' @param prm List of distribution parameters 
 #'
@@ -7,6 +7,7 @@
 #' @export
 #'
 #' @examples
+#' 
 get_psi <- function(prm) {
   return(c(0.85, 0.10, 0.05))
 }

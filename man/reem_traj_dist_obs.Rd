@@ -36,6 +36,11 @@ reem_traj_dist_obs(
 
 \item{prms}{}
 }
+\value{
+List containing:
+\item{distance: }{Numerical. The distance ofthe simulation from observations}
+\item{sim: }{Dataframe of the simulations.}
+}
 \description{
 Calculate the distance of the 
 epidemic trajectory from 
