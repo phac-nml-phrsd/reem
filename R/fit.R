@@ -513,7 +513,6 @@ reem_plot_fit <- function(obj) {
   gpall2d = patchwork::wrap_plots(gp) +
     patchwork::plot_annotation(title = 'Posterior parameters 2D density')
   
-  gpall2d
   
   # -- Ordered ABC distances
   
