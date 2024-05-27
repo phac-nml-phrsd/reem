@@ -16,6 +16,10 @@ clinical and wastewater data.
 To install: `devtools::install_github("phac-nml-phrsd/reem")`
 
 
+**Note:** This package implements the model as a __Reference Class__. This is a way to access the Object Oriented Programming functionalities in R. 
+Developers, if you are not familiar with Reference Classes in R, please see this [very short introduction](https://www.datamentor.io/r-programming/reference-class) and [Hadley Wickham's](http://adv-r.had.co.nz/R5.html) course for more details. 
+
+
 ## Model description
 
 The epidemic model is a traditional SIR model but implemented as a
@@ -27,7 +31,7 @@ See for example: D. Fargue, Reducibilite des systemes hereditaires, Int. J. Nonl
 
 The renewal equation of the pathogen transmission process is as follows:
 
-$$i(t) = \left(\frac{S(t)}{N}\right)^{\alpha}\, \mathcal{R}_0 \, B(t) \sum_{k=1}^\ell g(k)i(t-k)$$
+$$i(t) = \left(\frac{S(t)}{N}\right)^{\exp(\alpha)}\, \mathcal{R}_0 \, B(t) \sum_{k=1}^\ell g(k)i(t-k)$$
 
 $$S(t) = \max(0, S(t-1) - i(t))$$
 
@@ -135,7 +139,7 @@ prm.abc = list(
   n.abc = 500,   # Total number of ABC iterations (the larger the better)
   n.sim = 0,     # Number of simulation for a given set of prior parameters. `0` for deterministic, else`8` should be enough
   p.abc = 0.02,  # Acceptance probability (the lower the better)
-  n.cores = 4,   # number of cores used for parallel computing
+  n.cores = 1,   # number of cores used for parallel computing
   use.cl = TRUE, # use clinical observations in the fit?
   use.ww = TRUE, # use wastewater observation in the fit?
   err.type = 'L2'# Type of error calculated during the fit.

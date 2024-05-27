@@ -7,8 +7,13 @@ and wastewater data.
 
 To install: `devtools::install_github("phac-nml-phrsd/reem")`
 
-**Note:** This package implements the model as a __Reference Class__. This is a way to access the Object Oriented Programming functionalities in R. 
-Developers, if you are not familiar with Reference Classes in R, please see this [very short introduction](https://www.datamentor.io/r-programming/reference-class) and [Hadley Wickham's](http://adv-r.had.co.nz/R5.html) course for more details. 
+**Note:** This package implements the model as a **Reference Class**.
+This is a way to access the Object Oriented Programming functionalities
+in R. Developers, if you are not familiar with Reference Classes in R,
+please see this [very short
+introduction](https://www.datamentor.io/r-programming/reference-class)
+and [Hadley Wickham’s](http://adv-r.had.co.nz/R5.html) course for more
+details.
 
 ## Model description
 
@@ -25,26 +30,16 @@ SEIR Epidemic Model and the Renewal Equation, SIAM J. Appl. Math., 78
 
 The renewal equation of the pathogen transmission process is as follows:
 
-![i(t) = \left(\frac{S(t)}{N}\right)^{\alpha}\\ \mathcal{R}\_0 \\ B(t) \sum\_{k=1}^\ell g(k)i(t-k)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;i%28t%29%20%3D%20%5Cleft%28%5Cfrac%7BS%28t%29%7D%7BN%7D%5Cright%29%5E%7B%5Calpha%7D%5C%2C%20%5Cmathcal%7BR%7D_0%20%5C%2C%20B%28t%29%20%5Csum_%7Bk%3D1%7D%5E%5Cell%20g%28k%29i%28t-k%29 "i(t) = \left(\frac{S(t)}{N}\right)^{\alpha}\, \mathcal{R}_0 \, B(t) \sum_{k=1}^\ell g(k)i(t-k)")
+$$i(t) = \left(\frac{S(t)}{N}\right)^{\exp(\alpha)}\, \mathcal{R}_0 \, B(t) \sum_{k=1}^\ell g(k)i(t-k)$$
 
-![S(t) = \max(0, S(t-1) - i(t))](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;S%28t%29%20%3D%20%5Cmax%280%2C%20S%28t-1%29%20-%20i%28t%29%29 "S(t) = \max(0, S(t-1) - i(t))")
+$$S(t) = \max(0, S(t-1) - i(t))$$
 
-where
-![i(t)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;i%28t%29 "i(t)")
-is the incidence at time
-![t](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;t "t"),
-![\mathcal{R}\_0](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%5Cmathcal%7BR%7D_0 "\mathcal{R}_0")
-is the basic reproduction number,
-![S_t](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;S_t "S_t")
-are the number of susceptible individuals at time
-![t](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;t "t"),
-![N](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;N "N")
-is the total population size,
-![g](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;g "g")
-is the intrinsic generation interval distribution and
-![B](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;B "B")
-a function to change the transmission rate with respect to time (e.g.,
-to implement public health measures, vaccination campaigns, etc.).
+where $i(t)$ is the incidence at time $t$, $\mathcal{R}_0$ is the basic
+reproduction number, $S_t$ are the number of susceptible individuals at
+time $t$, $N$ is the total population size, $g$ is the intrinsic
+generation interval distribution and $B$ a function to change the
+transmission rate with respect to time (e.g., to implement public health
+measures, vaccination campaigns, etc.).
 
 ## Simulation example
 
@@ -174,7 +169,7 @@ prm.abc = list(
   n.abc = 500,   # Total number of ABC iterations (the larger the better)
   n.sim = 0,     # Number of simulation for a given set of prior parameters. `0` for deterministic, else`8` should be enough
   p.abc = 0.02,  # Acceptance probability (the lower the better)
-  n.cores = 4,   # number of cores used for parallel computing
+  n.cores = 1,   # number of cores used for parallel computing
   use.cl = TRUE, # use clinical observations in the fit?
   use.ww = TRUE, # use wastewater observation in the fit?
   err.type = 'L2'# Type of error calculated during the fit.
@@ -209,23 +204,15 @@ thefit = obj$fit_abc(prm.abc, prms.to.fit)
     ## 
     ## Number of priors     : 500
     ## Number of posteriors : 10 (accept ratio = 0.02)
-    ## Number of cores      : 4 (125 iters per core)
+    ## Number of cores      : 1 (500 iters per core)
     ## 
     ## Data horizon : 92 (days) 
     ## 
     ## ---------------------
 
-    ## Warning in searchCommandline(parallel, cpus = cpus, type = type, socketHosts =
-    ## socketHosts, : Unknown option on commandline:
-    ## rmarkdown::render('/Users/davidchampredon/GitHub/reem/README.Rmd',~+~~+~encoding~+~
+    ## snowfall 1.84-6.3 initialized: sequential execution, one CPU.
 
-    ## R Version:  R version 4.2.0 (2022-04-22)
-
-    ## snowfall 1.84-6.3 initialized (using snow 0.4-4): parallel execution on 4 CPUs.
-
-    ## Library dplyr loaded.
-
-    ## Library dplyr loaded in cluster.
+    ## Warning: package 'dplyr' was built under R version 4.2.3
 
     ## 
     ## Attaching package: 'dplyr'
@@ -238,12 +225,19 @@ thefit = obj$fit_abc(prm.abc, prms.to.fit)
     ## 
     ##     intersect, setdiff, setequal, union
 
-    ## Library purrr loaded.
+    ## Warning: package 'purrr' was built under R version 4.2.3
 
-    ## Library purrr loaded in cluster.
+    ## sfExportAll() ignored in sequential mode.
 
-    ## 
-    ## Stopping cluster
+    ## ABC iteration # 1 / 500
+
+    ## Warning in check_obs_schedule(obj): Observation times/dates for wastewater data
+    ## not specified: assuming ww observation schedule at every time step.
+
+    ## Warning in check_obs_schedule(obj): Observation times/dates for clinical data
+    ## not specified: assuming clinical observation schedule at every time step.
+
+    ## ABC iteration # 500 / 500
 
 Once the ABC fit is completed, we can call built-in functions to assess
 the goodness of fit.
