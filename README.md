@@ -7,6 +7,9 @@ and wastewater data.
 
 To install: `devtools::install_github("phac-nml-phrsd/reem")`
 
+**Note:** This package implements the model as a __Reference Class__. This is a way to access the Object Oriented Programming functionalities in R. 
+Developers, if you are not familiar with Reference Classes in R, please see this [very short introduction](https://www.datamentor.io/r-programming/reference-class) and [Hadley Wickham's](http://adv-r.had.co.nz/R5.html) course for more details. 
+
 ## Model description
 
 The epidemic model is a traditional SIR model but implemented as a
