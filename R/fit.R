@@ -59,7 +59,13 @@ err_fct <- function(cl.i, ww.i,
     print(obs.ww$date)
     print('simulated ww (ABC internal):')
     print(ww.i$date)
-    stop('Date mismatch: wastewater observation dates are missing in simulation.')
+    
+    is.in = obs.ww$date[-1] %in% ww.i$date
+    is.missing = obs.ww$date[-1][which(!is.in)]
+    stop(paste('Date mismatch:',
+               'wastewater observation dates are missing in simulation.\n',
+               'Here are the dates missing:\n',
+               paste(is.missing, sep=' ; ')))
   }
   
   # --- Adjust to fitting observation dates
