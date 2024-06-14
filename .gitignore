@@ -53,3 +53,12 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 .DS_Store
+inst/doc
+
+doc/*.log
+doc/*.out
+doc/*.aux
+doc/*.gz
+
+
+
