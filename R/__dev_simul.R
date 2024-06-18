@@ -6,7 +6,7 @@ if(0){
   library(ggplot2)
   library(lubridate)
   library(reem)
-  # devtools::load_all() 
+  # devtools::load_all()
   
   date.start = ymd('2022-01-01')
   asof       = ymd('2022-03-01') 
@@ -43,7 +43,9 @@ if(0){
   
   simepi  = obj$simulate_epi(deterministic = FALSE)
   
-  simepi$sim %>% ggplot(aes(x=date, y = Wd)) + geom_line()
+  g = plot_epi(simepi) 
+  patchwork::wrap_plots(g, ncol = 1)
+  
   
   # impact of `alpha`
   obj$prms$alpha <- 0

@@ -113,20 +113,21 @@ check_obs_schedule <- function(obj) {
 reem_simulate <- function(prms, deterministic) {
   
   # Unpack parameters
-  R0      = prms$R0
-  B       = prms$B
-  N       = prms$N
-  alpha   = prms$alpha
-  I.init  = prms$I.init
-  horizon = prms$horizon
-  rho     = prms$rho
-  lag     = prms$lag
-  g       = prms$g
-  fec     = prms$fec
-  kappa   = prms$kappa
-  psi     = prms$psi
-  t.obs.ww = prms$t.obs.ww
-  shed.mult = prms$shed.mult
+  R0      = prms[['R0']]
+  B       = prms[['B']]
+  N       = prms[['N']]
+  alpha   = prms[['alpha']]
+  I.init  = prms[['I.init']]
+  horizon = prms[['horizon']]
+  rho     = prms[['rho']]
+  lag     = prms[['lag']]
+  g       = prms[['g']]
+  fec     = prms[['fec']]
+  h       = prms[['h']]
+  kappa   = prms[['kappa']]
+  psi     = prms[['psi']]
+  t.obs.ww = prms[['t.obs.ww']]
+  shed.mult = prms[['shed.mult']]
   
   ni = length(I.init)
   
@@ -135,6 +136,7 @@ reem_simulate <- function(prms, deterministic) {
   S  = rep(NA, horizon)   # daily number of susceptible
   A  = rep(NA, horizon)   # rolling sum of daily incidence aggregated over `lag`
   Y  = rep(NA, horizon)   # observed aggregated incidence (:stochastic fraction of `A`)
+  H  = rep(0, horizon)    # daily hospital admissions
   Wd = rep(NA, horizon)   # wastewater concentration deposited
   
   # Initial period when incidence is known:
@@ -165,6 +167,18 @@ reem_simulate <- function(prms, deterministic) {
   lambdaY[lambdaY==0] <- 1e-3
   lambdaY[is.na(lambdaY)] <- 1e-3
   Y = calc_Y(lambdaY, n=length(A), deterministic)
+  
+  # Hospital admissions (H):
+  if(is.null(h)) h = rep(0,2)
+  nh = length(h)
+  for(t in 2:horizon){
+    H[t] = 0
+    upperidx = min(nh, t-1)
+    for(k in 1:upperidx){
+      H[t] = H[t] + h[k] * I[t-k]
+    }
+    H[t] = round(H[t])
+  }
   
   # --- Wastewater ---
   
@@ -205,6 +219,8 @@ reem_simulate <- function(prms, deterministic) {
   Wr = wr.m
   if(!deterministic) Wr = rnorm(n=n.ww, mean = wr.m, sd = wr.m * 0.2)
   
+  # Ending
+  
   df = data.frame(
     t = 1:horizon, 
     m = m, 
@@ -212,6 +228,7 @@ reem_simulate <- function(prms, deterministic) {
     S = S,
     A = A,
     Y = Y,
+    H = H,
     Wd = Wd, 
     Wp = Wp)
   
