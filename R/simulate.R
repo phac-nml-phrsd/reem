@@ -123,7 +123,8 @@ reem_simulate <- function(prms, deterministic) {
   lag     = prms[['lag']]
   g       = prms[['g']]
   fec     = prms[['fec']]
-  h       = prms[['h']]
+  h.prop  = prms[['h.prop']]
+  h.lags  = prms[['h.lags']]
   kappa   = prms[['kappa']]
   psi     = prms[['psi']]
   t.obs.ww = prms[['t.obs.ww']]
@@ -139,7 +140,7 @@ reem_simulate <- function(prms, deterministic) {
   H  = rep(0, horizon)    # daily hospital admissions
   Wd = rep(NA, horizon)   # wastewater concentration deposited
   
-  # Initial period when incidence is known:
+  # -- Initial period when incidence is known:
   m[1:ni] = I.init
   I[1:ni] = I.init
   S[1:ni] = N - cumsum(I.init)
@@ -162,14 +163,24 @@ reem_simulate <- function(prms, deterministic) {
     A[t] = sum(I[t:tlag])
   }
   
-  # Observed aggregated incidence (Y):
+  # -- Observed aggregated incidence (Y):
   lambdaY = rho*A
   lambdaY[lambdaY==0] <- 1e-3
   lambdaY[is.na(lambdaY)] <- 1e-3
   Y = calc_Y(lambdaY, n=length(A), deterministic)
   
-  # Hospital admissions (H):
-  if(is.null(h)) h = rep(0,2)
+  # -- Hospital admissions (H):
+  
+  
+  # calculate `h` from lags and total proportion
+  h.undefined = is.null(h.lags) | is.null(h.prop)
+  if(h.undefined) {
+    h = rep(0,2)
+  }
+  if(!h.undefined){
+    h = h.lags / sum(h.lags) * h.prop
+  }
+  
   nh = length(h)
   for(t in 2:horizon){
     H[t] = 0
@@ -191,7 +202,9 @@ reem_simulate <- function(prms, deterministic) {
     w.m[t] = shed.mult * sum(fec[idx]*I[t-idx])
   }
   Wd =  w.m
-  if(!deterministic) Wd = rnorm(n = horizon, mean = w.m, sd = w.m * 0.1)
+  if(!deterministic) Wd = rnorm(n    = horizon, 
+                                mean = w.m, 
+                                sd   = w.m * 0.1)
   
   # -- present at sampling site
   
@@ -217,7 +230,9 @@ reem_simulate <- function(prms, deterministic) {
     wr.m[i] = Wp[t.obs.ww[i]]
   
   Wr = wr.m
-  if(!deterministic) Wr = rnorm(n=n.ww, mean = wr.m, sd = wr.m * 0.2)
+  if(!deterministic) Wr = rnorm(n    = n.ww, 
+                                mean = wr.m, 
+                                sd   = wr.m * 0.2)
   
   # Ending
   
