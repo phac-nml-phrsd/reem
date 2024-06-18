@@ -29,6 +29,8 @@ if(0){
     rho     = 0.1, # mean reporting ratio
     g       = get_gi(), # Generation interval distribution
     fec     = get_fecalshed(), # fecal shedding kinetics
+    h.prop  = 0.05, # total proportion hospitalized for one cohort
+    h.lags  = c(rep(0,3), 1, 2, 2, 1, 0), # Lag infection-hospitalization
     kappa   = 0.18, # decay in ww
     psi     = get_psi(),   # plug flow simulation,
     shed.mult = 1e-3
@@ -42,17 +44,18 @@ if(0){
   obj0$print_prms()
   
   simepi  = obj0$simulate_epi(deterministic = FALSE)
+  plot_epi(simepi) |> patchwork::wrap_plots(ncol=1)
   
   obs.cl = filter(simepi$obs.cl, date <= asof)
+  obs.ha = filter(simepi$obs.ha, date <= asof)
   obs.ww = filter(simepi$obs.ww, date <= asof)
- 
+  
   # mess with the dates such that they 
   # do not perfectly align with the simulation
   obs.cl$t <- obs.cl$t + 1
   obs.cl$date <- obs.cl$date + 1
-   
-  # Attached simulated data to new `reem` object:
   
+  # Attached simulated data to new `reem` object:
   prms = prms0
   prms$t.obs.cl <- NULL
   prms$t.obs.ww <- NULL
@@ -60,6 +63,7 @@ if(0){
              name = 'foo2', 
              prms = prms, 
              obs.cl = obs.cl,
+             obs.ha = obs.ha,
              obs.ww = obs.ww,
              is.fitted = FALSE)
   
@@ -68,25 +72,28 @@ if(0){
   # ---- Fit ----
   
   prm.abc = list(
-    n.abc = 500,
+    n.abc = 2e3,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
-    p.abc = 0.02, #1e-2,
-    n.cores = 4, #min(12, parallel::detectCores() - 1),
+    p.abc = 0.01, #1e-2,
+    n.cores = 6, #min(12, parallel::detectCores() - 1),
     use.cl = 1, 
+    use.ha = 1, 
     use.ww = 1,
-    err.type = 'L2'
+    err.type = 'normlarge'   # normlarge, L2
   )
   
-   prms.to.fit = list(
+  prms.to.fit = list(
     R0          = list('gamma', 1.5, 0.251),
     alpha       = list('normp', 2, 1),
     i0prop      = list('unif', -5, -2),
+    h.prop      = list('unif', 0.001, 0.2),
     start.delta = list('unif_int', -7, 7)  
   )
   
-   foo = obj$fit_abc(prm.abc, prms.to.fit)  
+  foo = obj$fit_abc(prm.abc, prms.to.fit)  
   
   gg = obj$plot_fit()
+  gg$all
   
   fname = paste0('plot-',timestamp_short(),'.pdf')
   
@@ -105,7 +112,7 @@ if(0){
   
   saveRDS(object = obj, file = 'obj-dev.rds')
   
- message('\nDONE.\n')
+  message('\nDONE.\n')
   # - - - - - - - - - -  - - - - - - - - 
   # --- other stuff  ----
   if(0){

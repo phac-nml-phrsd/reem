@@ -286,20 +286,25 @@ reem_simulate_epi <- function(obj,
   
   sim = dplyr::mutate(sim, date = prms$date.start + t)
   
-  # Create two dataframes of observations only:
+  # Create dataframes of observations only:
   #  - clinical data
+  #  - hospital admissions data
   #  - wastewater data
   # (they may not be observed on the same schedule)
   
   
   # Aggregate clinical reports
-  sim.obs.cl = aggregate_time(df       = sim, 
-                              dt.aggr  = date.obs.cl, 
-                              var.name = 'Y') %>% 
+  sim.obs.cl = aggregate_time(
+    df       = sim, 
+    dt.aggr  = date.obs.cl, 
+    var.name = 'Y') %>% 
     dplyr::transmute(
       date, 
-      t = as.integer(date - prms$date.start),
-      obs  = aggregation) 
+      t    = as.integer(date - prms$date.start),
+      obs  = as.integer(aggregation)) 
+  
+  # Hospital admissions
+  sim.obs.ha = select(sim, t, date, obs = H)
   
   # Extract wastewater observations
   sim.obs.ww = sim %>% 
@@ -313,6 +318,7 @@ reem_simulate_epi <- function(obj,
   return(list(
     sim    = sim, 
     obs.cl = sim.obs.cl,
+    obs.ha = sim.obs.ha,
     obs.ww = sim.obs.ww
   ))
 }

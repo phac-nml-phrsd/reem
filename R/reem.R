@@ -16,10 +16,12 @@
 #'   \item{\code{N}: }{population size.}
 #'   \item{\code{alpha}: }{transmission heterogeneity (alpha=-Inf: homogeneous).}
 #'   \item{\code{I.init}: }{initial incidence (overwritten in fit ABC).}
-#'   \item{\code{lag}: }{aggregation window for clinical reports}
+#'   \item{\code{lag}: }{aggregation window for clinical reports.}
 #'   \item{\code{rho}: }{ mean reporting ratio.}
 #'   \item{\code{g}: }{intrinsic generation interval distribution.}
 #'   \item{\code{fec}: }{fecal shedding kinetics.}
+#'   \item{\code{h.prop}: }{total proportion of infections that will be hospitalized.}
+#'   \item{\code{h.lags}: }{time lags repartition weights between infection and hospital admission times.}
 #'   \item{\code{kappa}: }{pathogen decay in wastewater.}
 #'   \item{\code{psi}: }{plug flow simulation.}
 #'   \item{\code{shed.mult}: }{deposited fecal shedding multiplier.}
@@ -28,6 +30,8 @@
 #' @field is.fitted Logical. Is the model fitted to the observation
 #' data attached (\code{obs.cl} and/or \code{obs.ww})? 
 #' @field obs.cl Dataframe representing the clinical observations. 
+#' Must have \code{date} and \code{obs} variables. 
+#' @field obs.ha Dataframe representing the hospital admissions. 
 #' Must have \code{date} and \code{obs} variables. 
 #' @field obs.ww Dataframe representing the wastewater observations. 
 #' Must have \code{date} and \code{obs} variables. 
@@ -47,6 +51,7 @@ setRefClass(
     name      = "character",
     prms      = "list",
     obs.cl    = "data.frame",
+    obs.ha    = "data.frame",
     obs.ww    = "data.frame",
     is.fitted = "logical",
     fit.obj   = "list",
@@ -87,6 +92,7 @@ setRefClass(
       # = = = = = = = = = = 
       
       traj_dist_obs = function(use.cl, 
+                               use.ha, 
                                use.ww, 
                                err.type,
                                deterministic,
@@ -96,6 +102,7 @@ setRefClass(
           reem_traj_dist_obs(
             obj           = .self, 
             use.cl        = use.cl, 
+            use.ha        = use.ha, 
             use.ww        = use.ww, 
             err.type      = err.type, 
             deterministic = deterministic, 

@@ -11,6 +11,22 @@ sss <- function(x,y) {
   return(sqrt( sum( (x-y)^2 ) ))
 }
 
+#' @title sqrt sum of squared relative difference
+#'
+#' @param x simulations
+#' @param y observations
+#'
+#' @return Numerical. The sum of squared relative difference
+#' @keywords internal
+#'  
+ssrs <- function(x,y) {
+  # deal with zeros:
+  idx = which(y!=0)
+  yy = y[idx]
+  xx = x[idx]
+  return(sqrt( sum( (xx/yy-1)^2 ) ))
+}
+
 
 #' Normalization with one of the largest values
 #'
@@ -27,26 +43,7 @@ normlarge <- function(x, largest.rank = 3) {
 }
 
 
-#' Error function for a fit algorithm
-#'
-#' @param cl.i Dataframe of simulated clinical observations
-#' @param ww.i Dataframe of simulated wastewater observations
-#' @param obs.cl Dataframe of clinical observations
-#' @param obs.ww Dataframe of wastewater observations
-#' @param use.cl Logical. Use clinical data in fit?
-#' @param use.ww Logical. Use wastewater data in fit?
-#'
-#' @return Numerical value representing the distance 
-#' of the simulation from the observed data.
-#' 
-err_fct <- function(cl.i, ww.i, 
-                    obs.cl, obs.ww,
-                    use.cl, use.ww,
-                    err.type = 'rel',
-                    do.plot = FALSE) {
-  
-  # --- Checks  
-  
+check_dates_cl <- function(obs.cl, cl.i) {
   if(! all(obs.cl$date[-1] %in% cl.i$date)){
     print('observed cl:')
     print(obs.cl$date)
@@ -54,6 +51,21 @@ err_fct <- function(cl.i, ww.i,
     print(cl.i$date)
     stop('Date mismatch: clinical observation dates are missing in simulation.')
   }
+}
+
+
+check_dates_ha <- function(obs.ha, ha.i) {
+  if(! all(obs.ha$date[-1] %in% ha.i$date)){
+    print('observed hosp. adm.:')
+    print(obs.ha$date)
+    print('simulated hosp. adm. (ABC internal):')
+    print(ha.i$date)
+    stop('Date mismatch: hospital admission dates are missing in simulation.')
+  }
+}
+
+check_dates_ww <- function(obs.ww, ww.i) {
+  
   if(!all(obs.ww$date[-1] %in% ww.i$date)){
     print('observed ww:')
     print(obs.ww$date)
@@ -67,33 +79,72 @@ err_fct <- function(cl.i, ww.i,
                'Here are the dates missing:\n',
                paste(is.missing, sep=' ; ')))
   }
+}
+
+
+
+#' Error function for a fit algorithm
+#'
+#' @param cl.i Dataframe of simulated clinical observations
+#' @param ww.i Dataframe of simulated wastewater observations
+#' @param obs.cl Dataframe of clinical observations
+#' @param obs.ww Dataframe of wastewater observations
+#' @param use.cl Logical. Use clinical data in fit?
+#' @param use.ww Logical. Use wastewater data in fit?
+#'
+#' @return Numerical value representing the distance 
+#' of the simulation from the observed data.
+#' 
+err_fct <- function(cl.i, ha.i, ww.i, 
+                    obs.cl, obs.ha, obs.ww,
+                    use.cl, use.ha, use.ww,
+                    err.type = 'rel',
+                    do.plot = FALSE) {
+  
+  # --- Checks  
+  
+  check_dates_cl(obs.cl, cl.i)
+  check_dates_ww(obs.ww, ww.i)
+  check_dates_ha(obs.ha, ha.i)
   
   # --- Adjust to fitting observation dates
   
   df.cl = dplyr::left_join(cl.i, obs.cl, by='date')
+  df.ha = dplyr::left_join(ha.i, obs.ha, by='date')
   df.ww = dplyr::left_join(ww.i, obs.ww, by='date') %>% 
     tidyr::drop_na(obs)
   
   err.cl = 0
+  err.ha = 0
   err.ww = 0
   
   if(err.type == 'L2'){
     if(use.cl) err.cl = sss(df.cl$obs, df.cl$Ym) 
+    if(use.ha) err.ha = sss(df.ha$obs, df.ha$Hm) 
     if(use.ww) err.ww = sss(df.ww$obs, df.ww$Wm)
   }
   if(err.type == 'rel'){
-    if(use.cl) err.cl = sqrt(sum( (df.cl$Ym/df.cl$obs - 1 )^2 )) #TODO: handle div by 0
-    if(use.ww) err.ww = sqrt(sum( (df.ww$Wm/df.ww$obs - 1 )^2 ))
+    #TODO: handle div by 0
+    if(use.cl) err.cl = ssrs(df.cl$Ym, df.cl$obs) 
+    if(use.ha) err.ha = ssrs(df.ha$Hm, df.ha$obs) 
+    if(use.ww) err.ww = ssrs(df.ww$Wm, df.ww$obs) 
   }
   # The vectors are normalized by their respective
-  # largest value to put both ww and clinical 
+  # largest value to have all data sources 
   # on the same scale:
   if(err.type == 'normlarge'){
     largest.rank = 3
+    
     if(use.cl) {
       z.cl = normlarge(df.cl$obs, largest.rank ) 
       err.cl = sss(df.cl$obs/z.cl , df.cl$Ym/z.cl)
     }
+    
+    if(use.ha) {
+      z.ha = normlarge(df.ha$obs, largest.rank ) 
+      err.ha = sss(df.ha$obs/z.ha , df.ha$Hm/z.ha)
+    }
+    
     if(use.ww) {
       z.ww = normlarge(df.ww$obs, largest.rank) 
       err.ww = sss(df.ww$obs/z.ww , df.ww$Wm/z.ww)
@@ -105,7 +156,7 @@ err_fct <- function(cl.i, ww.i,
   # equal to nrow(cl.i), which varies as delta.start changes.
   # Hence, the error may not be consistent across all priors.
   
-  err =  err.cl + err.ww
+  err =  err.cl + err.ha + err.ww
   return(err)
 }
 
@@ -135,6 +186,7 @@ err_fct <- function(cl.i, ww.i,
 reem_traj_dist_obs <- function(
     obj,
     use.cl, 
+    use.ha, 
     use.ww, 
     err.type,
     deterministic,
@@ -144,17 +196,22 @@ reem_traj_dist_obs <- function(
   
   prms   = obj$prms
   obs.cl = obj$obs.cl
+  obs.ha = obj$obs.ha
   obs.ww = obj$obs.ww
   
-  if(nrow(obs.cl)==0 & nrow(obs.ww)==0) {
-    stop('The REEM object does not have any observation attached.
-         Hence, cannot calculate a distance from observation. ABORTING!')
+  if(nrow(obs.cl)==0 & 
+     nrow(obs.ha)==0 & 
+     nrow(obs.ww)==0) {
+    stop('The REEM object does not have any observation attached.\n',
+         'Hence, cannot calculate a distance from observation.\nABORTING!\n\n')
   }
   
   # Setting the horizon for each data source
   if(nrow(obs.cl) > 0)  datemax.cl = max(obs.cl$date)
   if(nrow(obs.ww) > 0)  datemax.ww = max(obs.ww$date)
+  if(nrow(obs.ha) > 0)  datemax.ha = max(obs.ha$date)
   if(nrow(obs.ww) == 0) datemax.ww = datemax.cl
+  if(nrow(obs.ha) == 0) datemax.ha = datemax.cl
   if(nrow(obs.cl) == 0) datemax.cl = datemax.ww
   
   # Adjust the epidemic start time
@@ -173,6 +230,7 @@ reem_traj_dist_obs <- function(
   if(deterministic){
     s     = obj$simulate_epi(deterministic = TRUE)
     a.cl  = s$obs.cl
+    a.ha  = s$obs.ha
     a.ww  = s$obs.ww
     a.sim = s$sim
   }
@@ -181,15 +239,17 @@ reem_traj_dist_obs <- function(
     # Simulate `n.sim` times with a given set of prior parameters.
     # The ABC distance from the observations will be computed 
     # using the _mean_ value across the `n.sim` simualtions:
-    tmp.cl = tmp.ww = tmp.sim = list()
+    tmp.cl = tmp.ha = tmp.ww = tmp.sim = list()
     
     for(k in 1:n.sim){
       s            = obj$simulate_epi(deterministic = FALSE)
       tmp.cl[[k]]  = s$obs.cl %>% mutate(iter = k)
+      tmp.ha[[k]]  = s$obs.ha %>% mutate(iter = k)
       tmp.ww[[k]]  = s$obs.ww %>% mutate(iter = k)
       tmp.sim[[k]] = s$sim %>% mutate(n.sim = k)
     }
     a.cl  = dplyr::bind_rows(tmp.cl)
+    a.ha  = dplyr::bind_rows(tmp.ha)
     a.ww  = dplyr::bind_rows(tmp.ww)
     a.sim = dplyr::bind_rows(tmp.sim)
   }
@@ -202,6 +262,12 @@ reem_traj_dist_obs <- function(
     dplyr::ungroup() %>%
     dplyr::filter(date <= datemax.cl)
   
+  ha.i = a.ha %>% 
+    dplyr::group_by(date) %>% 
+    dplyr::summarize(Hm = mean(obs)) %>%
+    dplyr::ungroup() %>%
+    dplyr::filter(date <= datemax.ha)
+  
   ww.i = a.ww %>% 
     dplyr::group_by(date) %>% 
     dplyr::summarize(Wm = mean(obs)) %>%
@@ -209,9 +275,9 @@ reem_traj_dist_obs <- function(
     dplyr::filter(date <= datemax.ww)
   
   # Calculate the ABC distance
-  res = err_fct(cl.i, ww.i, 
-                obs.cl, obs.ww, 
-                use.cl, use.ww,
+  res = err_fct(cl.i, ha.i, ww.i, 
+                obs.cl, obs.ha, obs.ww, 
+                use.cl, use.ha, use.ww,
                 err.type) 
   return(list(
     distance = res, 
@@ -225,6 +291,7 @@ calc_dist_parallel <- function(i,
                                priors,
                                obj,
                                use.cl, 
+                               use.ha, 
                                use.ww, 
                                err.type,
                                deterministic,
@@ -246,6 +313,7 @@ calc_dist_parallel <- function(i,
   x = reem_traj_dist_obs(
     obj           = obj,
     use.cl        = use.cl, 
+    use.ha        = use.ha, 
     use.ww        = use.ww, 
     err.type      = err.type,
     deterministic = deterministic,
@@ -328,9 +396,10 @@ reem_fit_abc <- function(obj,
   n.cores = prm.abc$n.cores
   
   use.ww = prm.abc$use.ww
+  use.ha = prm.abc$use.ha
   use.cl = prm.abc$use.cl
   
-  d.max = max(obj$obs.cl$date, obj$obs.ww$date) + 1
+  d.max = max(obj$obs.cl$date, obj$obs.ha$date, obj$obs.ww$date) + 1
   hz    = as.integer(d.max - obj$prms$date.start)
   
   if(hz <= 1) {
@@ -346,6 +415,7 @@ reem_fit_abc <- function(obj,
   message('\n----- ABC FIT -----\n\n',
           'Target data sources :\n',
           '  clinical   = ', ifelse(use.cl,'yes', 'NO'),'\n',
+          '  hosp. adm. = ', ifelse(use.ha,'yes', 'NO'),'\n',
           '  wastewater = ', ifelse(use.ww,'yes', 'NO'),'\n\n',
           'Number of priors     : ', prm.abc$n.abc, '\n',
           'Number of posteriors : ', 
@@ -377,6 +447,7 @@ reem_fit_abc <- function(obj,
     priors    = priors, 
     obj       = obj,
     use.cl    = use.cl, 
+    use.ha    = use.ha, 
     use.ww    = use.ww,
     n.sim     = n.sim,
     verbose   = verbose,
@@ -409,6 +480,23 @@ reem_fit_abc <- function(obj,
   return(res)
 }
 
+plot_traj <- function(obs, ps, varname, color, title, ylab) {
+  colordark = paste0(color,'3')
+  varnamem  = paste0(varname,'.m')
+  varnamelo = paste0(varname,'.lo')
+  varnamehi = paste0(varname,'.hi')
+  
+  g = ps %>% 
+    ggplot2::ggplot(ggplot2::aes(x=date)) + 
+    ggplot2::geom_line(ggplot2::aes(y = .data[[varnamem]]),
+                       color = colordark)+
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data[[varnamelo]], 
+                                      ymax = .data[[varnamehi]]), 
+                         alpha=0.2, fill=color)+
+    ggplot2::geom_point(data = obs, ggplot2::aes(y=obs)) +
+    ggplot2::labs(title = title, y = ylab)
+  return(g)
+}
 
 reem_plot_fit <- function(obj) {
   
@@ -417,6 +505,7 @@ reem_plot_fit <- function(obj) {
   fit.obj = obj$fit.obj 
   ps      = fit.obj$post.simulations 
   obs.cl  = obj$obs.cl
+  obs.ha  = obj$obs.ha
   obs.ww  = obj$obs.ww
   
   ps.cl = lapply(ps, aggregate_time, 
@@ -428,6 +517,13 @@ reem_plot_fit <- function(obj) {
     dplyr::summarise(Y.m = mean(aggregation),
                      Y.lo = min(aggregation),
                      Y.hi = max(aggregation))
+  
+  ps.ha = ps %>% 
+    dplyr::bind_rows() %>% 
+    dplyr::group_by(date) %>%
+    dplyr::summarise(H.m = mean(H),
+                     H.lo = min(H),
+                     H.hi = max(H))
   
   ps.ww = ps %>% 
     dplyr::bind_rows() %>% 
@@ -442,27 +538,27 @@ reem_plot_fit <- function(obj) {
   
   # ---- Trajectories
   
-  g.cl = ps.cl %>% 
-    ggplot2::ggplot(ggplot2::aes(x=date)) + 
-    ggplot2::geom_line(ggplot2::aes(y = Y.m), color = 'chartreuse3')+
-    ggplot2::geom_ribbon(ggplot2::aes(ymin=Y.lo, ymax=Y.hi), 
-                         alpha=0.2, fill='chartreuse')+
-    ggplot2::geom_point(data = obs.cl, ggplot2::aes(y=obs)) +
-    ggplot2::labs(title = 'Fit to clinical data', y = 'cases')
-  # g.cl
+  g.cl = plot_traj(obs     = obs.cl, 
+                   ps      = ps.cl, 
+                   varname = 'Y',
+                   color   = 'chartreuse',
+                   title   = 'Fit to clinical data', 
+                   ylab    = 'cases')
   
-  g.ww = ps.ww %>%
-    tidyr::drop_na(starts_with('Wr')) %>%
-    ggplot2::ggplot(ggplot2::aes(x=date)) + 
-    ggplot2::geom_line(ggplot2::aes(y = Wr.m), 
-                       color = 'chocolate3')+
-    ggplot2::geom_ribbon(ggplot2::aes(
-      ymin = Wr.lo, 
-      ymax = Wr.hi), 
-      alpha=0.2, fill='chocolate')+
-    ggplot2::geom_point(data = obs.ww, ggplot2::aes(y=obs)) +
-    ggplot2::labs(title = 'Fit to wastewater data', y = 'concentration')
-  # g.ww
+  g.ha = plot_traj(obs     = obs.ha, 
+                   ps      = ps.ha, 
+                   varname = 'H',
+                   color   = 'orchid',
+                   title   = 'Fit to hosp.adm.', 
+                   ylab    = 'cases')
+  
+  g.ww = plot_traj(obs     = obs.ww, 
+                   ps      = ps.ww, 
+                   varname = 'Wr',
+                   color   = 'chocolate',
+                   title   = 'Fit to wastewater data', 
+                   ylab    = 'concentration')
+    
   
   # ---- Posterior parameters
   
@@ -518,7 +614,6 @@ reem_plot_fit <- function(obj) {
     }
   }
   
-  
   gpall2d = patchwork::wrap_plots(gp) +
     patchwork::plot_annotation(title = 'Posterior parameters 2D density')
   
@@ -552,6 +647,7 @@ reem_plot_fit <- function(obj) {
   
   g.list = list(
     traj.cl      = g.cl,
+    traj.ha      = g.ha,
     traj.ww      = g.ww,
     post.prms    = g.post,
     post.prms.2d = gpall2d,
