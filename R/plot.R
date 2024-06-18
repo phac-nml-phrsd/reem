@@ -32,7 +32,7 @@ plot_epi <- function(simepi) {
   
   g.pop = sim.pop %>% 
     ggplot2::ggplot(ggplot2::aes(x=date, y = value, color = variable)) + 
-    ggplot2::geom_line() + 
+    ggplot2::geom_line(linewidth = 1) + 
     ggplot2::scale_y_log10() + 
     ggplot2::scale_color_manual(values = col.pop) +
     ggplot2::theme_bw()+
@@ -52,7 +52,7 @@ plot_epi <- function(simepi) {
   
   g.ww = sim.ww %>% 
     ggplot2::ggplot(ggplot2::aes(x=date, y = value, color = variable)) + 
-    ggplot2::geom_line() + 
+    ggplot2::geom_line(linewidth = 1) + 
     ggplot2::theme_bw()+
     ggplot2::labs(title = 'Pathogen concentration in wastewater')
   
