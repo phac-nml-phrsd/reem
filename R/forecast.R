@@ -6,21 +6,23 @@
 #' @param prm.fcst List of forecast parameters. 
 #' In particular, must contain an element named `ci`
 #' specifying the quantiles probabilities to calculate.
-#' @param vars String vector. Names of the variables
-#' forecasted to calculate the quantiles.
-#'
+#' @param vars String vector. If not NULL (default), overrides `prm.fcst$vars.to.fcst`.
+#' 
 #' @return Dataframe of quantiles.
 #' @keywords internal
 #'
-summarize_fcst <- function(simfwd, prm.fcst, vars) {
+summarize_fcst <- function(simfwd, prm.fcst, vars = NULL) {
   
   if(0){  # --- DEBUG
     simfwd = fcst$simfwd
     ci = c(0.50, 0.80, 0.95)
-    vars = c('Y', 'Wr')
   }
   
-  message('\nSummarizing forecasts...',appendLF = FALSE)
+  if(is.null(vars)) vars = prm.fcst$vars.to.fcst
+  if(is.null(vars)) vars = c('Y', 'Wr')
+  
+  message('\nSummarizing forecasts for variables ',
+          paste(vars, collapse = ', '), appendLF = FALSE)
   ci    = prm.fcst$ci
   probs = sort(c(0.5 - ci/2, 0.5 + ci/2) )
   
@@ -54,7 +56,7 @@ summarize_fcst <- function(simfwd, prm.fcst, vars) {
 #' @return A list of dataframes.
 #'
 aggregate_fcst <- function(var.to.aggregate, obj, simfwd) {
-
+  
   # retrieve the aggregation interval 
   # from the observation data set
   dt = as.numeric(median(diff(obj$obs.cl$date)))
@@ -106,6 +108,7 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
       asof = ymd('2022-03-01'),
       horizon.fcst = ymd('2022-07-01'),
       use.fit.post = TRUE,
+      vars.to.fcst = c('Y', 'Wr', 'H'),
       n.resample = 20,
       ci = c(0.50, 0.80, 0.95)
     )
@@ -180,10 +183,12 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
     # to d it this way...
   }
   
+  if(is.null(prm.fcst$vars.to.fcst)) 
+    prm.fcst$vars.to.fcst = c('Y', 'Wr')
+  
   summary.fcst = summarize_fcst(
     simfwd   = simfwd, 
-    prm.fcst = prm.fcst,
-    vars     = c('Y', 'Wr')) # TODO: remove hard code
+    prm.fcst = prm.fcst)
   
   # Dealing with aggregated incidence
   simfwd.aggr = list()
@@ -221,15 +226,68 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
 #'
 #' @return A ggplot object
 #' @keywords internal
-add_ribbons_quantiles <- function(g, z, k,
+add_ribbons_quantiles <- function(g, qlist, k,
                                   col.fcst, alpha.ribbon) {
-  nz = length(z)
+  nq = length(qlist)
   res = g + 
-    geom_ribbon(aes(ymin = .data[[z[k]]], 
-                    ymax = .data[[z[nz-k+1] ]]), 
+    geom_ribbon(aes(ymin = .data[[qlist[k]]], 
+                    ymax = .data[[qlist[nq - k + 1] ]]), 
                 fill = col.fcst, alpha = alpha.ribbon)
   return(res)
 }
+
+
+#' Helper function
+#'
+#' @param traj.fit 
+#' @param traj.fcst 
+#' @param obs 
+#' @param alpha.ribbon 
+#' @param col.fit 
+#' @param col.fcst 
+#' @param fcst.prm 
+#' @param title 
+#' @param ylab 
+#' @param qlist 
+#'
+#' @return a ggplot object
+#' 
+#' @keywords internal
+#'
+plot_fitfcst <- function(traj.fit, traj.fcst, obs, 
+                         alpha.ribbon, col.fit, col.fcst, 
+                         fcst.prm, 
+                         title, ylab, qlist) {
+  
+  g = ggplot(data = traj.fcst, aes(x=date))+ 
+    # --- Fit
+    geom_line(data = traj.fit, aes(y=m), 
+              color = col.fit, linetype = 'dashed') + 
+    geom_ribbon(data = traj.fit, aes(ymin=lo, ymax=hi), 
+                fill = col.fit, color = col.fit, 
+                linewidth = 0.1, 
+                alpha = alpha.ribbon / 2) + 
+    geom_point(data = obs, aes(y=obs)) + 
+    # --- Forecast
+    geom_line( aes(y = mean), color= col.fcst, 
+               linetype = 'dotted') + 
+    geom_vline(xintercept = fcst.prm$asof, 
+               linetype = 'dashed', 
+               color = 'gray50') + 
+    annotate(geom = 'text', y=1, x=fcst.prm$asof, 
+             label = fcst.prm$asof, size = 2) + 
+    xaxis + 
+    labs(title =title, 
+         x = '', y = ylab, 
+         caption = paste('fit ribbon: min/max\nfcst ribbon: quantiles'))
+  
+  # Add all the ribbons corresponding to each quantile
+  for(k in 1:(length(qlist)/2)) {
+    g = add_ribbons_quantiles(g, qlist, k, col.fcst, alpha.ribbon/2)
+  }
+  return(g)
+}
+
 
 
 #' Plot forecasts
@@ -248,160 +306,129 @@ reem_plot_forecast <- function(
     logscale) {
   
   obs.cl = obj$obs.cl
+  obs.ha = obj$obs.ha
   obs.ww = obj$obs.ww
+  
   fcst.obj = obj$fcst.obj
   fcst.prm = obj$fcst.prm
   
   # - - - Cosmetics  
   
   col.fcst = 'steelblue2'
-  col.fit  = 'tan2'
-  xaxis = scale_x_date(
-    date_breaks = date_breaks, 
-    date_labels = date_labels)
-  alpha.ribbon = 0.10
-  
-  # - - - - Retrieve fitted curves
-  
-  fitsim.ww = obj$fit.obj$post.simulations %>% 
-    bind_rows() %>% 
-    group_by(date) %>% 
-    summarize(m  = mean(Wr), 
-              lo = min(Wr), 
-              hi = max(Wr)) %>% 
-    drop_na(m)
-  
-  tmp.cl = obj$fit.obj$post.simulations %>% 
-    bind_rows() %>% 
-    group_by(date) %>% 
-    summarize(m = mean(Y), 
-              lo = min(Y), 
-              hi = max(Y)) %>% 
-    drop_na(m)
-  
-  # Tue Jul 11 13:49:02 2023 ------------------------------
-  # FIXME
-  # This should be redundant now that the 
-  # forecast object returns aggregated forecasts
-  # see function `aggregate_fcst()`
-  
-  # --- Aggregation of clinical reports ---
-  
-  # Aggregate clinical reports for the fitted part
-  fitsim.cl = tmp.cl %>% 
-    aggcl(dt.aggr = obs.cl$date, 
-          vars = c('m','lo','hi')) %>%
-    filter(date <= max(obs.cl$date))
-  
-  # Retrieve the forecast summary
-  sf = fcst.obj$summary.fcst 
-  
-  # set the aggregation dates as 
-  # starting from `asof` and a time interval
-  # equal to the one of the observations:
-  dt = as.numeric(diff(obs.cl$date))[1]
-  dt.aggr.fcst = seq.Date(from = fcst.prm$asof , 
-                          to = max(sf$date), 
-                          by = dt)
-  
-  # Reformat to suit ggplot
-  sf2 = sf %>% 
-    pivot_wider(names_from = qprob, values_from = q, 
-                names_prefix = 'q_')
-  
-  z  = names(sf2)
-  z  = z[grepl('^q_',z)]
-  nz = length(z)
-  
-  # ** WARNING **
-  # HERE WE CALCULATE THE SUM OF THE QUANTILE WHICH IS 
-  # DIFFERENT FROM THE QUANTILE OF THE SUM (WHAT WE REALLY WANT!)
-  # TODO: CHANGE THAT!
-  
-  sf.cl = sf2 %>% 
-    filter(name == 'Y') %>%
-    aggcl(dt.aggr = dt.aggr.fcst, 
-          vars = c('mean', z)) %>% 
-    filter(date > fcst.prm$asof)
-  
-  # - - - Plots - - - 
-  
-  g.cl = ggplot(data = sf.cl,
-                aes(x=date))+ 
-    #
-    # --- Fit
-    #
-    geom_line(data = fitsim.cl, aes(y=m), 
-              color = col.fit, linetype = 'dashed') + 
-    geom_ribbon(data = fitsim.cl, aes(ymin=lo, ymax=hi), 
-                fill=col.fit, alpha = alpha.ribbon / 2) + 
-    geom_point(data = obs.cl, aes(y=obs)) + 
-    #
-    # --- Forecast
-    # 
-    geom_line( aes(y = mean), color= col.fcst, 
-               linetype = 'dotted') + 
-    geom_vline(xintercept = fcst.prm$asof, 
-               linetype = 'dashed', 
-               color = 'gray50') + 
-    annotate(geom = 'text', y=1, x=fcst.prm$asof, 
-             label = fcst.prm$asof, size = 2) + 
-    xaxis + 
-    labs(title = 'Forecast infections', 
-         x = '', y = 'cases')
-  
-  # Add all the ribbons corresponding to each quantile
-  for(k in 1:(nz/2)) {
-    g.cl = add_ribbons_quantiles(g.cl, z, k, 
-                                 col.fcst, alpha.ribbon)
-  }
-  # g.cl
-  
-  # --- Wastewater 
-  
-  sf.ww = filter(sf2, name == 'Wr')
-  
-  g.ww =  sf.ww %>%
-    drop_na(mean) %>%
-    filter(date >= fcst.prm$asof) %>%
-    ggplot(aes(x=date)) + 
-    #
-    # --- Fit
-    # 
-    geom_line(data = fitsim.ww, aes(y=m), 
-              color = col.fit, linetype = 'dashed') + 
-    geom_ribbon(data = fitsim.ww, aes(ymin=lo, ymax=hi), 
-                fill=col.fit, alpha = alpha.ribbon / 2) + 
-    geom_point(data = obs.ww, aes(y=obs)) + 
-    #
-    # --- Forecast
-    #
-    geom_line( aes(y = mean), color= col.fcst, 
-               linetype = 'dotted') + 
-    geom_vline(xintercept = fcst.prm$asof, 
-               linetype = 'dashed', 
-               color = 'gray50') + 
-    annotate(geom = 'text', y = 0, x = fcst.prm$asof, 
-             label = fcst.prm$asof, size = 2) + 
-    labs(title = 'Forecast wastewater concentration', 
-         x = '', y = 'concentration (gcp/ml)') +
-    xaxis 
-  
-  for(k in 1:(nz/2)) {
-    g.ww = add_ribbons_quantiles(g.ww, z, k, 
-                                 col.fcst, alpha.ribbon)
-  }
-  # g.ww
-  
-  if(logscale){
-    g.cl = g.cl + scale_y_log10()
-    g.ww = g.ww + scale_y_log10()
-  }
-  
-  return(list(
-    cl = g.cl, 
-    ww = g.ww
-  ))
+    col.fit  = 'tan2'
+      xaxis = ggplot2::scale_x_date(
+        date_breaks = date_breaks, 
+        date_labels = date_labels)
+      alpha.ribbon = 0.20
+      
+      # - - - - Retrieve fitted curves
+      
+      post.sim = obj$fit.obj$post.simulations
+      
+      sumpost <- function(post.sim, var) {
+        res = post.sim %>%  
+          dplyr::bind_rows() %>% 
+          dplyr::group_by(date) %>% 
+          dplyr::summarize(m  = mean(.data[[var]]), 
+                           lo = min(.data[[var]]), 
+                           hi = max(.data[[var]])) %>% 
+          tidyr::drop_na(m)
+        return(res)
+      }
+      
+      fitsim.ww = sumpost(post.sim, var = 'Wr')
+      fitsim.ha = sumpost(post.sim, var = 'H')
+      fitsim.cl = sumpost(post.sim, var = 'Y') %>% 
+        # Aggregate clinical reports for the fitted part
+        aggcl(dt.aggr = obs.cl$date, 
+              vars = c('m','lo','hi')) %>%
+        dplyr::filter(date <= max(obs.cl$date))
+      
+      # Retrieve the forecast summary
+      sf = fcst.obj$summary.fcst 
+      
+      # set the aggregation dates as 
+      # starting from `asof` and a time interval
+      # equal to the one of the observations:
+      dt = as.numeric(diff(obs.cl$date))[1]
+      dt.aggr.fcst = seq.Date(from = fcst.prm$asof , 
+                              to = max(sf$date), 
+                              by = dt)
+      
+      # Reformat to suit ggplot
+      sf2 = sf %>% 
+        pivot_wider(names_from = qprob, values_from = q, 
+                    names_prefix = 'q_')
+      
+      z  = names(sf2)
+      qlist  = z[grepl('^q_',z)]
+      
+      
+      # ** WARNING **
+      # HERE WE CALCULATE THE SUM OF THE QUANTILE WHICH IS 
+      # DIFFERENT FROM THE QUANTILE OF THE SUM (WHAT WE REALLY WANT!)
+      # TODO: CHANGE THAT!
+      
+      sf.cl = sf2 %>% 
+        filter(name == 'Y') %>%
+        aggcl(dt.aggr = dt.aggr.fcst, 
+              vars = c('mean', qlist)) %>% 
+        filter(date > fcst.prm$asof)
+      
+      sf.ww = filter(sf2, name == 'Wr') %>%
+        drop_na(mean) %>%
+        filter(date >= fcst.prm$asof)
+      
+      sf.ha = filter(sf2, name == 'H') %>%
+        drop_na(mean) %>%
+        filter(date >= fcst.prm$asof)
+      
+      # - - - Plots - - - 
+      
+      g.cl = plot_fitfcst(
+        traj.fit = fitsim.cl, 
+        traj.fcst = sf.cl, 
+        obs = obs.cl, 
+        alpha.ribbon = alpha.ribbon,
+        col.fit = col.fit, 
+        col.fcst = col.fcst, 
+        fcst.prm = fcst.prm, 
+        title = 'Reported cases', ylab = 'cases',
+        qlist = qlist)
+      
+      g.ha = plot_fitfcst(
+        traj.fit = fitsim.ha, 
+        traj.fcst = sf.ha, 
+        obs = obs.ha, 
+        alpha.ribbon = alpha.ribbon,
+        col.fit = col.fit, 
+        col.fcst = col.fcst, 
+        fcst.prm = fcst.prm, 
+        title = 'Hospital admissions', ylab = 'daily adm',
+        qlist = qlist)
+      
+      g.ww = plot_fitfcst(
+        traj.fit = fitsim.ww, 
+        traj.fcst = sf.ww, 
+        obs = obs.ww, 
+        alpha.ribbon = alpha.ribbon,
+        col.fit = col.fit, 
+        col.fcst = col.fcst, 
+        fcst.prm = fcst.prm, 
+        title = 'Wastewater', ylab = 'concentration',
+        qlist = qlist)
+      
+      if(logscale){
+        g.cl = g.cl + scale_y_log10()
+        g.ha = g.ha + scale_y_log10()
+        g.ww = g.ww + scale_y_log10()
+      }
+      
+      return(list(
+        cl = g.cl, 
+        ha = g.ha, 
+        ww = g.ww
+      ))
 }
 
 
@@ -415,12 +442,12 @@ reem_plot_forecast <- function(
 #' @return
 #'
 reem_plot_peak <- function( var,
-    obj         ,
-    date_labels ,
-    logscale    ) {
+                            obj         ,
+                            date_labels ,
+                            logscale    ) {
   
   pk = obj$forecast_peak(var = var)
-
+  
   g.pk = pk %>% ggplot(aes(x=peak.date , y=peak.value)) +
     geom_density_2d_filled(color = 'grey50', alpha = 0.6)+
     theme(panel.grid.minor.y = element_blank(), 
@@ -493,9 +520,9 @@ reem_proba_box <- function(var,
   # var = 'Y.aggr' ; val.lower = 10 ; val.upper = 70
   # date.lower = ymd('2022-03-01')
   # date.upper = ymd('2022-03-20')
- 
+  
   is.aggregated = grepl('\\.aggr$', var)
-   
+  
   fs = fcst$simfwd
   if(is.aggregated) fs = fcst$simfwd.aggr[[var]]
   n = length(fs)
@@ -552,7 +579,7 @@ reem_get_fcst_density <- function(
   df = data.frame(date = date.future)
   
   for(i in seq_along(date.future)){
-   # print(i) # DEBUG
+    # print(i) # DEBUG
     fcst.vals = extract_helper(
       i = i, 
       fcst = fcst, 

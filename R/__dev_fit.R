@@ -67,6 +67,9 @@ if(0){
              obs.ww = obs.ww,
              is.fitted = FALSE)
   
+  g.obs = plot_obs(obj)
+  g.obs
+  
   prms$R0 <- 2.5
   
   # ---- Fit ----
@@ -91,6 +94,8 @@ if(0){
   )
   
   foo = obj$fit_abc(prm.abc, prms.to.fit)  
+  
+  saveRDS(obj, file = 'debug-fit.rds')
   
   gg = obj$plot_fit()
   gg$all

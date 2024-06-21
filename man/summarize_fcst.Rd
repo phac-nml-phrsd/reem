@@ -4,7 +4,7 @@
 \alias{summarize_fcst}
 \title{Calculate quantiles of forecast trajectories}
 \usage{
-summarize_fcst(simfwd, prm.fcst, vars)
+summarize_fcst(simfwd, prm.fcst, vars = NULL)
 }
 \arguments{
 \item{simfwd}{Object of forecast trajectories.}
@@ -13,8 +13,7 @@ summarize_fcst(simfwd, prm.fcst, vars)
 In particular, must contain an element named `ci`
 specifying the quantiles probabilities to calculate.}
 
-\item{vars}{String vector. Names of the variables
-forecasted to calculate the quantiles.}
+\item{vars}{String vector. If not NULL (default), overrides `prm.fcst$vars.to.fcst`.}
 }
 \value{
 Dataframe of quantiles.
