@@ -37,11 +37,14 @@ test_that("fit_abc works", {
   simepi  = obj0$simulate_epi(deterministic = FALSE)
   obs.cl = dplyr::filter(simepi$obs.cl, date <= asof)
   obs.ww = dplyr::filter(simepi$obs.ww, date <= asof)
+  obs.ha = dplyr::filter(simepi$obs.ha, date <= asof)
   
   # mess with the dates such that they 
   # do not perfectly align with the simulation
   obs.cl$t    <- obs.cl$t + 1
   obs.cl$date <- obs.cl$date + 1
+  obs.ha$t    <- obs.ha$t + 1
+  obs.ha$date <- obs.ha$date + 1
   obs.ww$t    <- obs.ww$t + 1
   obs.ww$date <- obs.ww$date + 1
   
@@ -53,6 +56,7 @@ test_that("fit_abc works", {
              name = 'foo', 
              prms = prms, 
              obs.cl = obs.cl,
+             obs.ha = obs.ha,
              obs.ww = obs.ww,
              is.fitted = FALSE)
   
@@ -64,6 +68,7 @@ test_that("fit_abc works", {
     p.abc = 0.02, #1e-2,
     n.cores = 1, #min(12, parallel::detectCores() - 1),
     use.cl = 1, 
+    use.ha = 1,
     use.ww = 1,
     err.type = 'L2'
   )
