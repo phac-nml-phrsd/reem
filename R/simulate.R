@@ -304,7 +304,7 @@ reem_simulate_epi <- function(obj,
       obs  = as.integer(aggregation)) 
   
   # Hospital admissions
-  sim.obs.ha = select(sim, t, date, obs = H)
+  sim.obs.ha = dplyr::select(sim, t, date, obs = H)
   
   # Extract wastewater observations
   sim.obs.ww = sim %>% 
