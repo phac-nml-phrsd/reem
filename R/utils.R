@@ -200,7 +200,7 @@ prm_model_example <- function() {
     t.obs.cl = seq(7,280, by = 7),
     t.obs.ww = seq(3,200, by=3),
     i0prop  = 1e-3,
-    date.start = date.start,
+    date.start = lubridate::ymd('2000-01-01'),
     start.delta = 0, 
     R0      = 1.5, # Basic reproduction number
     N       = 9999, # population size
