@@ -257,7 +257,7 @@ add_ribbons_quantiles <- function(g, qlist, k,
 plot_fitfcst <- function(traj.fit, traj.fcst, obs, 
                          alpha.ribbon, col.fit, col.fcst, 
                          fcst.prm, 
-                         title, ylab, qlist) {
+                         title, ylab, qlist, xaxis) {
   
   g = ggplot(data = traj.fcst, aes(x=date))+ 
     # --- Fit
@@ -289,6 +289,25 @@ plot_fitfcst <- function(traj.fit, traj.fcst, obs,
 }
 
 
+#' Helper function
+#'
+#' @param post.sim 
+#' @param var 
+#'
+#' @return dataframe
+#' @keywords internal
+#'
+#' 
+sumpost <- function(post.sim, var) {
+  res = post.sim %>%  
+    dplyr::bind_rows() %>% 
+    dplyr::group_by(date) %>% 
+    dplyr::summarize(m  = mean(.data[[var]]), 
+                     lo = min(.data[[var]]), 
+                     hi = max(.data[[var]])) %>% 
+    tidyr::drop_na(m)
+  return(res)
+}
 
 #' Plot forecasts
 #'
@@ -312,123 +331,115 @@ reem_plot_forecast <- function(
   fcst.obj = obj$fcst.obj
   fcst.prm = obj$fcst.prm
   
-  # - - - Cosmetics  
+  # Cosmetics  
   
-  col.fcst = 'steelblue2'
-    col.fit  = 'tan2'
-      xaxis = ggplot2::scale_x_date(
-        date_breaks = date_breaks, 
-        date_labels = date_labels)
-      alpha.ribbon = 0.20
-      
-      # - - - - Retrieve fitted curves
-      
-      post.sim = obj$fit.obj$post.simulations
-      
-      sumpost <- function(post.sim, var) {
-        res = post.sim %>%  
-          dplyr::bind_rows() %>% 
-          dplyr::group_by(date) %>% 
-          dplyr::summarize(m  = mean(.data[[var]]), 
-                           lo = min(.data[[var]]), 
-                           hi = max(.data[[var]])) %>% 
-          tidyr::drop_na(m)
-        return(res)
-      }
-      
-      fitsim.ww = sumpost(post.sim, var = 'Wr')
-      fitsim.ha = sumpost(post.sim, var = 'H')
-      fitsim.cl = sumpost(post.sim, var = 'Y') %>% 
-        # Aggregate clinical reports for the fitted part
-        aggcl(dt.aggr = obs.cl$date, 
-              vars = c('m','lo','hi')) %>%
-        dplyr::filter(date <= max(obs.cl$date))
-      
-      # Retrieve the forecast summary
-      sf = fcst.obj$summary.fcst 
-      
-      # set the aggregation dates as 
-      # starting from `asof` and a time interval
-      # equal to the one of the observations:
-      dt = as.numeric(diff(obs.cl$date))[1]
-      dt.aggr.fcst = seq.Date(from = fcst.prm$asof , 
-                              to = max(sf$date), 
-                              by = dt)
-      
-      # Reformat to suit ggplot
-      sf2 = sf %>% 
-        pivot_wider(names_from = qprob, values_from = q, 
-                    names_prefix = 'q_')
-      
-      z  = names(sf2)
-      qlist  = z[grepl('^q_',z)]
-      
-      
-      # ** WARNING **
-      # HERE WE CALCULATE THE SUM OF THE QUANTILE WHICH IS 
-      # DIFFERENT FROM THE QUANTILE OF THE SUM (WHAT WE REALLY WANT!)
-      # TODO: CHANGE THAT!
-      
-      sf.cl = sf2 %>% 
-        filter(name == 'Y') %>%
-        aggcl(dt.aggr = dt.aggr.fcst, 
-              vars = c('mean', qlist)) %>% 
-        filter(date > fcst.prm$asof)
-      
-      sf.ww = filter(sf2, name == 'Wr') %>%
-        drop_na(mean) %>%
-        filter(date >= fcst.prm$asof)
-      
-      sf.ha = filter(sf2, name == 'H') %>%
-        drop_na(mean) %>%
-        filter(date >= fcst.prm$asof)
-      
-      # - - - Plots - - - 
-      
-      g.cl = plot_fitfcst(
-        traj.fit = fitsim.cl, 
-        traj.fcst = sf.cl, 
-        obs = obs.cl, 
-        alpha.ribbon = alpha.ribbon,
-        col.fit = col.fit, 
-        col.fcst = col.fcst, 
-        fcst.prm = fcst.prm, 
-        title = 'Reported cases', ylab = 'cases',
-        qlist = qlist)
-      
-      g.ha = plot_fitfcst(
-        traj.fit = fitsim.ha, 
-        traj.fcst = sf.ha, 
-        obs = obs.ha, 
-        alpha.ribbon = alpha.ribbon,
-        col.fit = col.fit, 
-        col.fcst = col.fcst, 
-        fcst.prm = fcst.prm, 
-        title = 'Hospital admissions', ylab = 'daily adm',
-        qlist = qlist)
-      
-      g.ww = plot_fitfcst(
-        traj.fit = fitsim.ww, 
-        traj.fcst = sf.ww, 
-        obs = obs.ww, 
-        alpha.ribbon = alpha.ribbon,
-        col.fit = col.fit, 
-        col.fcst = col.fcst, 
-        fcst.prm = fcst.prm, 
-        title = 'Wastewater', ylab = 'concentration',
-        qlist = qlist)
-      
-      if(logscale){
-        g.cl = g.cl + scale_y_log10()
-        g.ha = g.ha + scale_y_log10()
-        g.ww = g.ww + scale_y_log10()
-      }
-      
-      return(list(
-        cl = g.cl, 
-        ha = g.ha, 
-        ww = g.ww
-      ))
+  xaxis = ggplot2::scale_x_date(
+    date_breaks = date_breaks, 
+    date_labels = date_labels)
+  alpha.ribbon = 0.20
+  
+  col.fcst = "steelblue" ; col.fit = "tan3"
+    
+  # - - - - Retrieve fitted curves
+  
+  post.sim = obj$fit.obj$post.simulations
+  
+  fitsim.ww = sumpost(post.sim, var = 'Wr')
+  fitsim.ha = sumpost(post.sim, var = 'H')
+  fitsim.cl = sumpost(post.sim, var = 'Y') %>% 
+    # Aggregate clinical reports for the fitted part
+    aggcl(dt.aggr = obs.cl$date, 
+          vars = c('m','lo','hi')) %>%
+    dplyr::filter(date <= max(obs.cl$date))
+  
+  # Retrieve the forecast summary
+  sf = fcst.obj$summary.fcst 
+  
+  # set the aggregation dates as 
+  # starting from `asof` and a time interval
+  # equal to the one of the observations:
+  dt = as.numeric(diff(obs.cl$date))[1]
+  dt.aggr.fcst = seq.Date(from = fcst.prm$asof , 
+                          to = max(sf$date), 
+                          by = dt)
+  
+  # Reformat to suit ggplot
+  sf2 = sf %>% 
+    pivot_wider(names_from = qprob, values_from = q, 
+                names_prefix = 'q_')
+  
+  z  = names(sf2)
+  qlist  = z[grepl('^q_',z)]
+  
+  
+  # ** WARNING **
+  # HERE WE CALCULATE THE SUM OF THE QUANTILE WHICH IS 
+  # DIFFERENT FROM THE QUANTILE OF THE SUM (WHAT WE REALLY WANT!)
+  # TODO: CHANGE THAT!
+  
+  sf.cl = sf2 %>% 
+    filter(name == 'Y') %>%
+    aggcl(dt.aggr = dt.aggr.fcst, 
+          vars = c('mean', qlist)) %>% 
+    filter(date > fcst.prm$asof)
+  
+  sf.ww = filter(sf2, name == 'Wr') %>%
+    drop_na(mean) %>%
+    filter(date >= fcst.prm$asof)
+  
+  sf.ha = filter(sf2, name == 'H') %>%
+    drop_na(mean) %>%
+    filter(date >= fcst.prm$asof)
+  
+  # - - - Plots - - - 
+  
+  g.cl = plot_fitfcst(
+    traj.fit = fitsim.cl, 
+    traj.fcst = sf.cl, 
+    obs = obs.cl, 
+    alpha.ribbon = alpha.ribbon,
+    col.fit = col.fit, 
+    col.fcst = col.fcst, 
+    fcst.prm = fcst.prm, 
+    title = 'Reported cases', ylab = 'cases',
+    qlist = qlist, 
+    xaxis = xaxis)
+  
+  g.ha = plot_fitfcst(
+    traj.fit = fitsim.ha, 
+    traj.fcst = sf.ha, 
+    obs = obs.ha, 
+    alpha.ribbon = alpha.ribbon,
+    col.fit = col.fit, 
+    col.fcst = col.fcst, 
+    fcst.prm = fcst.prm, 
+    title = 'Hospital admissions', ylab = 'daily adm',
+    qlist = qlist,
+    xaxis = xaxis)
+  
+  g.ww = plot_fitfcst(
+    traj.fit = fitsim.ww, 
+    traj.fcst = sf.ww, 
+    obs = obs.ww, 
+    alpha.ribbon = alpha.ribbon,
+    col.fit = col.fit, 
+    col.fcst = col.fcst, 
+    fcst.prm = fcst.prm, 
+    title = 'Wastewater', ylab = 'concentration',
+    qlist = qlist,
+    xaxis = xaxis)
+  
+  if(logscale){
+    g.cl = g.cl + scale_y_log10()
+    g.ha = g.ha + scale_y_log10()
+    g.ww = g.ww + scale_y_log10()
+  }
+  
+  return(list(
+    cl = g.cl, 
+    ha = g.ha, 
+    ww = g.ww
+  ))
 }
 
 
