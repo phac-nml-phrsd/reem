@@ -59,3 +59,30 @@ plot_epi <- function(simepi) {
   g = list(populations = g.pop, wastewater = g.ww)
   return(g)
 }
+
+
+
+#' Plot observed data associated with a `reem` object.
+#'
+#' @param obj A `reem` object.
+#'
+#' @return A ggplot object. 
+#' @export
+#'
+#' @examples
+#' 
+plot_obs <- function(obj) {
+  tmp = list() 
+  tmp[['cl']] = obj$obs.cl |> mutate(type = 'case')
+  tmp[['ha']] = obj$obs.ha |> mutate(type = 'hosp. adm.')
+  tmp[['ww']] = obj$obs.ww |> mutate(type = 'ww')
+  df = bind_rows(tmp)  
+  
+  g = df |> ggplot(aes(x=date, y=obs)) + 
+    geom_step(color = 'grey60') + 
+    geom_point() + 
+    facet_wrap(~type, scales = 'free_y', ncol = 1) + 
+    labs(title = 'Observed data', y = 'value')
+  return(g)
+}
+
