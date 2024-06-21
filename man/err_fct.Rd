@@ -6,10 +6,13 @@
 \usage{
 err_fct(
   cl.i,
+  ha.i,
   ww.i,
   obs.cl,
+  obs.ha,
   obs.ww,
   use.cl,
+  use.ha,
   use.ww,
   err.type = "rel",
   do.plot = FALSE
