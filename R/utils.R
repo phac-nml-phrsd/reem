@@ -138,7 +138,7 @@ aggregate_time <- function(df,
   idx.tmp = df$dt %in% dt.aggr 
   if(sum(idx.tmp)==0) {
     stop('The aggregation times/dates are not found in the simulation times.\n',
-         '(clinical observations dates and/or start date are likely mispecified)')
+         '(observations dates and/or start date are likely mispecified)')
   }
   idx     = cumsum(idx.tmp) + 1   # `+1` because we don't want index `0` in vectors 
   # need to shift by one 

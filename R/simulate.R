@@ -59,10 +59,6 @@ create_obs_if_missing <- function(obj, type) {
     obs_type = theobs
   }
   
-  # same times as when data is observed:
-  if(type == 'cl') date.obs.cl = obs_type$date
-  if(type == 'ha') date.obs.ha = obs_type$date
-  
   # if observation _times_ are not defined
   times.def = 't' %in% names(obs_type)
   if(! times.def){
@@ -71,11 +67,12 @@ create_obs_if_missing <- function(obj, type) {
   if(times.def) t.obs.type = obs_type$t
   
   if(type == 'cl')  prms = c(prms, 
-                             t.obs.cl    = list(t.obs.cl),
-                             date.obs.cl = list(date.obs.cl))
+                             t.obs.cl    = list(t.obs.type),
+                             date.obs.cl = list(obs_type$date))
+  
   if(type == 'ha')  prms = c(prms, 
-                             t.obs.ha    = list(t.obs.ha),
-                             date.obs.ha = list(date.obs.ha))
+                             t.obs.ha    = list(t.obs.type),
+                             date.obs.ha = list(obs_type$date))
   
   warning('Observation times/dates for ',
           ifelse(type == 'cl', 'clinical reports', 'hospital admission'),
@@ -292,7 +289,25 @@ reem_simulate <- function(prms, deterministic) {
   return(df)  
 }
 
-
+#' Helper function to aggregate simulated observations
+#' @keywords internal
+#' 
+helper_aggreg <- function(sim, type, dateobs, prms) {
+  
+  if(type == 'cl') v = 'Y'
+  if(type == 'ha') v = 'H'
+  
+  a = aggregate_time(
+    df       = sim, 
+    dt.aggr  = dateobs, 
+    var.name = v) %>% 
+    dplyr::transmute(
+      date, 
+      t    = as.integer(date - prms$date.start),
+      obs  = as.integer(aggregation))
+  
+  return(a)
+}
 
 #' Simulate a full epidemic with a REEM
 #' including clinical and wastewater "observations".
@@ -311,13 +326,7 @@ reem_simulate_epi <- function(obj,
   
   prms = obj$prms
   
-  # For simulations (TODO: change that...)
-  if(!is.null(prms$t.obs.cl)) {
-    t.obs.cl    = prms$t.obs.cl
-    date.obs.cl = prms$date.start + t.obs.cl
-  }
-  
-   # Simulate epidemic to generate data
+  # Simulate epidemic to generate data
   sim = reem_simulate(prms, deterministic)
   
   sim = dplyr::mutate(sim, date = prms$date.start + t)
@@ -328,19 +337,20 @@ reem_simulate_epi <- function(obj,
   #  - wastewater data
   # (they may not be observed on the same schedule)
   
+  date.obs.cl = prms$date.start + prms$t.obs.cl
+  date.obs.ha = prms$date.start + prms$t.obs.ha
   
   # Aggregate clinical reports
-  sim.obs.cl = aggregate_time(
-    df       = sim, 
-    dt.aggr  = date.obs.cl, 
-    var.name = 'Y') %>% 
-    dplyr::transmute(
-      date, 
-      t    = as.integer(date - prms$date.start),
-      obs  = as.integer(aggregation)) 
+  sim.obs.cl = helper_aggreg(sim = sim, 
+                             type = 'cl', 
+                             dateobs = date.obs.cl, 
+                             prms = prms)
   
-  # Hospital admissions
-  sim.obs.ha = dplyr::select(sim, t, date, obs = H)
+  # Aggregate hospital admissions
+  sim.obs.ha = helper_aggreg(sim = sim, 
+                             type = 'ha', 
+                             dateobs = date.obs.ha, 
+                             prms = prms)
   
   # Extract wastewater observations
   sim.obs.ww = sim %>% 
@@ -349,7 +359,7 @@ reem_simulate_epi <- function(obj,
                   !is.na(Wr)) %>%   # filtering out NA keeps observed times only.
     dplyr::rename(obs = Wr) %>%
     dplyr::mutate(date = prms$date.start + t) %>%
-    dplyr::select(t, date, obs)
+    dplyr::select(date, t, obs)
   
   return(list(
     sim    = sim, 

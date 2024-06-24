@@ -27,7 +27,7 @@ plot_epi <- function(simepi) {
   col.pop = c(`S: susceptible` = 'blue2', 
               `I: incidence` = 'red3', 
               `A: aggregated incidence` = 'gold', 
-              `Y: observed aggr. incidence` = 'gold4',
+              `Y: observed aggr. incidence` = 'green4',
               `H: daily hosp admissions` = 'black')
   
   g.pop = sim.pop %>% 
@@ -37,7 +37,7 @@ plot_epi <- function(simepi) {
     ggplot2::scale_color_manual(values = col.pop) +
     ggplot2::theme_bw()+
     ggplot2::theme(panel.grid.minor.y = element_blank() ) + 
-    ggplot2::labs(title = 'Population')
+    ggplot2::labs(title = 'Populations Simulated')
   # g.pop 
   
   # Wastewater
@@ -53,10 +53,32 @@ plot_epi <- function(simepi) {
   g.ww = sim.ww %>% 
     ggplot2::ggplot(ggplot2::aes(x=date, y = value, color = variable)) + 
     ggplot2::geom_line(linewidth = 1) + 
+    ggplot2::geom_point(data = dplyr::filter(sim.ww, name=='Wr')) + 
     ggplot2::theme_bw()+
+    ggplot2::scale_color_manual(values = c('tan4', 'tan', 'black')) +
     ggplot2::labs(title = 'Pathogen concentration in wastewater')
+  # g.ww
   
-  g = list(populations = g.pop, wastewater = g.ww)
+  # Observations 
+  
+  obs = rbind(
+    dplyr::mutate(simepi$obs.cl, type = 'clinical reports'),
+    dplyr::mutate(simepi$obs.ha, type = 'hosp. admissions'),
+    dplyr::mutate(simepi$obs.ww, type = 'wastewater')
+    )
+  
+  g.obs = obs |> 
+    ggplot(aes(x=date, y=obs)) + 
+    geom_step(color = 'grey') + 
+    geom_point() +  
+    ggplot2::theme_bw()+
+    facet_wrap(~type, ncol = 1, scales = 'free_y') + 
+    labs(title = 'Observations', x='', y='value')
+  
+  g = list(
+    populations = g.pop, 
+    wastewater = g.ww,
+    observations = g.obs)
   return(g)
 }
 

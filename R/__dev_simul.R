@@ -16,7 +16,9 @@ if(0){
     last.obs = 299,  # last observation time (must be < horizon)
     B       = rep(1,300), # Behavior change
     freq.obs.ww = 3, # average frequency of ww observation
+    # Define the schedule of `observations`
     t.obs.cl = seq(7,280, by = 7),
+    t.obs.ha = seq(12,280, by = 5),
     t.obs.ww = seq(3,200, by=3),
     i0prop  = 1e-3,
     date.start = date.start,
