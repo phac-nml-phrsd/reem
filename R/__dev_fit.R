@@ -6,18 +6,20 @@ if(0){
   library(ggplot2)
   library(lubridate)
   library(reem)
-  # devtools::load_all() 
+  devtools::load_all()
   
   date.start = ymd('2022-01-01')
   asof       = ymd('2022-03-01') 
+  hz = 180
   
   prms0 = list(
-    horizon = 300,  # horizon of the simulation
-    last.obs = 299,  # last observation time (must be < horizon)
-    B       = rep(1,300), # Behavior change
+    horizon = hz,  # horizon of the simulation
+    last.obs = hz-1,  # last observation time (must be < horizon)
+    B       = rep(1,hz), # Behavior change
     freq.obs.ww = 3, # average frequency of ww observation
-    t.obs.cl = seq(7,280, by = 7),
-    t.obs.ww = seq(3,200, by=3),
+    t.obs.cl = seq(7,hz-2, by = 7),
+    t.obs.ha = seq(12,hz-2, by = 20),
+    t.obs.ww = seq(3,hz-2, by=3),
     i0prop  = 1e-3,
     date.start = date.start,
     start.delta = 0, 
@@ -50,14 +52,11 @@ if(0){
   obs.ha = filter(simepi$obs.ha, date <= asof)
   obs.ww = filter(simepi$obs.ww, date <= asof)
   
-  # mess with the dates such that they 
-  # do not perfectly align with the simulation
-  obs.cl$t <- obs.cl$t + 1
-  obs.cl$date <- obs.cl$date + 1
   
   # Attached simulated data to new `reem` object:
   prms = prms0
   prms$t.obs.cl <- NULL
+  prms$t.obs.ha <- NULL
   prms$t.obs.ww <- NULL
   obj  = new('reem', 
              name = 'foo2', 
@@ -67,6 +66,10 @@ if(0){
              obs.ww = obs.ww,
              is.fitted = FALSE)
   
+  obj$print_prms()
+ 
+  foo = obj$simulate_epi(deterministic = F)
+   
   g.obs = plot_obs(obj)
   g.obs
   
@@ -75,10 +78,10 @@ if(0){
   # ---- Fit ----
   
   prm.abc = list(
-    n.abc = 2e3,
+    n.abc = 1e3,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
     p.abc = 0.01, #1e-2,
-    n.cores = 6, #min(12, parallel::detectCores() - 1),
+    n.cores = 1, #min(12, parallel::detectCores() - 1),
     use.cl = 1, 
     use.ha = 1, 
     use.ww = 1,

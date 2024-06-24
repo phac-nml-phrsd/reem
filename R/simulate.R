@@ -27,7 +27,7 @@ check_date_start <- function(obj) {
 #' Helper function
 #' @keywords internal
 #' 
-create_obs_if_missing <- function(obj, type) {
+create_obs_if_missing <- function(obj, type, verbose) {
   
   # DEBUG:  type = 'cl'
   
@@ -39,6 +39,9 @@ create_obs_if_missing <- function(obj, type) {
   # If no observations were attached, 
   # create an empty one.
   if(n == 0){
+    
+    if(verbose) message('no existing ',type,' observations, creating empty one...')
+    
     h = prms$horizon
     obs_type = data.frame(
       t    = 0:(h-1), 
@@ -56,6 +59,7 @@ create_obs_if_missing <- function(obj, type) {
   
   # If observations attached, use this one
   if(n > 0){
+    if(verbose) message('Using existing ',type,' observations for schedule...')
     obs_type = theobs
   }
   
@@ -74,10 +78,10 @@ create_obs_if_missing <- function(obj, type) {
                              t.obs.ha    = list(t.obs.type),
                              date.obs.ha = list(obs_type$date))
   
-  warning('Observation times/dates for ',
-          ifelse(type == 'cl', 'clinical reports', 'hospital admission'),
-          ' data not specified: ',
-          'assuming observation schedule at every time step.')
+  if(verbose){
+    message('type = ', type, '  ==> prms$t.obs.cl = ', prms$t.obs.cl)
+    message('type = ', type, '  ==> prms$t.obs.ha = ', prms$t.obs.ha)
+  }
   
   return(prms)
 }
@@ -89,11 +93,10 @@ create_obs_if_missing <- function(obj, type) {
 #'
 #' @return
 #'
-check_obs_schedule <- function(obj) {
- 
+check_obs_schedule <- function(obj, verbose = 0) {
+  
   prms = obj$prms
-
-   
+  
   # If observation times/dates not specified:
   # - if `[t/date].obs.xx` exists, set obs date/times to the ones already existing of this object.
   # - if `[t/date].obs.xx` does not exist, assume observation at every time step.
@@ -103,29 +106,51 @@ check_obs_schedule <- function(obj) {
   miss.obs.dt.ha = is.null(prms$t.obs.ha) & is.null(prms$date.obs.ha)
   miss.obs.dt.ww = is.null(prms$t.obs.ww) & is.null(prms$date.obs.ww)
   
+  if(verbose){ # DEBUG 
+    message('miss.obs.dt.cl = ', miss.obs.dt.cl)
+    message('miss.obs.dt.ha = ', miss.obs.dt.ha)
+    message('miss.obs.dt.ww = ', miss.obs.dt.ww)
+  }
+  
   if(is.null(prms$date.start)) stop('`date.start` must be specified. ABORTING!')
   if(is.null(prms$horizon)) stop('`horizon` must be specified. ABORTING!')
   
   # -- Wastewater data
   
   if(miss.obs.dt.ww){
+    
+    has.obs.ww = !is.null(obj$obs.ww)
+    
+    if(verbose) message('has.obs.ww = ', has.obs.ww)
+    
+    # if observations specified, use their times and dates
+    if(has.obs.ww){
+      prms = c(prms, 
+               t.obs.ww    = list(obj$obs.ww$t),
+               date.obs.ww = list(obj$obs.ww$date))
+      
+      if(verbose) message('prms$t.obs.ww = ', prms$t.obs.ww)
+    }
+    
     # If not specified, then assumed 
     # observed at all time steps:
-    date.obs.ww = prms$date.start + 1:prms$horizon
-    t.obs.ww    = 1:prms$horizon
-    
-    prms = c(prms, 
-             t.obs.ww    = list(t.obs.ww),
-             date.obs.ww = list(date.obs.ww))
-    
-    warning('Observation times/dates for wastewater data not specified: ',
-            'assuming ww observation schedule at every time step.')
+    if(! has.obs.ww){
+      date.obs.ww = prms$date.start + 1:prms$horizon
+      t.obs.ww    = 1:prms$horizon
+      
+      prms = c(prms, 
+               t.obs.ww    = list(t.obs.ww),
+               date.obs.ww = list(date.obs.ww))
+      
+      warning('Observation times/dates for wastewater data not specified: ',
+              'assuming ww observation schedule at every time step.')
+    }
   }
   
   # -- Clinical data
   
-  if(miss.obs.dt.cl) prms = create_obs_if_missing(obj, type = 'cl') 
-  if(miss.obs.dt.ha) prms = create_obs_if_missing(obj, type = 'ha') 
+  if(miss.obs.dt.cl) prms = create_obs_if_missing(obj, type = 'cl', verbose) 
+  if(miss.obs.dt.ha) prms = create_obs_if_missing(obj, type = 'ha', verbose) 
   
   
   return(prms)
@@ -285,7 +310,7 @@ reem_simulate <- function(prms, deterministic) {
   df$Wr <- NA
   idx = df$t %in% t.obs.ww
   df$Wr[idx] <- Wr
-   
+  
   return(df)  
 }
 
@@ -322,7 +347,7 @@ reem_simulate_epi <- function(obj,
   
   # -- Checks 
   obj$prms = check_date_start(obj)
-  obj$prms = check_obs_schedule(obj)
+  obj$prms = check_obs_schedule(obj, verbose = 1)
   
   prms = obj$prms
   

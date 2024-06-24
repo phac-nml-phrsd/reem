@@ -308,6 +308,7 @@ calc_dist_parallel <- function(i,
     obj$prms = set_I_init(obj$prms)
   }
   
+  # overwrite with priors values:
   obj$prms[names(pp)] <- pp
   
   x = reem_traj_dist_obs(
