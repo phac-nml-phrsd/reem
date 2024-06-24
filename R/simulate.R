@@ -24,6 +24,67 @@ check_date_start <- function(obj) {
   return(prms)
 }
 
+#' Helper function
+#' @keywords internal
+#' 
+create_obs_if_missing <- function(obj, type) {
+  
+  # DEBUG:  type = 'cl'
+  
+  thetype = ifelse(type == 'cl', 'obs.cl', 'obs.ha')
+  
+  theobs = obj[[thetype]]
+  n  = nrow(theobs)
+  
+  # If no observations were attached, 
+  # create an empty one.
+  if(n == 0){
+    h = prms$horizon
+    obs_type = data.frame(
+      t    = 0:(h-1), 
+      date = lubridate::ymd('2020-01-01') + 0:(h-1), 
+      inc  = NA)
+    prms[[thetype]] = obs_type
+    
+    warning('No ', 
+            ifelse(type == 'cl', 'clinical reports', 'hospital admission'),
+            ' observations (`prms$',
+            ifelse(type == 'cl', 'obs.cl', 'obs.ha'),
+            '`) attached to the REEM object. ',
+            'Setting an empty one. ')
+  }
+  
+  # If observations attached, use this one
+  if(n > 0){
+    obs_type = theobs
+  }
+  
+  # same times as when data is observed:
+  if(type == 'cl') date.obs.cl = obs_type$date
+  if(type == 'ha') date.obs.ha = obs_type$date
+  
+  # if observation _times_ are not defined
+  times.def = 't' %in% names(obs_type)
+  if(! times.def){
+    t.obs.type = as.integer(obs_type$date - prms$date.start)
+  }
+  if(times.def) t.obs.type = obs_type$t
+  
+  if(type == 'cl')  prms = c(prms, 
+                             t.obs.cl    = list(t.obs.cl),
+                             date.obs.cl = list(date.obs.cl))
+  if(type == 'ha')  prms = c(prms, 
+                             t.obs.ha    = list(t.obs.ha),
+                             date.obs.ha = list(date.obs.ha))
+  
+  warning('Observation times/dates for ',
+          ifelse(type == 'cl', 'clinical reports', 'hospital admission'),
+          ' data not specified: ',
+          'assuming observation schedule at every time step.')
+  
+  return(prms)
+}
+
 
 #' Check observations (data) times
 #'
@@ -34,6 +95,7 @@ check_date_start <- function(obj) {
 check_obs_schedule <- function(obj) {
  
   prms = obj$prms
+
    
   # If observation times/dates not specified:
   # - if `[t/date].obs.xx` exists, set obs date/times to the ones already existing of this object.
@@ -41,12 +103,14 @@ check_obs_schedule <- function(obj) {
   
   # Check if dates or times are missing as input 
   miss.obs.dt.cl = is.null(prms$t.obs.cl) & is.null(prms$date.obs.cl)
+  miss.obs.dt.ha = is.null(prms$t.obs.ha) & is.null(prms$date.obs.ha)
   miss.obs.dt.ww = is.null(prms$t.obs.ww) & is.null(prms$date.obs.ww)
   
   if(is.null(prms$date.start)) stop('`date.start` must be specified. ABORTING!')
   if(is.null(prms$horizon)) stop('`horizon` must be specified. ABORTING!')
   
   # -- Wastewater data
+  
   if(miss.obs.dt.ww){
     # If not specified, then assumed 
     # observed at all time steps:
@@ -62,38 +126,10 @@ check_obs_schedule <- function(obj) {
   }
   
   # -- Clinical data
-  if(miss.obs.dt.cl){
-    
-    if(nrow(obj$obs.cl) == 0){
-      h = prms$horizon
-      obscl = data.frame(t = 0:(h-1), 
-                         date = lubridate::ymd('2020-01-01')+0:(h-1), 
-                         inc = NA)
-      prms$obs.cl = obscl
-      warning('No clinical observations (`prms$obs.cl`) attached to the REEM object. ',
-              'Setting an empty one. ')
-    }
-    if(nrow(obj$obs.cl) > 0){
-      obscl = obj$obs.cl
-    }
-    
-    # same times as when clinical is observed:
-    date.obs.cl = obscl$date
-    
-    # if clinical observation _times_ are not defined
-    times.cl.def = 't' %in% names(obscl)
-    if(! times.cl.def){
-      t.obs.cl = as.integer(obscl$date - prms$date.start)
-    }
-    if(times.cl.def) t.obs.cl = obscl$t
-    
-    prms = c(prms, 
-             t.obs.cl    = list(t.obs.cl),
-             date.obs.cl = list(date.obs.cl))
-    
-    warning('Observation times/dates for clinical data not specified: ',
-            'assuming clinical observation schedule at every time step.')
-  }
+  
+  if(miss.obs.dt.cl) prms = create_obs_if_missing(obj, type = 'cl') 
+  if(miss.obs.dt.ha) prms = create_obs_if_missing(obj, type = 'ha') 
+  
   
   return(prms)
 }
