@@ -68,10 +68,13 @@ The intrinsic generation interval distribution of the pathogen is noted $g$.
 The infection process is described by the following discrete-time equations:
 
 \begin{eqnarray}
-I(t) & = & \Ro \left(\frac{S(t)}{N}\right)^{\exp(\alpha)} B(t) \sum_{k=1}^{t-1} g(k)\, I(t-k) \\
+j(t) & = & \Ro \left(\frac{S(t)}{N}\right)^{\exp(\alpha)} B(t) \sum_{k=1}^{t-1} g(k)\, j(t-k) \\
+I(t) & \sim & \mathrm{Pois}(j(t))   \\
 S(t) & = & \max(0, S(t-1) - I(t))
 \end{eqnarray}
 
+The time-dependent variable $j(t)$ represents the \emph{mean} incidence driven by a \emph{deterministic} pathogen transmission process.
+The actual incidence at time $t$, $I(t)$, is simply drawn from a Poisson distribution with mean $j(t)$.
 The parameter $\alpha$ is a real number affecting the tail-end of the epidemic curve and has been asociated with a simple way to model transmission heterogeneity. When $\alpha=0$, contacts are modelled as homogeneous (like in the canonical ODE-based SIR model). 
 The deterministic function $B$ is introduced to model exogen changes in the transmission rate (for example, to represent public health interventions). When $B(t) = 1$ for all times $t$, there is nochange in the intrinsic transmission rate and the epidemic follows its ``natural'' course. 
 
@@ -114,17 +117,18 @@ W_r(t) = \mathcal{N}(W_p(t), \sigma_w)
 
 Like fecal shedding in wastewater, the number of hospital admissions is modelled as simply resulting from incidence, with a time lag. 
 More precisely, we define $h$ as the average fraction of infected individuals that will be hospitalized because of the severity of their infection. 
-The function $h$ is the distribution of the time lags between infection and hospital admission. In other words, $h(\tau)$ is the proportion of individuals infected $\tau$ days ago that will be hospitalized that will be hospitalized today. 
+The function $h$ is the distribution of the time lags between infection and hospital admission. In other words, $h(\tau)$ is the proportion of individuals infected $\tau$ days ago that will be hospitalized today. 
 Hence, the number of hospital admissions on day $t$ is given by:
 \begin{equation}
 H(t) = \sum_{k=1}^{t-1} h(k) \, I(t-k)
 \end{equation}
 
-Note that a cohort of infected individuals infected at the same time in the past will contribute at most a fraction $\sum_{k>0} h(k)$ of its size to hospital admissions.
-
-
-
-
+%Note that a cohort of infected individuals infected at the same time in the past will contribute the fraction $\sum_{k>0} h(k)$ of its size to hospital admissions (hence, $h$ must sum less than 1).
+For implementation convenience, the function $h$ is reparameterized such that the time repartition and the total quantity of hospital admissions are separated:
+\begin{equation}
+h(k) = \frac{\eta(k)}{\sum_{i>0}\eta(i)} \, h^\star
+\end{equation}
+Hence, a cohort of infected individuals infected at the same time in the past will contribute the fraction $\sum_{k>0} h(k) =  h^\star$ of its size to hospital admissions. The repartition of the hospital admission lags is defined with the unitless function $\eta$.
 
 %\subsection{A subsection}
 %

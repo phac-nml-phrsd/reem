@@ -1,6 +1,14 @@
 
 plot*.pdf
 
+doc/*.aux
+doc/*.log
+doc/*.gz
+doc/*.out
+
+
+
+
 # History files
 .Rhistory
 .Rapp.history

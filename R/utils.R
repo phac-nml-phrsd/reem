@@ -181,3 +181,42 @@ aggcl <- function(df, dt.aggr, vars) {
     mutate(date = d) 
   return(res)
 }
+
+
+
+#' Returns an example of a list of model parameters
+#'
+#' @return List of REEM model parameters
+#' @export
+#'
+
+prm_model_example <- function() {
+  
+   prms = list(
+    horizon = 300,  # horizon of the simulation
+    last.obs = 299,  # last observation time (must be < horizon)
+    B       = rep(1,300), # Behavior change
+    freq.obs.ww = 3, # average frequency of ww observation
+    t.obs.cl = seq(7,280, by = 7),
+    t.obs.ww = seq(3,200, by=3),
+    i0prop  = 1e-3,
+    date.start = lubridate::ymd('2000-01-01'),
+    start.delta = 0, 
+    R0      = 1.5, # Basic reproduction number
+    N       = 9999, # population size
+    alpha   = 0.2, # transmission heterogeneity (alpha=0: homogeneous)
+    I.init  = c(1,1,3,5), # initial incidence (overwritten in fit ABC)
+    lag     = 7,   # Aggregation lag for clinical reports
+    rho     = 0.1, # mean reporting ratio
+    g       = get_gi(), # Generation interval distribution
+    fec     = get_fecalshed(), # fecal shedding kinetics
+    h.prop  = 0.05, # total proportion hospitalized for one cohort
+    h.lags  = c(rep(0,3), 1, 2, 2, 1, 0), # Lag infection-hospitalization
+    kappa   = 0.18, # decay in ww
+    psi     = get_psi(),   # plug flow simulation,
+    shed.mult = 1e-3
+  ) 
+   
+   return(prms)
+}
+

@@ -12,8 +12,8 @@ if(0){
     library(patchwork)
   })
   devtools::load_all()
-  theme_set(theme_bw())
-  obj = readRDS('obj-dev.rds')
+  
+  
   asof = ymd('2022-03-01') 
   
   prm.fcst = list(
@@ -21,9 +21,12 @@ if(0){
     horizon.fcst = ymd('2022-06-01'),
     use.fit.post = TRUE,
     n.resample   = 20,
+    vars.to.fcst = c('Y', 'Wr', 'H'),
     ci           = seq(0.1,0.9, by = 0.1)
   )
   
+  
+  obj = readRDS('debug-fit.rds')
   fcst = obj$forecast(prm = prm.fcst, verbose = 1)
   
   g.fcst = obj$plot_forecast(date_breaks = '1 month')

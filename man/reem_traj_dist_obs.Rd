@@ -10,6 +10,7 @@ for a given set of REEM parameters.}
 reem_traj_dist_obs(
   obj,
   use.cl,
+  use.ha,
   use.ww,
   err.type,
   deterministic,

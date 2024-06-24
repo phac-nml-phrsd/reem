@@ -42,14 +42,18 @@ test_that("simulate_epi works", {
   
   simepi  = obj$simulate_epi(deterministic = FALSE)
   expect_type(simepi, 'list')
-  expect_equal(length(simepi), 3)
-  check.names.simepi = all(names(simepi) %in% c('sim', 'obs.cl', 'obs.ww'))
+  expect_equal(length(simepi), 4)
+  check.names.simepi = all(names(simepi) %in% c('sim', 
+                                                'obs.cl',
+                                                'obs.ha',
+                                                'obs.ww'))
   expect_true(check.names.simepi)
   
   
   sim = simepi$sim
   expect_true(class(sim) == 'data.frame')
-  check.names.sim = all(names(sim) %in% c("t","m","I","S","A","Y","Wd","Wp","Wr","date"))
+  check.names.sim = all(names(sim) %in% c("t","m","I","S","A","Y","H",
+                                          "Wd","Wp","Wr","date"))
   expect_true(check.names.sim)
   expect_equal(nrow(sim), prms$horizon)
   
@@ -59,7 +63,7 @@ test_that("simulate_epi works", {
   set.seed(1234)
   simepi2  = obj$simulate_epi(deterministic = TRUE)
   sim2 = simepi2$sim  
-  plot(sim2$S)
+  # plot(sim2$S)
   Imax = round(max(sim2$I))   
   Ymax = round(max(sim2$Y))   
   Smin = round(min(sim2$S)) 

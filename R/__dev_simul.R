@@ -6,7 +6,7 @@ if(0){
   library(ggplot2)
   library(lubridate)
   library(reem)
-  # devtools::load_all() 
+  # devtools::load_all()
   
   date.start = ymd('2022-01-01')
   asof       = ymd('2022-03-01') 
@@ -29,6 +29,8 @@ if(0){
     rho     = 0.1, # mean reporting ratio
     g       = get_gi(), # Generation interval distribution
     fec     = get_fecalshed(), # fecal shedding kinetics
+    h.prop  = 0.05, # total proportion hospitalized for one cohort
+    h.lags  = c(rep(0,3), 1, 2, 2, 1, 0), # Lag infection-hospitalization
     kappa   = 0.18, # decay in ww
     psi     = get_psi(), # plug flow simulation,
     shed.mult = 0.2 # deposited fecal shedding multiplier  
@@ -43,7 +45,9 @@ if(0){
   
   simepi  = obj$simulate_epi(deterministic = FALSE)
   
-  simepi$sim %>% ggplot(aes(x=date, y = Wd)) + geom_line()
+  g = plot_epi(simepi) 
+  patchwork::wrap_plots(g, ncol = 1)
+  
   
   # impact of `alpha`
   obj$prms$alpha <- 0

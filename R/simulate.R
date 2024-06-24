@@ -113,20 +113,22 @@ check_obs_schedule <- function(obj) {
 reem_simulate <- function(prms, deterministic) {
   
   # Unpack parameters
-  R0      = prms$R0
-  B       = prms$B
-  N       = prms$N
-  alpha   = prms$alpha
-  I.init  = prms$I.init
-  horizon = prms$horizon
-  rho     = prms$rho
-  lag     = prms$lag
-  g       = prms$g
-  fec     = prms$fec
-  kappa   = prms$kappa
-  psi     = prms$psi
-  t.obs.ww = prms$t.obs.ww
-  shed.mult = prms$shed.mult
+  R0      = prms[['R0']]
+  B       = prms[['B']]
+  N       = prms[['N']]
+  alpha   = prms[['alpha']]
+  I.init  = prms[['I.init']]
+  horizon = prms[['horizon']]
+  rho     = prms[['rho']]
+  lag     = prms[['lag']]
+  g       = prms[['g']]
+  fec     = prms[['fec']]
+  h.prop  = prms[['h.prop']]
+  h.lags  = prms[['h.lags']]
+  kappa   = prms[['kappa']]
+  psi     = prms[['psi']]
+  t.obs.ww = prms[['t.obs.ww']]
+  shed.mult = prms[['shed.mult']]
   
   ni = length(I.init)
   
@@ -135,9 +137,10 @@ reem_simulate <- function(prms, deterministic) {
   S  = rep(NA, horizon)   # daily number of susceptible
   A  = rep(NA, horizon)   # rolling sum of daily incidence aggregated over `lag`
   Y  = rep(NA, horizon)   # observed aggregated incidence (:stochastic fraction of `A`)
+  H  = rep(0, horizon)    # daily hospital admissions
   Wd = rep(NA, horizon)   # wastewater concentration deposited
   
-  # Initial period when incidence is known:
+  # -- Initial period when incidence is known:
   m[1:ni] = I.init
   I[1:ni] = I.init
   S[1:ni] = N - cumsum(I.init)
@@ -160,11 +163,33 @@ reem_simulate <- function(prms, deterministic) {
     A[t] = sum(I[t:tlag])
   }
   
-  # Observed aggregated incidence (Y):
+  # -- Observed aggregated incidence (Y):
   lambdaY = rho*A
   lambdaY[lambdaY==0] <- 1e-3
   lambdaY[is.na(lambdaY)] <- 1e-3
   Y = calc_Y(lambdaY, n=length(A), deterministic)
+  
+  # -- Hospital admissions (H):
+  
+  
+  # calculate `h` from lags and total proportion
+  h.undefined = is.null(h.lags) | is.null(h.prop)
+  if(h.undefined) {
+    h = rep(0,2)
+  }
+  if(!h.undefined){
+    h = h.lags / sum(h.lags) * h.prop
+  }
+  
+  nh = length(h)
+  for(t in 2:horizon){
+    H[t] = 0
+    upperidx = min(nh, t-1)
+    for(k in 1:upperidx){
+      H[t] = H[t] + h[k] * I[t-k]
+    }
+    H[t] = round(H[t])
+  }
   
   # --- Wastewater ---
   
@@ -177,7 +202,9 @@ reem_simulate <- function(prms, deterministic) {
     w.m[t] = shed.mult * sum(fec[idx]*I[t-idx])
   }
   Wd =  w.m
-  if(!deterministic) Wd = rnorm(n = horizon, mean = w.m, sd = w.m * 0.1)
+  if(!deterministic) Wd = rnorm(n    = horizon, 
+                                mean = w.m, 
+                                sd   = w.m * 0.1)
   
   # -- present at sampling site
   
@@ -203,7 +230,11 @@ reem_simulate <- function(prms, deterministic) {
     wr.m[i] = Wp[t.obs.ww[i]]
   
   Wr = wr.m
-  if(!deterministic) Wr = rnorm(n=n.ww, mean = wr.m, sd = wr.m * 0.2)
+  if(!deterministic) Wr = rnorm(n    = n.ww, 
+                                mean = wr.m, 
+                                sd   = wr.m * 0.2)
+  
+  # Ending
   
   df = data.frame(
     t = 1:horizon, 
@@ -212,6 +243,7 @@ reem_simulate <- function(prms, deterministic) {
     S = S,
     A = A,
     Y = Y,
+    H = H,
     Wd = Wd, 
     Wp = Wp)
   
@@ -254,20 +286,25 @@ reem_simulate_epi <- function(obj,
   
   sim = dplyr::mutate(sim, date = prms$date.start + t)
   
-  # Create two dataframes of observations only:
+  # Create dataframes of observations only:
   #  - clinical data
+  #  - hospital admissions data
   #  - wastewater data
   # (they may not be observed on the same schedule)
   
   
   # Aggregate clinical reports
-  sim.obs.cl = aggregate_time(df       = sim, 
-                              dt.aggr  = date.obs.cl, 
-                              var.name = 'Y') %>% 
+  sim.obs.cl = aggregate_time(
+    df       = sim, 
+    dt.aggr  = date.obs.cl, 
+    var.name = 'Y') %>% 
     dplyr::transmute(
       date, 
-      t = as.integer(date - prms$date.start),
-      obs  = aggregation) 
+      t    = as.integer(date - prms$date.start),
+      obs  = as.integer(aggregation)) 
+  
+  # Hospital admissions
+  sim.obs.ha = dplyr::select(sim, t, date, obs = H)
   
   # Extract wastewater observations
   sim.obs.ww = sim %>% 
@@ -281,6 +318,7 @@ reem_simulate_epi <- function(obj,
   return(list(
     sim    = sim, 
     obs.cl = sim.obs.cl,
+    obs.ha = sim.obs.ha,
     obs.ww = sim.obs.ww
   ))
 }

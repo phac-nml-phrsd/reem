@@ -2,7 +2,7 @@
 % Please edit documentation in R/psi.R
 \name{get_psi}
 \alias{get_psi}
-\title{Title}
+\title{Pathogen decay in wastewater}
 \usage{
 get_psi(prm)
 }
@@ -14,5 +14,5 @@ Numerical vector representing  the distribution
 of viral decay in wastewater.
 }
 \description{
-Title
+Pathogen decay in wastewater
 }
