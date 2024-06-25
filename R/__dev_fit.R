@@ -9,7 +9,7 @@ if(0){
   devtools::load_all()
   
   date.start = ymd('2022-01-01')
-  asof       = ymd('2022-03-01') 
+  asof       = ymd('2022-04-01') 
   hz = 180
   
   prms0 = list(
@@ -17,16 +17,16 @@ if(0){
     last.obs = hz-1,  # last observation time (must be < horizon)
     B       = rep(1,hz), # Behavior change
     freq.obs.ww = 3, # average frequency of ww observation
-    t.obs.cl = seq(7,hz-2, by = 7),
-    t.obs.ha = seq(12,hz-2, by = 20),
-    t.obs.ww = seq(3,hz-2, by=3),
+    date.obs.cl = date.start + seq(7,hz-2, by = 7),
+    date.obs.ha = date.start + seq(12,hz-2, by = 10),
+    date.obs.ww = date.start + seq(3,hz-2, by=14),
     i0prop  = 1e-3,
     date.start = date.start,
     start.delta = 0, 
     R0      = 1.5, # Basic reproduction number
-    N       = 9999, # population size
+    N       = 1e6, # population size
     alpha   = 0.2, # transmission heterogeneity (alpha=0: homogeneous)
-    I.init  = c(1,1,3,5), # initial incidence (overwritten in fit ABC)
+    I.init  = c(1,1,3,5)*20, # initial incidence (overwritten in fit ABC)
     lag     = 7,   # Aggregation lag for clinical reports
     rho     = 0.1, # mean reporting ratio
     g       = get_gi(), # Generation interval distribution
@@ -66,22 +66,16 @@ if(0){
              obs.ww = obs.ww,
              is.fitted = FALSE)
   
-  obj$print_prms()
- 
-  foo = obj$simulate_epi(deterministic = F)
-   
   g.obs = plot_obs(obj)
   g.obs
-  
-  prms$R0 <- 2.5
   
   # ---- Fit ----
   
   prm.abc = list(
-    n.abc = 1e3,
+    n.abc = 6e3,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
     p.abc = 0.01, #1e-2,
-    n.cores = 1, #min(12, parallel::detectCores() - 1),
+    n.cores = 12, #min(12, parallel::detectCores() - 1),
     use.cl = 1, 
     use.ha = 1, 
     use.ww = 1,
@@ -91,7 +85,7 @@ if(0){
   prms.to.fit = list(
     R0          = list('gamma', 1.5, 0.251),
     alpha       = list('normp', 2, 1),
-    i0prop      = list('unif', -5, -2),
+    i0prop      = list('unif', -5.8, -2),
     h.prop      = list('unif', 0.001, 0.2),
     start.delta = list('unif_int', -7, 7)  
   )
