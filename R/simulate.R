@@ -7,25 +7,17 @@
 #' @return
 #' 
 check_date_start <- function(obj) {
-  
-  prms = obj$prms
-  
-  # When working with real data, 
-  # we usually are in "date mode"
-  has.date.start = !is.null(prms$date.start)
-  
+  has.date.start = !is.null(obj$prms$date.start)
   if(!has.date.start){
-    prms$date.start <- lubridate::ymd('2020-01-01')
-    
-    warning('The start date (`prms$date.start`) of ',
-            'the REEM model has not been specified.',
-            ' Setting it to 2020-01-01. ')
+    stop('The start date of ',
+         'the REEM model has not been specified.',
+         ' It MUST be specified in `obj$prms$date.start`\nABORTING.')
   }
-  return(prms)
 }
 
 
-#' Set the schedule of times and dates for the observations (if any)
+#' Set the schedule of times and dates for the observations (if any).
+#' Handles `date.start` changes.
 #'
 #' @param type string. variable type
 #' @param obj reem object
@@ -39,30 +31,30 @@ set_obs_schedule <- function(type, obj) {
   vtype    = paste0('obs.',type)
   obs.type = obj[[vtype]]
   n        = nrow(obs.type)
-  arg.t    = paste0('t.obs.', type)
   arg.d    = paste0('date.obs.', type)
   
   # If there are observations attached to 
   # the `reem` object, simply use their schedules
   if(n > 0){
-    obj$prms[[arg.t]] <- obs.type$t
-    obj$prms[[arg.d]] <- obs.type$date
+    d = obs.type$date
+    t = as.integer(obs.type$date - obj$prms$date.start)
+    idx = which(t >= 0)
+    if(length(idx)==0){
+      stop('`prms$date.start` is larger than the last `',
+           type,'` observation date.\nABORTING!')
+    }
+    obj$prms[[arg.d]] <- d[idx]
   }
   
-  # If there are no observations attached, 
-  # use the times defined in `prms` or 
+  # If there are no observations attached
+  # and no the dates defined in `prms`, 
   # create an ad-hoc one
   if(n == 0){
-    
-    has.t.type = !is.null(obj$prms[[arg.t]])
-    
-    if(has.t.type)  t.adhoc = obj$prms[[arg.t]]
-    if(!has.t.type) t.adhoc = 0:obj$prms$horizon
-    
-    d.adhoc = obj$prms$date.start + t.adhoc
-    
-    obj$prms[[arg.t]] <- t.adhoc
-    obj$prms[[arg.d]] <- d.adhoc
+    has.d.type = !is.null(obj$prms[[arg.d]])
+    if(!has.d.type) {
+      t.adhoc = 0:obj$prms$horizon
+      obj$prms[[arg.d]] <- obj$prms$date.start + t.adhoc
+    }
   }
   return(obj)
 }
@@ -194,17 +186,9 @@ reem_simulate <- function(prms, deterministic) {
   
   # -- observed ("reported") at sampling site
   
-  t.obs.ww = t.obs.ww[t.obs.ww < horizon]
-  n.ww = length(t.obs.ww)
-  wr.m = numeric(n.ww)
-  
-  for(i in seq_along(t.obs.ww)) 
-    wr.m[i] = Wp[t.obs.ww[i]]
-  
-  Wr = wr.m
-  if(!deterministic) Wr = rnorm(n    = n.ww, 
-                                mean = wr.m, 
-                                sd   = wr.m * 0.2)
+  Wr = rnorm(n    = length(Wp), 
+             mean = Wp, 
+             sd   = Wp * 0.2)
   
   # Ending
   
@@ -217,13 +201,8 @@ reem_simulate <- function(prms, deterministic) {
     Y = Y,
     H = H,
     Wd = Wd, 
-    Wp = Wp)
-  
-  # This is equivalent as, but quicker than, a `left_join()`
-  # because we want this code to be as fast as possible!
-  df$Wr <- NA
-  idx = df$t %in% t.obs.ww
-  df$Wr[idx] <- Wr
+    Wp = Wp, 
+    Wr = Wr)
   
   return(df)  
 }
@@ -260,48 +239,57 @@ reem_simulate_epi <- function(obj,
                               deterministic) {
   
   # -- Checks 
-  obj$prms = check_date_start(obj)
+  check_date_start(obj)
   
   # Set observation schedules
   for(vt in c('cl', 'ha', 'ww')) {
     obj = set_obs_schedule(vt,obj)
   }
-  
+ 
+  # DEBUG
+  # obj$print_prms()
+   
   # Simulate epidemic to generate data
   sim = reem_simulate(obj$prms, deterministic)
   
   sim = dplyr::mutate(sim, date = obj$prms$date.start + t)
   
-  # Create dataframes of simulated observations only:
+  if(0){ # DEBUG 
+    print('\nin sim')
+    print(head(sim))
+  }
+  
+  # Create dataframes of "simulated observations" 
+  # at the specified observation dates:
   #  - clinical data
   #  - hospital admissions data
   #  - wastewater data
   # (they may not be observed on the same schedule)
+  #
+  # Note: clinical reports and hospital admissions
+  #       are assumed to be AGGREGATED observations
+  #       unlike wastewater concentration.
   
-  date.obs.cl = obj$prms$date.start + obj$prms$t.obs.cl
-  date.obs.ha = obj$prms$date.start + obj$prms$t.obs.ha
   
   # Aggregate clinical reports
-  sim.obs.cl = helper_aggreg(sim = sim, 
-                             type = 'cl', 
-                             dateobs = date.obs.cl, 
-                             prms = obj$prms)
+  sim.obs.cl = helper_aggreg(sim     = sim, 
+                             type    = 'cl', 
+                             dateobs = obj[['prms']][['date.obs.cl']], 
+                             prms    = obj$prms)
   
   # Aggregate hospital admissions
-  sim.obs.ha = helper_aggreg(sim = sim, 
-                             type = 'ha', 
-                             dateobs = date.obs.ha, 
-                             prms = obj$prms)
+  sim.obs.ha = helper_aggreg(sim     = sim, 
+                             type    = 'ha', 
+                             dateobs = obj[['prms']][['date.obs.ha']], 
+                             prms    = obj$prms)
   
   # Extract wastewater observations
-  sim.obs.ww = sim %>% 
-    dplyr::select(t, Wr) %>% 
-    dplyr::filter(t <= obj$prms$last.obs, 
-                  !is.na(Wr)) %>%   # filtering out NA keeps observed times only.
-    dplyr::rename(obs = Wr) %>%
-    dplyr::mutate(date = obj$prms$date.start + t) %>%
-    dplyr::select(date, t, obs)
+  # (wastewater concentration is NOT aggregated in time)
+  sim.obs.ww = sim |> 
+    dplyr::filter(date %in% obj[['prms']][['date.obs.ww']]) |>
+    dplyr::select(date, t, obs = Wr)
   
+
   return(list(
     sim    = sim, 
     obs.cl = sim.obs.cl,
