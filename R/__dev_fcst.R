@@ -14,7 +14,7 @@ if(0){
   devtools::load_all()
   
   
-  asof = ymd('2022-03-01') 
+  asof = ymd('2022-04-01') 
   
   prm.fcst = list(
     asof         = asof,
@@ -31,6 +31,8 @@ if(0){
   
   g.fcst = obj$plot_forecast(date_breaks = '1 month')
   g      = patchwork::wrap_plots(g.fcst, ncol=1)
+  g
+  
   pdf(paste0('plot-fcst-', reem::timestamp_short(),'.pdf'))
   plot(g)
   dev.off()

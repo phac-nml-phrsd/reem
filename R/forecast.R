@@ -1,3 +1,9 @@
+quantile_df <- function(x, probs) {
+  tibble(
+    q     = stats::quantile(x, probs, na.rm = TRUE),
+    qprob = probs
+  )
+}
 
 
 #' @title Calculate quantiles of forecast trajectories
@@ -25,13 +31,6 @@ summarize_fcst <- function(simfwd, prm.fcst, vars = NULL) {
           paste(vars, collapse = ', '), appendLF = FALSE)
   ci    = prm.fcst$ci
   probs = sort(c(0.5 - ci/2, 0.5 + ci/2) )
-  
-  quantile_df <- function(x, probs) {
-    tibble(
-      q     = stats::quantile(x, probs, na.rm = TRUE),
-      qprob = probs
-    )
-  }
   
   res = dplyr::bind_rows(simfwd) %>% 
     dplyr::select(date, !!vars) %>% 
@@ -86,6 +85,70 @@ aggregate_fcst <- function(var.to.aggregate, obj, simfwd) {
 }
 
 
+summ_aggr_fcst <- function(simfwd, obj, var, prm.fcst) {
+  # var = 'cl'
+  
+  vtype = paste0('obs.',var)
+  d = obj[[vtype]][['date']]
+  dt = median(diff(d)) |> as.integer()
+  
+  ci    =   prm.fcst$ci
+  probs = sort(c(0.5 - ci/2, 0.5 + ci/2) )
+  
+  # Create the forward dates schedule (after "asof")
+  d.fwd = max(d) + seq(dt, obj$prms$horizon, by = dt)
+ 
+
+  # We must consider the values after the last obesrvation date
+  # otherwise, will sum from date.start!
+  simfwd.crop = purrr::map(simfwd, ~ dplyr::filter(., date > max(d) ))
+
+  # Aggregation
+  simfwd.aggr = lapply(simfwd.crop, 
+                       helper_aggreg, 
+                       type = var, 
+                       dateobs = d.fwd, 
+                       prms = obj$prms) 
+  
+  # Summary statistics (quantiles, mean)
+  summary.fcst.aggr = simfwd.aggr |>
+    dplyr::bind_rows() |>
+    dplyr::select(date, obs) |> 
+    dplyr::reframe(
+      quantile_df(obs, probs), 
+      mean = mean(obs),
+      .by = c(date))
+  
+  res = list(
+    simfwd.aggr = simfwd.aggr,
+    summary.fcst.aggr = summary.fcst.aggr
+  )
+  return(res)
+}
+
+
+# Helper function 
+update_and_simulate <- function(i, pp, obj, verbose, tpb) {
+  
+  if(verbose)  cat('Simulating forward with posterior sample #',i,'\n')
+  if(!verbose) setTxtProgressBar(tpb, value = i)
+  
+  # update fitted parameters 
+  # with their posterior values
+  obj$prms[names(pp)] <- pp[i,]
+  
+  # Update initial number of infectious individuals `obj$prms$I.init`
+  obj$prms = set_I_init(obj$prms)
+  
+  # Forward simulations are calculated 
+  # for every day in the future (no unobserved date):
+  obj$prms$t.obs.ww <- 1:prm.fcst$horizon.fcst 
+  
+  # Simulate forward
+  s = obj$simulate_epi(deterministic = TRUE) #TODO: let user choose
+  s$sim$index <- i
+  return(s$sim)
+}
 
 
 #' @title Forecast a fitted epidemic 
@@ -124,31 +187,9 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
   # (i.e., no resampling from posterior distributions)
   if(prm.fcst$use.fit.post){
     
+    # Posterior parameters
     pp = a$post.prms %>% dplyr::select(!tidyr::starts_with('abc'))
-    
-    # Helper function 
-    update_and_simulate <- function(i, pp, obj, verbose, tpb) {
-      
-      if(verbose)  cat('Simulating forward with posterior sample #',i,'\n')
-      if(!verbose) setTxtProgressBar(tpb, value = i)
-      
-      # update fitted parameters 
-      # with their posterior values
-      obj$prms[names(pp)] <- pp[i,]
-      
-      # Update initial number of infectious individuals `obj$prms$I.init`
-      obj$prms = set_I_init(obj$prms)
-      
-      # Forward simulations are calculated 
-      # for every day in the future (no unobserved date):
-      obj$prms$t.obs.ww <- 1:prm.fcst$horizon.fcst 
-      
-      # Simulate forward
-      s = obj$simulate_epi(deterministic = TRUE) #TODO: let user choose
-      s$sim$index <- i
-      return(s$sim)
-    }
-    
+  
     npp = nrow(pp)
     ns  = prm.fcst$n.resample
     
@@ -194,16 +235,14 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
   simfwd.aggr = list()
   summary.fcst.aggr = list()
   
-  # TODO: make a function for these 2 function calls!
-  simfwd.aggr[['Y.aggr']] = aggregate_fcst(
-    var.to.aggregate = 'Y', 
-    obj              = obj, 
-    simfwd           = simfwd)
+  tmp.cl = summ_aggr_fcst(simfwd, obj, var = 'cl', prm.fcst)
+  tmp.ha = summ_aggr_fcst(simfwd, obj, var = 'ha', prm.fcst)
+
+  simfwd.aggr[['Y.aggr']]       = tmp.cl$simfwd.aggr
+  summary.fcst.aggr[['Y.aggr']] = tmp.cl$summary.fcst.aggr
   
-  summary.fcst.aggr[['Y.aggr']] = summarize_fcst(
-    simfwd   = simfwd.aggr, 
-    prm.fcst = prm.fcst,
-    vars     = c('Y.aggr'))  
+  simfwd.aggr[['H.aggr']]       = tmp.ha$simfwd.aggr
+  summary.fcst.aggr[['H.aggr']] = tmp.ha$summary.fcst.aggr
   
   return( list(
     asof   = prm.fcst$asof,
@@ -212,7 +251,6 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
     simfwd.aggr = simfwd.aggr,
     summary.fcst.aggr = summary.fcst.aggr
   ))
-  
 }
 
 
@@ -235,6 +273,7 @@ add_ribbons_quantiles <- function(g, qlist, k,
                 fill = col.fcst, alpha = alpha.ribbon)
   return(res)
 }
+
 
 
 #' Helper function
@@ -339,18 +378,22 @@ reem_plot_forecast <- function(
   alpha.ribbon = 0.20
   
   col.fcst = "steelblue" ; col.fit = "tan3"
-    
+  
   # - - - - Retrieve fitted curves
   
   post.sim = obj$fit.obj$post.simulations
   
   fitsim.ww = sumpost(post.sim, var = 'Wr')
-  fitsim.ha = sumpost(post.sim, var = 'H')
-  fitsim.cl = sumpost(post.sim, var = 'Y') %>% 
-    # Aggregate clinical reports for the fitted part
-    aggcl(dt.aggr = obs.cl$date, 
-          vars = c('m','lo','hi')) %>%
-    dplyr::filter(date <= max(obs.cl$date))
+  
+  fitsim.cl = extract_fit_aggreg(obj, 'cl', rename = F) 
+  fitsim.ha = extract_fit_aggreg(obj, 'ha', rename = F) 
+  
+  # fitsim.ha = sumpost(post.sim, var = 'H')
+  # fitsim.cl = sumpost(post.sim, var = 'Y') %>% 
+  #   # Aggregate clinical reports for the fitted part
+  #   aggcl(dt.aggr = obs.cl$date, 
+  #         vars = c('m','lo','hi')) %>%
+  #   dplyr::filter(date <= max(obs.cl$date))
   
   # Retrieve the forecast summary
   sf = fcst.obj$summary.fcst 
@@ -377,19 +420,33 @@ reem_plot_forecast <- function(
   # DIFFERENT FROM THE QUANTILE OF THE SUM (WHAT WE REALLY WANT!)
   # TODO: CHANGE THAT!
   
-  sf.cl = sf2 %>% 
-    filter(name == 'Y') %>%
-    aggcl(dt.aggr = dt.aggr.fcst, 
-          vars = c('mean', qlist)) %>% 
-    filter(date > fcst.prm$asof)
-  
+  # sf.cl = sf2 %>% 
+  #   filter(name == 'Y') %>%
+  #   aggcl(dt.aggr = dt.aggr.fcst, 
+  #         vars = c('mean', qlist)) %>% 
+  #   filter(date > fcst.prm$asof)
+  # 
   sf.ww = filter(sf2, name == 'Wr') %>%
     drop_na(mean) %>%
     filter(date >= fcst.prm$asof)
   
-  sf.ha = filter(sf2, name == 'H') %>%
-    drop_na(mean) %>%
-    filter(date >= fcst.prm$asof)
+  # sf.ha = filter(sf2, name == 'H') %>%
+  #   drop_na(mean) %>%
+  #   filter(date >= fcst.prm$asof)
+  # 
+  
+  # Tue Jun 25 17:07:24 2024 ------------------------------
+  
+  sf.cl = fcst.obj$summary.fcst.aggr$Y.aggr |> 
+    pivot_wider(names_from = qprob, 
+                values_from = q, 
+                names_prefix = 'q_')
+  
+  sf.ha = fcst.obj$summary.fcst.aggr$H.aggr |> 
+    pivot_wider(names_from = qprob, 
+                values_from = q, 
+                names_prefix = 'q_')
+  
   
   # - - - Plots - - - 
   
@@ -404,7 +461,10 @@ reem_plot_forecast <- function(
     title = 'Reported cases', ylab = 'cases',
     qlist = qlist, 
     xaxis = xaxis)
+ 
+  g.cl
   
+   
   g.ha = plot_fitfcst(
     traj.fit = fitsim.ha, 
     traj.fcst = sf.ha, 
@@ -416,6 +476,8 @@ reem_plot_forecast <- function(
     title = 'Hospital admissions', ylab = 'daily adm',
     qlist = qlist,
     xaxis = xaxis)
+  g.ha
+  
   
   g.ww = plot_fitfcst(
     traj.fit = fitsim.ww, 
