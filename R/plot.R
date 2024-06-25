@@ -47,15 +47,16 @@ plot_epi <- function(simepi) {
   
   sim.ww$variable = NA
   sim.ww$variable[sim.ww$name == 'Wd'] = 'Wd: concentration deposited'
-  sim.ww$variable[sim.ww$name == 'Wp'] = 'Wd: concentration present at sampling site'
-  sim.ww$variable[sim.ww$name == 'Wr'] = 'Wr: concentration reported at sampling site'
+  sim.ww$variable[sim.ww$name == 'Wp'] = 'Wp: conc. present at sampling site'
+  sim.ww$variable[sim.ww$name == 'Wr'] = 'Wr: conc. reportable (lab errors)'
   
   g.ww = sim.ww %>% 
     ggplot2::ggplot(ggplot2::aes(x=date, y = value, color = variable)) + 
-    ggplot2::geom_line(linewidth = 1) + 
+    ggplot2::geom_line(data = dplyr::filter(sim.ww, name!='Wr'),
+                       linewidth = 1) + 
     ggplot2::geom_point(data = dplyr::filter(sim.ww, name=='Wr')) + 
     ggplot2::theme_bw()+
-    ggplot2::scale_color_manual(values = c('tan4', 'tan', 'black')) +
+    ggplot2::scale_color_manual(values = c('tan4', 'tan', 'tan2')) +
     ggplot2::labs(title = 'Pathogen concentration in wastewater')
   # g.ww
   
@@ -73,7 +74,7 @@ plot_epi <- function(simepi) {
     geom_point() +  
     ggplot2::theme_bw()+
     facet_wrap(~type, ncol = 1, scales = 'free_y') + 
-    labs(title = 'Observations', x='', y='value')
+    labs(title = 'Simulated observations', x='', y='value')
   
   g = list(
     populations = g.pop, 
