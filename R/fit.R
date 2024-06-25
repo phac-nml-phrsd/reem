@@ -109,10 +109,16 @@ err_fct <- function(cl.i, ha.i, ww.i,
   
   # --- Adjust to fitting observation dates
   
-  df.cl = dplyr::left_join(cl.i, obs.cl, by='date')
-  df.ha = dplyr::left_join(ha.i, obs.ha, by='date')
-  df.ww = dplyr::left_join(ww.i, obs.ww, by='date') %>% 
-    tidyr::drop_na(obs)
+  df.cl = dplyr::left_join(cl.i, obs.cl, by='date') |> tidyr::drop_na(obs)
+  df.ha = dplyr::left_join(ha.i, obs.ha, by='date') |> tidyr::drop_na(obs)
+  df.ww = dplyr::left_join(ww.i, obs.ww, by='date') |> tidyr::drop_na(obs)
+  
+  if(0){ # DEBUG 
+    message('\nDEBUG err_fct:')
+    print((df.cl))
+    print((df.ww))
+    print((df.ha))
+  }
   
   err.cl = 0
   err.ha = 0
@@ -194,10 +200,16 @@ reem_traj_dist_obs <- function(
     verbose = FALSE
 ) {
   
-  prms   = obj$prms
-  obs.cl = obj$obs.cl
-  obs.ha = obj$obs.ha
-  obs.ww = obj$obs.ww
+  prms = obj$prms
+  
+  # Adjust the epidemic start time
+  date.start.init = prms$date.start
+  date.start.new  = prms$date.start + prms$start.delta
+  
+  # Crop observations that occurred before the (new) start date
+  obs.cl = obj$obs.cl |> dplyr::filter(date > date.start.new)
+  obs.ha = obj$obs.ha |> dplyr::filter(date > date.start.new)
+  obs.ww = obj$obs.ww |> dplyr::filter(date > date.start.new)
   
   if(nrow(obs.cl)==0 & 
      nrow(obs.ha)==0 & 
@@ -214,11 +226,6 @@ reem_traj_dist_obs <- function(
   if(nrow(obs.ha) == 0) datemax.ha = datemax.cl
   if(nrow(obs.cl) == 0) datemax.cl = datemax.ww
   
-  # Adjust the epidemic start time
-  # and check if we did not create
-  # negative times inadvertently:
-  prms$date.start <- prms$date.start + prms$start.delta
-  
   if(verbose){
     cat('-- Distance debug\n')
     cat('\nprms$N:', prms$N)
@@ -227,12 +234,22 @@ reem_traj_dist_obs <- function(
     cat('\nprms$date.start:', as.character(prms$date.start))
   }
   
+  obj.x = obj$copy()
+  obj.x$obs.cl <- obs.cl
+  obj.x$obs.ha <- obs.ha
+  obj.x$obs.ww <- obs.ww
+  obj.x$prms$date.start <- date.start.new
+  
   if(deterministic){
-    s     = obj$simulate_epi(deterministic = TRUE)
+    s     = obj.x$simulate_epi(deterministic = TRUE)
     a.cl  = s$obs.cl
     a.ha  = s$obs.ha
     a.ww  = s$obs.ww
     a.sim = s$sim
+    if(0){ # DEBUG 
+      print('in fit')
+      print(head(a.sim))
+    }
   }
   
   if(!deterministic){
@@ -242,11 +259,11 @@ reem_traj_dist_obs <- function(
     tmp.cl = tmp.ha = tmp.ww = tmp.sim = list()
     
     for(k in 1:n.sim){
-      s            = obj$simulate_epi(deterministic = FALSE)
-      tmp.cl[[k]]  = s$obs.cl %>% mutate(iter = k)
-      tmp.ha[[k]]  = s$obs.ha %>% mutate(iter = k)
-      tmp.ww[[k]]  = s$obs.ww %>% mutate(iter = k)
-      tmp.sim[[k]] = s$sim %>% mutate(n.sim = k)
+      s            = obj.x$simulate_epi(deterministic = FALSE)
+      tmp.cl[[k]]  = s$obs.cl %>% dplyr::mutate(iter = k)
+      tmp.ha[[k]]  = s$obs.ha %>% dplyr::mutate(iter = k)
+      tmp.ww[[k]]  = s$obs.ww %>% dplyr::mutate(iter = k)
+      tmp.sim[[k]] = s$sim %>% dplyr::mutate(n.sim = k)
     }
     a.cl  = dplyr::bind_rows(tmp.cl)
     a.ha  = dplyr::bind_rows(tmp.ha)
@@ -273,6 +290,14 @@ reem_traj_dist_obs <- function(
     dplyr::summarize(Wm = mean(obs)) %>%
     dplyr::ungroup() %>%
     dplyr::filter(date <= datemax.ww)
+  
+  # The shift from `date.start` may have 
+  # changed the horizon DATE before the 
+  # last observations. 
+  # Cropping again the tail end
+  obs.cl = dplyr::filter(obs.cl, date <= max(cl.i$date))
+  obs.ha = dplyr::filter(obs.ha, date <= max(ha.i$date))
+  obs.ww = dplyr::filter(obs.ww, date <= max(ww.i$date))
   
   # Calculate the ABC distance
   res = err_fct(cl.i, ha.i, ww.i, 
@@ -301,6 +326,11 @@ calc_dist_parallel <- function(i,
   if(i == 1)      cat('ABC iteration # 1 /',nrow(priors),'\n') 
   if(i%%500 == 0) cat('ABC iteration #',i,'/',nrow(priors),'\n') 
   
+  if(0){ # DEBUG 
+    cat('\n--- DEBUG ABC iter: ',i,'\n')
+  }
+  
+  # Update prior value at this iteration
   pp = priors[i,]
   
   if('i0prop' %in% names(priors)){
@@ -308,7 +338,8 @@ calc_dist_parallel <- function(i,
     obj$prms = set_I_init(obj$prms)
   }
   
-  # overwrite with priors values:
+  # overwrite model parameters 
+  # with priors values:
   obj$prms[names(pp)] <- pp
   
   x = reem_traj_dist_obs(
@@ -509,26 +540,33 @@ reem_plot_fit <- function(obj) {
   obs.ha  = obj$obs.ha
   obs.ww  = obj$obs.ww
   
-  ps.cl = lapply(ps, aggregate_time, 
-                 dt.aggr = obs.cl$date, 
-                 # `Y` is the aggregated clinical reports
-                 var.name = 'Y') %>% 
-    dplyr::bind_rows() %>% 
-    dplyr::group_by(date) %>%
-    dplyr::summarise(Y.m = mean(aggregation),
-                     Y.lo = min(aggregation),
-                     Y.hi = max(aggregation))
   
-  ps.ha = ps %>% 
-    dplyr::bind_rows() %>% 
-    dplyr::group_by(date) %>%
-    dplyr::summarise(H.m = mean(H),
-                     H.lo = min(H),
-                     H.hi = max(H))
+  ps.cl = lapply(ps, helper_aggreg, 
+                 type = 'cl', 
+                 dateobs = obj[['obs.cl']][['date']], 
+                 prms= obj$prms) |> 
+    dplyr::bind_rows() |> 
+    dplyr::group_by(date) |>
+    dplyr::summarise(Y.m = mean(obs),
+                     Y.lo = min(obs),
+                     Y.hi = max(obs)) |>
+    dplyr::filter(date <= max(obs.cl$date))
+  
+  ps.ha = lapply(ps, helper_aggreg, 
+               type = 'ha', 
+               dateobs = obj[['obs.ha']][['date']], 
+               prms= obj$prms) |> 
+    dplyr::bind_rows() |> 
+    dplyr::group_by(date) |>
+    dplyr::summarise(H.m = mean(obs),
+                     H.lo = min(obs),
+                     H.hi = max(obs)) |>
+    dplyr::filter(date <= max(obs.ha$date))
   
   ps.ww = ps %>% 
     dplyr::bind_rows() %>% 
     tidyr::drop_na(Wr) %>%
+    dplyr::filter(date %in% obj[['obs.ww']][['date']]) |>
     dplyr::group_by(date) %>%
     # `Wr` is the reported wastewater concentration
     dplyr::summarise(Wr.m = mean(Wr),
@@ -559,7 +597,6 @@ reem_plot_fit <- function(obj) {
                    color   = 'chocolate',
                    title   = 'Fit to wastewater data', 
                    ylab    = 'concentration')
-    
   
   # ---- Posterior parameters
   
