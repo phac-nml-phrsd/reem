@@ -24,137 +24,49 @@ check_date_start <- function(obj) {
   return(prms)
 }
 
-#' Helper function
+
+#' Set the schedule of times and dates for the observations (if any)
+#'
+#' @param type string. variable type
+#' @param obj reem object
+#'
+#' @return a reem object
 #' @keywords internal
-#' 
-create_obs_if_missing <- function(obj, type, verbose) {
-  
+#'
+set_obs_schedule <- function(type, obj) {
   # DEBUG:  type = 'cl'
   
-  thetype = ifelse(type == 'cl', 'obs.cl', 'obs.ha')
+  vtype    = paste0('obs.',type)
+  obs.type = obj[[vtype]]
+  n        = nrow(obs.type)
+  arg.t    = paste0('t.obs.', type)
+  arg.d    = paste0('date.obs.', type)
   
-  theobs = obj[[thetype]]
-  n  = nrow(theobs)
+  # If there are observations attached to 
+  # the `reem` object, simply use their schedules
+  if(n > 0){
+    obj$prms[[arg.t]] <- obs.type$t
+    obj$prms[[arg.d]] <- obs.type$date
+  }
   
-  # If no observations were attached, 
-  # create an empty one.
+  # If there are no observations attached, 
+  # use the times defined in `prms` or 
+  # create an ad-hoc one
   if(n == 0){
     
-    if(verbose) message('no existing ',type,' observations, creating empty one...')
+    has.t.type = !is.null(obj$prms[[arg.t]])
     
-    h = prms$horizon
-    obs_type = data.frame(
-      t    = 0:(h-1), 
-      date = lubridate::ymd('2020-01-01') + 0:(h-1), 
-      inc  = NA)
-    prms[[thetype]] = obs_type
+    if(has.t.type)  t.adhoc = obj$prms[[arg.t]]
+    if(!has.t.type) t.adhoc = 0:obj$prms$horizon
     
-    warning('No ', 
-            ifelse(type == 'cl', 'clinical reports', 'hospital admission'),
-            ' observations (`prms$',
-            ifelse(type == 'cl', 'obs.cl', 'obs.ha'),
-            '`) attached to the REEM object. ',
-            'Setting an empty one. ')
+    d.adhoc = obj$prms$date.start + t.adhoc
+    
+    obj$prms[[arg.t]] <- t.adhoc
+    obj$prms[[arg.d]] <- d.adhoc
   }
-  
-  # If observations attached, use this one
-  if(n > 0){
-    if(verbose) message('Using existing ',type,' observations for schedule...')
-    obs_type = theobs
-  }
-  
-  # if observation _times_ are not defined
-  times.def = 't' %in% names(obs_type)
-  if(! times.def){
-    t.obs.type = as.integer(obs_type$date - prms$date.start)
-  }
-  if(times.def) t.obs.type = obs_type$t
-  
-  if(type == 'cl')  prms = c(prms, 
-                             t.obs.cl    = list(t.obs.type),
-                             date.obs.cl = list(obs_type$date))
-  
-  if(type == 'ha')  prms = c(prms, 
-                             t.obs.ha    = list(t.obs.type),
-                             date.obs.ha = list(obs_type$date))
-  
-  if(verbose){
-    message('type = ', type, '  ==> prms$t.obs.cl = ', prms$t.obs.cl)
-    message('type = ', type, '  ==> prms$t.obs.ha = ', prms$t.obs.ha)
-  }
-  
-  return(prms)
+  return(obj)
 }
 
-
-#' Check observations (data) times
-#'
-#' @param obj 
-#'
-#' @return
-#'
-check_obs_schedule <- function(obj, verbose = 0) {
-  
-  prms = obj$prms
-  
-  # If observation times/dates not specified:
-  # - if `[t/date].obs.xx` exists, set obs date/times to the ones already existing of this object.
-  # - if `[t/date].obs.xx` does not exist, assume observation at every time step.
-  
-  # Check if dates or times are missing as input 
-  miss.obs.dt.cl = is.null(prms$t.obs.cl) & is.null(prms$date.obs.cl)
-  miss.obs.dt.ha = is.null(prms$t.obs.ha) & is.null(prms$date.obs.ha)
-  miss.obs.dt.ww = is.null(prms$t.obs.ww) & is.null(prms$date.obs.ww)
-  
-  if(verbose){ # DEBUG 
-    message('miss.obs.dt.cl = ', miss.obs.dt.cl)
-    message('miss.obs.dt.ha = ', miss.obs.dt.ha)
-    message('miss.obs.dt.ww = ', miss.obs.dt.ww)
-  }
-  
-  if(is.null(prms$date.start)) stop('`date.start` must be specified. ABORTING!')
-  if(is.null(prms$horizon)) stop('`horizon` must be specified. ABORTING!')
-  
-  # -- Wastewater data
-  
-  if(miss.obs.dt.ww){
-    
-    has.obs.ww = !is.null(obj$obs.ww)
-    
-    if(verbose) message('has.obs.ww = ', has.obs.ww)
-    
-    # if observations specified, use their times and dates
-    if(has.obs.ww){
-      prms = c(prms, 
-               t.obs.ww    = list(obj$obs.ww$t),
-               date.obs.ww = list(obj$obs.ww$date))
-      
-      if(verbose) message('prms$t.obs.ww = ', prms$t.obs.ww)
-    }
-    
-    # If not specified, then assumed 
-    # observed at all time steps:
-    if(! has.obs.ww){
-      date.obs.ww = prms$date.start + 1:prms$horizon
-      t.obs.ww    = 1:prms$horizon
-      
-      prms = c(prms, 
-               t.obs.ww    = list(t.obs.ww),
-               date.obs.ww = list(date.obs.ww))
-      
-      warning('Observation times/dates for wastewater data not specified: ',
-              'assuming ww observation schedule at every time step.')
-    }
-  }
-  
-  # -- Clinical data
-  
-  if(miss.obs.dt.cl) prms = create_obs_if_missing(obj, type = 'cl', verbose) 
-  if(miss.obs.dt.ha) prms = create_obs_if_missing(obj, type = 'ha', verbose) 
-  
-  
-  return(prms)
-}
 
 
 #' Simulate an epidemic with a REEM.
@@ -174,7 +86,8 @@ reem_simulate <- function(prms, deterministic) {
   R0      = prms[['R0']]
   B       = prms[['B']]
   N       = prms[['N']]
-  alpha   = prms[['alpha']]
+  alpha   = prms$alpha
+  # alpha   = prms[['alpha']]
   I.init  = prms[['I.init']]
   horizon = prms[['horizon']]
   rho     = prms[['rho']]
@@ -187,6 +100,7 @@ reem_simulate <- function(prms, deterministic) {
   psi     = prms[['psi']]
   t.obs.ww = prms[['t.obs.ww']]
   shed.mult = prms[['shed.mult']]
+  
   
   ni = length(I.init)
   
@@ -347,43 +261,45 @@ reem_simulate_epi <- function(obj,
   
   # -- Checks 
   obj$prms = check_date_start(obj)
-  obj$prms = check_obs_schedule(obj, verbose = 1)
   
-  prms = obj$prms
+  # Set observation schedules
+  for(vt in c('cl', 'ha', 'ww')) {
+    obj = set_obs_schedule(vt,obj)
+  }
   
   # Simulate epidemic to generate data
-  sim = reem_simulate(prms, deterministic)
+  sim = reem_simulate(obj$prms, deterministic)
   
-  sim = dplyr::mutate(sim, date = prms$date.start + t)
+  sim = dplyr::mutate(sim, date = obj$prms$date.start + t)
   
-  # Create dataframes of observations only:
+  # Create dataframes of simulated observations only:
   #  - clinical data
   #  - hospital admissions data
   #  - wastewater data
   # (they may not be observed on the same schedule)
   
-  date.obs.cl = prms$date.start + prms$t.obs.cl
-  date.obs.ha = prms$date.start + prms$t.obs.ha
+  date.obs.cl = obj$prms$date.start + obj$prms$t.obs.cl
+  date.obs.ha = obj$prms$date.start + obj$prms$t.obs.ha
   
   # Aggregate clinical reports
   sim.obs.cl = helper_aggreg(sim = sim, 
                              type = 'cl', 
                              dateobs = date.obs.cl, 
-                             prms = prms)
+                             prms = obj$prms)
   
   # Aggregate hospital admissions
   sim.obs.ha = helper_aggreg(sim = sim, 
                              type = 'ha', 
                              dateobs = date.obs.ha, 
-                             prms = prms)
+                             prms = obj$prms)
   
   # Extract wastewater observations
   sim.obs.ww = sim %>% 
     dplyr::select(t, Wr) %>% 
-    dplyr::filter(t <= prms$last.obs, 
+    dplyr::filter(t <= obj$prms$last.obs, 
                   !is.na(Wr)) %>%   # filtering out NA keeps observed times only.
     dplyr::rename(obs = Wr) %>%
-    dplyr::mutate(date = prms$date.start + t) %>%
+    dplyr::mutate(date = obj$prms$date.start + t) %>%
     dplyr::select(date, t, obs)
   
   return(list(
