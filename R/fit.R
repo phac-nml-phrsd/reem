@@ -530,6 +530,30 @@ plot_traj <- function(obs, ps, varname, color, title, ylab) {
   return(g)
 }
 
+
+extract_fit_aggreg <- function(obj, type, rename = TRUE) {
+  
+  ps = obj$fit.obj$post.simulations
+  
+  vtype = paste0('obs.',type)
+  res = lapply(ps, helper_aggreg, 
+                 type = type, 
+                 dateobs = obj[[vtype]][['date']], 
+                 prms= obj$prms) |> 
+    dplyr::bind_rows() |> 
+    dplyr::group_by(date) |>
+    dplyr::summarise(m = mean(obs),
+                     lo = min(obs),
+                     hi = max(obs)) |>
+    dplyr::filter(date <= max(obj[[vtype]]$date))
+
+  if(rename & type == 'cl') res = dplyr::rename(res, 
+                                       Y.m=m, Y.lo=lo, Y.hi=hi)
+  if(rename & type == 'ha') res = dplyr::rename(res, 
+                                       H.m=m, H.lo=lo, H.hi=hi)
+  return(res)  
+}
+
 reem_plot_fit <- function(obj) {
   
   # Prepare dataframes for plotting
@@ -540,28 +564,8 @@ reem_plot_fit <- function(obj) {
   obs.ha  = obj$obs.ha
   obs.ww  = obj$obs.ww
   
-  
-  ps.cl = lapply(ps, helper_aggreg, 
-                 type = 'cl', 
-                 dateobs = obj[['obs.cl']][['date']], 
-                 prms= obj$prms) |> 
-    dplyr::bind_rows() |> 
-    dplyr::group_by(date) |>
-    dplyr::summarise(Y.m = mean(obs),
-                     Y.lo = min(obs),
-                     Y.hi = max(obs)) |>
-    dplyr::filter(date <= max(obs.cl$date))
-  
-  ps.ha = lapply(ps, helper_aggreg, 
-               type = 'ha', 
-               dateobs = obj[['obs.ha']][['date']], 
-               prms= obj$prms) |> 
-    dplyr::bind_rows() |> 
-    dplyr::group_by(date) |>
-    dplyr::summarise(H.m = mean(obs),
-                     H.lo = min(obs),
-                     H.hi = max(obs)) |>
-    dplyr::filter(date <= max(obs.ha$date))
+  ps.cl = extract_fit_aggreg(obj, type = 'cl')
+  ps.ha = extract_fit_aggreg(obj, type = 'ha')
   
   ps.ww = ps %>% 
     dplyr::bind_rows() %>% 
