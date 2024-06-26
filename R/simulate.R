@@ -215,8 +215,11 @@ helper_aggreg <- function(sim, type, dateobs, prms) {
   if(type == 'cl') v = 'Y'
   if(type == 'ha') v = 'H'
   
+  # Remove simulation data beyond the last observation date
+  df = sim[sim$date <= max(dateobs),]
+  
   a = aggregate_time(
-    df       = sim, 
+    df       = df, 
     dt.aggr  = dateobs, 
     var.name = v) %>% 
     dplyr::transmute(
