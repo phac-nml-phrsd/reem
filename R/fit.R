@@ -202,9 +202,10 @@ reem_traj_dist_obs <- function(
   
   prms = obj$prms
   
-  # Adjust the epidemic start time
+  # Adjust the epidemic start time and horizon
   date.start.init = prms$date.start
   date.start.new  = prms$date.start + prms$start.delta
+  horizon.new     = prms$horizon - prms$start.delta  # `-` because we want to keep the same _date_
   
   # Crop observations that occurred before the (new) start date
   obs.cl = obj$obs.cl |> dplyr::filter(date > date.start.new)
@@ -239,6 +240,7 @@ reem_traj_dist_obs <- function(
   obj.x$obs.ha <- obs.ha
   obj.x$obs.ww <- obs.ww
   obj.x$prms$date.start <- date.start.new
+  obj.x$prms$horizon <- horizon.new
   
   if(deterministic){
     s     = obj.x$simulate_epi(deterministic = TRUE)
@@ -538,13 +540,14 @@ extract_fit_aggreg <- function(obj, type, rename = TRUE) {
   vtype = paste0('obs.',type)
   res = lapply(ps, helper_aggreg, 
                  type = type, 
-                 dateobs = obj[[vtype]][['date']], 
+                   dateobs = obj[[vtype]][['date']], 
                  prms= obj$prms) |> 
     dplyr::bind_rows() |> 
     dplyr::group_by(date) |>
     dplyr::summarise(m = mean(obs),
                      lo = min(obs),
-                     hi = max(obs)) |>
+                     hi = max(obs),
+                     n = n()) |>
     dplyr::filter(date <= max(obj[[vtype]]$date))
 
   if(rename & type == 'cl') res = dplyr::rename(res, 
