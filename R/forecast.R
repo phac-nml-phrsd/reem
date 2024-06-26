@@ -529,24 +529,18 @@ reem_forecast_peak <- function(var, fcst) {
     df = fcst$simfwd.aggr[[var]]
   }
   if(!is.aggregated){
-    df = fcst$simfwd
+    df = fcst$simfwd |> 
+      purrr::map(~dplyr::mutate(., value = .data[[var]]))
   }
   
   res = df %>% 
-    bind_rows(.id = 'post') %>%
-    group_by(post) %>% 
-    summarise(peak.date = date[which.max(.data[[var]])[1]],
-              peak.value = max(.data[[var]],na.rm = TRUE))
+    dplyr::bind_rows(.id = 'post') %>%
+    dplyr::group_by(post) %>% 
+    dplyr::summarise(
+      peak.date  = date[which.max(value)[1]],
+      peak.value = max(value,na.rm = TRUE))
   
   return(res)
-  
-  if(FALSE){ # DEBUG
-    df %>% 
-      bind_rows(.id = 'post') %>% 
-      ggplot(aes(x=date, y=.data[[var]])) + 
-      geom_line(aes(group = post), alpha = 0.4) + 
-      geom_point(data = res, aes(x=peak.date, y=peak.value), size=3)
-  }
 }
 
 
@@ -575,16 +569,19 @@ reem_proba_box <- function(var,
   
   is.aggregated = grepl('\\.aggr$', var)
   
-  if(!is.aggregated) fs = fcst$simfwd
+  if(!is.aggregated) {
+    fs = fcst$simfwd |> 
+      purrr::map(~dplyr::mutate(., value = .data[[var]]))
+  }
   if(is.aggregated)  fs = fcst$simfwd.aggr[[var]]
   
   n = length(fs)
   x = logical(n)
   for(i in 1:n){
     val = fs[[i]] %>% 
-      filter(between(date, date.lower, date.upper)) %>% 
-      select(date, value) %>% 
-      drop_na(value) 
+      dplyr::filter(between(date, date.lower, date.upper)) %>% 
+      dplyr::select(date, value) %>% 
+      tidyr::drop_na(value) 
     x[i] = any(val.lower <= val$value & val$value <= val.upper)
   }
   return(mean(x))
