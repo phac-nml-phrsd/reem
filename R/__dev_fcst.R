@@ -14,7 +14,7 @@ if(0){
   devtools::load_all()
   
   
-  asof = ymd('2022-04-01') 
+  asof = ymd('2022-03-01') 
   
   prm.fcst = list(
     asof         = asof,
@@ -38,10 +38,10 @@ if(0){
   dev.off()
   
   var = 'Y.aggr'  # Y.aggr   Wr
-  date.lower = ymd('2022-02-10')
+  date.lower = ymd('2022-03-10')
   date.upper = ymd('2099-01-01')
-  val.lower = 0.2
-  val.upper = 9
+  val.lower = 25000
+  val.upper = 50000
   
   a = obj$proba_box(var        = var, 
                     date.lower = date.lower, 

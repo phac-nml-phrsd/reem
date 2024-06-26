@@ -583,9 +583,9 @@ reem_proba_box <- function(var,
   for(i in 1:n){
     val = fs[[i]] %>% 
       filter(between(date, date.lower, date.upper)) %>% 
-      select(date, !!var) %>% 
-      drop_na(!!var) 
-    x[i] = any(val.lower <= val[[var]] & val[[var]] <= val.upper)
+      select(date, value) %>% 
+      drop_na(value) 
+    x[i] = any(val.lower <= val$value & val$value <= val.upper)
   }
   return(mean(x))
 }
