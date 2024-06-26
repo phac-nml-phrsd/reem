@@ -388,13 +388,6 @@ reem_plot_forecast <- function(
   fitsim.cl = extract_fit_aggreg(obj, 'cl', rename = F) 
   fitsim.ha = extract_fit_aggreg(obj, 'ha', rename = F) 
   
-  # fitsim.ha = sumpost(post.sim, var = 'H')
-  # fitsim.cl = sumpost(post.sim, var = 'Y') %>% 
-  #   # Aggregate clinical reports for the fitted part
-  #   aggcl(dt.aggr = obs.cl$date, 
-  #         vars = c('m','lo','hi')) %>%
-  #   dplyr::filter(date <= max(obs.cl$date))
-  
   # Retrieve the forecast summary
   sf = fcst.obj$summary.fcst 
   
@@ -420,21 +413,11 @@ reem_plot_forecast <- function(
   # DIFFERENT FROM THE QUANTILE OF THE SUM (WHAT WE REALLY WANT!)
   # TODO: CHANGE THAT!
   
-  # sf.cl = sf2 %>% 
-  #   filter(name == 'Y') %>%
-  #   aggcl(dt.aggr = dt.aggr.fcst, 
-  #         vars = c('mean', qlist)) %>% 
-  #   filter(date > fcst.prm$asof)
-  # 
+  
   sf.ww = filter(sf2, name == 'Wr') %>%
     drop_na(mean) %>%
     filter(date >= fcst.prm$asof)
-  
-  # sf.ha = filter(sf2, name == 'H') %>%
-  #   drop_na(mean) %>%
-  #   filter(date >= fcst.prm$asof)
-  # 
-  
+ 
   # Tue Jun 25 17:07:24 2024 ------------------------------
   
   sf.cl = fcst.obj$summary.fcst.aggr$Y.aggr |> 
@@ -462,9 +445,6 @@ reem_plot_forecast <- function(
     qlist = qlist, 
     xaxis = xaxis)
  
-  g.cl
-  
-   
   g.ha = plot_fitfcst(
     traj.fit = fitsim.ha, 
     traj.fcst = sf.ha, 
@@ -476,8 +456,6 @@ reem_plot_forecast <- function(
     title = 'Hospital admissions', ylab = 'daily adm',
     qlist = qlist,
     xaxis = xaxis)
-  g.ha
-  
   
   g.ww = plot_fitfcst(
     traj.fit = fitsim.ww, 
