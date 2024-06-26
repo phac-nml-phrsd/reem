@@ -203,29 +203,31 @@ reem_traj_dist_obs <- function(
   prms = obj$prms
   
   # Adjust the epidemic start time and horizon
-  date.start.init = prms$date.start
   date.start.new  = prms$date.start + prms$start.delta
   horizon.new     = prms$horizon - prms$start.delta  # `-` because we want to keep the same _date_
   
-  # Crop observations that occurred before the (new) start date
-  obs.cl = obj$obs.cl |> dplyr::filter(date > date.start.new)
-  obs.ha = obj$obs.ha |> dplyr::filter(date > date.start.new)
-  obs.ww = obj$obs.ww |> dplyr::filter(date > date.start.new)
+  # inventory of observations
+  has.cl = nrow(obj$obs.cl)>0
+  has.ha = nrow(obj$obs.ha)>0
+  has.ww = nrow(obj$obs.ww)>0
   
-  if(nrow(obs.cl)==0 & 
-     nrow(obs.ha)==0 & 
-     nrow(obs.ww)==0) {
+  # Crop observations that occurred before the (new) start date
+  if(has.cl) obs.cl = obj$obs.cl |> dplyr::filter(date > date.start.new)
+  if(has.ha) obs.ha = obj$obs.ha |> dplyr::filter(date > date.start.new)
+  if(has.ww) obs.ww = obj$obs.ww |> dplyr::filter(date > date.start.new)
+  
+  if(!has.cl & !has.ha & !has.ww) {
     stop('The REEM object does not have any observation attached.\n',
          'Hence, cannot calculate a distance from observation.\nABORTING!\n\n')
   }
   
   # Setting the horizon for each data source
-  if(nrow(obs.cl) > 0)  datemax.cl = max(obs.cl$date)
-  if(nrow(obs.ww) > 0)  datemax.ww = max(obs.ww$date)
-  if(nrow(obs.ha) > 0)  datemax.ha = max(obs.ha$date)
-  if(nrow(obs.ww) == 0) datemax.ww = datemax.cl
-  if(nrow(obs.ha) == 0) datemax.ha = datemax.cl
-  if(nrow(obs.cl) == 0) datemax.cl = datemax.ww
+  if(has.cl)  datemax.cl = max(obs.cl$date)
+  if(has.ha)  datemax.ha = max(obs.ha$date)
+  if(has.ww)  datemax.ww = max(obs.ww$date)
+  if(!has.cl) datemax.cl = datemax.ww
+  if(!has.ha) datemax.ha = datemax.cl
+  if(!has.ww) datemax.ww = datemax.cl
   
   if(verbose){
     cat('-- Distance debug\n')
@@ -297,9 +299,9 @@ reem_traj_dist_obs <- function(
   # changed the horizon DATE before the 
   # last observations. 
   # Cropping again the tail end
-  obs.cl = dplyr::filter(obs.cl, date <= max(cl.i$date))
-  obs.ha = dplyr::filter(obs.ha, date <= max(ha.i$date))
-  obs.ww = dplyr::filter(obs.ww, date <= max(ww.i$date))
+  if(has.cl) obs.cl = dplyr::filter(obs.cl, date <= max(cl.i$date))
+  if(has.ha) obs.ha = dplyr::filter(obs.ha, date <= max(ha.i$date))
+  if(has.ww) obs.ww = dplyr::filter(obs.ww, date <= max(ww.i$date))
   
   # Calculate the ABC distance
   res = err_fct(cl.i, ha.i, ww.i, 
@@ -433,6 +435,10 @@ reem_fit_abc <- function(obj,
   use.ha = prm.abc$use.ha
   use.cl = prm.abc$use.cl
   
+  if(is.null(use.ww)) use.ww = 0
+  if(is.null(use.ha)) use.ha = 0
+  if(is.null(use.cl)) use.cl = 0
+  
   d.max = max(obj$obs.cl$date, obj$obs.ha$date, obj$obs.ww$date) + 1
   hz    = as.integer(d.max - obj$prms$date.start)
   
@@ -539,9 +545,9 @@ extract_fit_aggreg <- function(obj, type, rename = TRUE) {
   
   vtype = paste0('obs.',type)
   res = lapply(ps, helper_aggreg, 
-                 type = type, 
-                   dateobs = obj[[vtype]][['date']], 
-                 prms= obj$prms) |> 
+               type = type, 
+               dateobs = obj[[vtype]][['date']], 
+               prms= obj$prms) |> 
     dplyr::bind_rows() |> 
     dplyr::group_by(date) |>
     dplyr::summarise(m = mean(obs),
@@ -549,11 +555,11 @@ extract_fit_aggreg <- function(obj, type, rename = TRUE) {
                      hi = max(obs),
                      n = n()) |>
     dplyr::filter(date <= max(obj[[vtype]]$date))
-
+  
   if(rename & type == 'cl') res = dplyr::rename(res, 
-                                       Y.m=m, Y.lo=lo, Y.hi=hi)
+                                                Y.m=m, Y.lo=lo, Y.hi=hi)
   if(rename & type == 'ha') res = dplyr::rename(res, 
-                                       H.m=m, H.lo=lo, H.hi=hi)
+                                                H.m=m, H.lo=lo, H.hi=hi)
   return(res)  
 }
 
@@ -567,44 +573,57 @@ reem_plot_fit <- function(obj) {
   obs.ha  = obj$obs.ha
   obs.ww  = obj$obs.ww
   
-  ps.cl = extract_fit_aggreg(obj, type = 'cl')
-  ps.ha = extract_fit_aggreg(obj, type = 'ha')
+  # inventory of observations
+  has.cl = nrow(obj$obs.cl)>0
+  has.ha = nrow(obj$obs.ha)>0
+  has.ww = nrow(obj$obs.ww)>0
   
-  ps.ww = ps %>% 
-    dplyr::bind_rows() %>% 
-    tidyr::drop_na(Wr) %>%
-    dplyr::filter(date %in% obj[['obs.ww']][['date']]) |>
-    dplyr::group_by(date) %>%
-    # `Wr` is the reported wastewater concentration
-    dplyr::summarise(Wr.m = mean(Wr),
-                     Wr.lo = min(Wr),
-                     Wr.hi = max(Wr))
+  if(has.cl) ps.cl = extract_fit_aggreg(obj, type = 'cl')
+  if(has.ha) ps.ha = extract_fit_aggreg(obj, type = 'ha')
+  
+  if(has.ww){
+    ps.ww = ps %>% 
+      dplyr::bind_rows() %>% 
+      tidyr::drop_na(Wr) %>%
+      dplyr::filter(date %in% obj[['obs.ww']][['date']]) |>
+      dplyr::group_by(date) %>%
+      # `Wr` is the reported wastewater concentration
+      dplyr::summarise(Wr.m = mean(Wr),
+                       Wr.lo = min(Wr),
+                       Wr.hi = max(Wr))
+  } 
   
   ggplot2::theme_set(ggplot2::theme_bw())
   
   # ---- Trajectories
+  g.cl = g.ha = g.ww = NULL
   
-  g.cl = plot_traj(obs     = obs.cl, 
-                   ps      = ps.cl, 
-                   varname = 'Y',
-                   color   = 'chartreuse',
-                   title   = 'Fit to clinical data', 
-                   ylab    = 'cases')
+  if(has.cl){
+    g.cl = plot_traj(obs     = obs.cl, 
+                     ps      = ps.cl, 
+                     varname = 'Y',
+                     color   = 'chartreuse',
+                     title   = 'Fit to clinical data', 
+                     ylab    = 'cases')
+  }
   
-  g.ha = plot_traj(obs     = obs.ha, 
-                   ps      = ps.ha, 
-                   varname = 'H',
-                   color   = 'orchid',
-                   title   = 'Fit to hosp.adm.', 
-                   ylab    = 'cases')
+  if(has.ha){
+    g.ha = plot_traj(obs     = obs.ha, 
+                     ps      = ps.ha, 
+                     varname = 'H',
+                     color   = 'orchid',
+                     title   = 'Fit to hosp.adm.', 
+                     ylab    = 'cases')
+  }
   
-  g.ww = plot_traj(obs     = obs.ww, 
-                   ps      = ps.ww, 
-                   varname = 'Wr',
-                   color   = 'chocolate',
-                   title   = 'Fit to wastewater data', 
-                   ylab    = 'concentration')
-  
+  if(has.ww){
+    g.ww = plot_traj(obs     = obs.ww, 
+                     ps      = ps.ww, 
+                     varname = 'Wr',
+                     color   = 'chocolate',
+                     title   = 'Fit to wastewater data', 
+                     ylab    = 'concentration')
+  }
   # ---- Posterior parameters
   
   # -- 1D density
@@ -698,6 +717,9 @@ reem_plot_fit <- function(obj) {
     post.prms.2d = gpall2d,
     dist         = g.dist
   )
+  # Remove any NULL element (typically when an observation data set is missing)
+  g.list = g.list[!sapply(g.list, is.null)]
+  
   g.all = patchwork::wrap_plots(g.list) 
   
   res = c(g.list, list(all = g.all))
