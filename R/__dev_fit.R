@@ -8,8 +8,9 @@ if(0){
   library(reem)
   devtools::load_all()
   
+  set.seed(1234)
   date.start = ymd('2022-01-01')
-  asof       = ymd('2022-04-01') 
+  asof       = ymd('2022-03-01') 
   hz = 180
   
   prms0 = list(
@@ -72,10 +73,10 @@ if(0){
   # ---- Fit ----
   
   prm.abc = list(
-    n.abc = 6e3,
+    n.abc = 3e3,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
     p.abc = 0.01, #1e-2,
-    n.cores = 12, #min(12, parallel::detectCores() - 1),
+    n.cores = 6, #min(12, parallel::detectCores() - 1),
     use.cl = 1, 
     use.ha = 1, 
     use.ww = 1,
@@ -85,9 +86,9 @@ if(0){
   prms.to.fit = list(
     R0          = list('gamma', 1.5, 0.251),
     alpha       = list('normp', 2, 1),
+    start.delta = list('unif_int', -7, 7)  ,
     i0prop      = list('unif', -5.8, -2),
-    h.prop      = list('unif', 0.001, 0.2),
-    start.delta = list('unif_int', -7, 7)  
+    h.prop      = list('unif', 0.001, 0.2)
   )
   
   foo = obj$fit_abc(prm.abc, prms.to.fit)  
