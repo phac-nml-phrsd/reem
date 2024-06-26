@@ -236,14 +236,19 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
   simfwd.aggr = list()
   summary.fcst.aggr = list()
   
-  tmp.cl = summ_aggr_fcst(simfwd, obj, var = 'cl', prm.fcst)
-  tmp.ha = summ_aggr_fcst(simfwd, obj, var = 'ha', prm.fcst)
-
-  simfwd.aggr[['Y.aggr']]       = tmp.cl$simfwd.aggr
-  summary.fcst.aggr[['Y.aggr']] = tmp.cl$summary.fcst.aggr
+  has.cl = nrow(obj$obs.cl)>0
+  has.ha = nrow(obj$obs.ha)>0
   
-  simfwd.aggr[['H.aggr']]       = tmp.ha$simfwd.aggr
-  summary.fcst.aggr[['H.aggr']] = tmp.ha$summary.fcst.aggr
+  if(has.cl){ 
+    tmp.cl = summ_aggr_fcst(simfwd, obj, var = 'cl', prm.fcst)
+    simfwd.aggr[['Y.aggr']]       = tmp.cl$simfwd.aggr
+    summary.fcst.aggr[['Y.aggr']] = tmp.cl$summary.fcst.aggr
+  }
+  if(has.ha){
+    tmp.ha = summ_aggr_fcst(simfwd, obj, var = 'ha', prm.fcst)
+    simfwd.aggr[['H.aggr']]       = tmp.ha$simfwd.aggr
+    summary.fcst.aggr[['H.aggr']] = tmp.ha$summary.fcst.aggr
+  }
   
   return( list(
     asof   = prm.fcst$asof,

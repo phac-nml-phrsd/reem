@@ -103,15 +103,15 @@ err_fct <- function(cl.i, ha.i, ww.i,
   
   # --- Checks  
   
-  check_dates_cl(obs.cl, cl.i)
-  check_dates_ww(obs.ww, ww.i)
-  check_dates_ha(obs.ha, ha.i)
+  if(use.cl) check_dates_cl(obs.cl, cl.i)
+  if(use.ha) check_dates_ha(obs.ha, ha.i)
+  if(use.ww) check_dates_ww(obs.ww, ww.i)
   
   # --- Adjust to fitting observation dates
   
-  df.cl = dplyr::left_join(cl.i, obs.cl, by='date') |> tidyr::drop_na(obs)
-  df.ha = dplyr::left_join(ha.i, obs.ha, by='date') |> tidyr::drop_na(obs)
-  df.ww = dplyr::left_join(ww.i, obs.ww, by='date') |> tidyr::drop_na(obs)
+  if(use.cl) df.cl = dplyr::left_join(cl.i, obs.cl, by='date') |> tidyr::drop_na(obs)
+  if(use.ha) df.ha = dplyr::left_join(ha.i, obs.ha, by='date') |> tidyr::drop_na(obs)
+  if(use.ww) df.ww = dplyr::left_join(ww.i, obs.ww, by='date') |> tidyr::drop_na(obs)
   
   if(0){ # DEBUG 
     message('\nDEBUG err_fct:')
@@ -210,6 +210,8 @@ reem_traj_dist_obs <- function(
   has.cl = nrow(obj$obs.cl)>0
   has.ha = nrow(obj$obs.ha)>0
   has.ww = nrow(obj$obs.ww)>0
+  
+  obs.cl = obs.ha = obs.ww = data.frame()
   
   # Crop observations that occurred before the (new) start date
   if(has.cl) obs.cl = obj$obs.cl |> dplyr::filter(date > date.start.new)
