@@ -108,15 +108,16 @@ summ_aggr_fcst <- function(simfwd, obj, var, prm.fcst) {
                        helper_aggreg, 
                        type = var, 
                        dateobs = d.fwd, 
-                       prms = obj$prms) 
+                       prms = obj$prms, 
+                       var.name = 'value') 
   
   # Summary statistics (quantiles, mean)
   summary.fcst.aggr = simfwd.aggr |>
     dplyr::bind_rows() |>
-    dplyr::select(date, obs) |> 
+    dplyr::select(date, value) |> 
     dplyr::reframe(
-      quantile_df(obs, probs), 
-      mean = mean(obs),
+      quantile_df(value, probs), 
+      mean = mean(value),
       .by = c(date))
   
   res = list(
@@ -574,8 +575,9 @@ reem_proba_box <- function(var,
   
   is.aggregated = grepl('\\.aggr$', var)
   
-  fs = fcst$simfwd
-  if(is.aggregated) fs = fcst$simfwd.aggr[[var]]
+  if(!is.aggregated) fs = fcst$simfwd
+  if(is.aggregated)  fs = fcst$simfwd.aggr[[var]]
+  
   n = length(fs)
   x = logical(n)
   for(i in 1:n){

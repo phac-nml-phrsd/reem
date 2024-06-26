@@ -210,7 +210,7 @@ reem_simulate <- function(prms, deterministic) {
 #' Helper function to aggregate simulated observations
 #' @keywords internal
 #' 
-helper_aggreg <- function(sim, type, dateobs, prms) {
+helper_aggreg <- function(sim, type, dateobs, prms, var.name = 'obs') {
   
   if(type == 'cl') v = 'Y'
   if(type == 'ha') v = 'H'
@@ -226,6 +226,11 @@ helper_aggreg <- function(sim, type, dateobs, prms) {
       date, 
       t    = as.integer(date - prms$date.start),
       obs  = as.integer(aggregation))
+  
+  if(var.name != 'obs'){
+    idx = which(names(a) == 'obs')
+    names(a)[idx] <- var.name
+  } 
   
   return(a)
 }
