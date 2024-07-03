@@ -15,6 +15,14 @@ check_date_start <- function(obj) {
   }
 }
 
+check_length_timeseries <- function(x, horizon) {
+  n = rlang::as_label(eval(parse(text=dplyr::enquo(x)))[2])
+  if(length(x) != horizon) 
+    message('The size of vector ',n, ' (',
+         length(x),
+         ') is different from `horizon` (=',
+         horizon,')')  
+}
 
 #' Set the schedule of times and dates for the observations (if any).
 #' Handles `date.start` changes.
@@ -95,6 +103,12 @@ reem_simulate <- function(prms, deterministic) {
   
   
   ni = length(I.init)
+  
+  if(horizon <= ni){
+    warning("reem: horizon (=",horizon,") for simulation is shorter than `I.init` (=",ni,"). Cropping vector `I.init`!")
+    I.init = I.init[1:(horizon-1)]  # "-1" for at least one simulation step
+    ni = horizon - 1
+  }
   
   m  = numeric(horizon)
   I  = rep(NA, horizon)   # daily incidence
@@ -191,6 +205,17 @@ reem_simulate <- function(prms, deterministic) {
              sd   = Wp * 0.2)
   
   # Ending
+  
+  check_length_timeseries(m, horizon)
+  check_length_timeseries(I, horizon)
+  check_length_timeseries(S, horizon)
+  check_length_timeseries(A, horizon)
+  check_length_timeseries(Y, horizon)
+  check_length_timeseries(H, horizon)
+  check_length_timeseries(Wd, horizon)
+  check_length_timeseries(Wp, horizon)
+  check_length_timeseries(Wr, horizon)
+  
   
   df = data.frame(
     t = 1:horizon, 
