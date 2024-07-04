@@ -541,8 +541,20 @@ plot_traj <- function(obs, ps, varname, color, title, ylab) {
 }
 
 
+#' Extract posterior variable and aggregate
+#'
+#' @param obj `reem` object
+#' @param type String. Typcal values: `cl`, `ha`. (wastewater is NOT aggregated)
+#' @param rename Logical. Rename aggregated variables.
+#'
+#' @return
+#' @keywords internal
+#'
 extract_fit_aggreg <- function(obj, type, rename = TRUE) {
+ 
+  # type = 'cl'
   
+  # Extract posterior simulations 
   ps = obj$fit.obj$post.simulations
   
   vtype = paste0('obs.',type)
