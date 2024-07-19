@@ -237,7 +237,7 @@ reem_simulate <- function(prms, deterministic) {
 #' 
 helper_aggreg <- function(sim, type, dateobs, prms, var.name = 'obs') {
   
-  if(type == 'cl') v = 'Y'
+  if(type == 'cl') v = 'I'
   if(type == 'ha') v = 'H'
   
   # Remove simulation data beyond the last observation date
@@ -285,11 +285,12 @@ reem_simulate_epi <- function(obj,
   # Simulate epidemic to generate data
   sim = reem_simulate(obj$prms, deterministic)
   
+  # append the dates
   sim = dplyr::mutate(sim, date = obj$prms$date.start + t)
   
   if(0){ # DEBUG 
     print('\nin sim')
-    print(head(sim))
+    print(head(sim, n=12))
   }
   
   # Create dataframes of "simulated observations" 
@@ -303,14 +304,19 @@ reem_simulate_epi <- function(obj,
   #       are assumed to be AGGREGATED observations
   #       unlike wastewater concentration.
   
+  # Clinical reports are already aggregated 
+  # if we consider the variable `Y`, so to 
+  # calculate the "simulated observations"
+  # we just need to retrieve `Y` at the 
+  # observation dates defined in `prms`:
+  dateobs.cl = obj[['prms']][['date.obs.cl']]
+  sim.obs.cl = sim |> 
+    dplyr::filter(date %in% dateobs.cl) |> 
+    dplyr::transmute(date, t, obs = round(Y))
   
-  # Aggregate clinical reports
-  sim.obs.cl = helper_aggreg(sim     = sim, 
-                             type    = 'cl', 
-                             dateobs = obj[['prms']][['date.obs.cl']], 
-                             prms    = obj$prms)
-  
-  # Aggregate hospital admissions
+  # Aggregate hospital admissions because the 
+  # variable `H` in `sim` is _not_aggregated 
+  # (it is a simple proportion of the daily incidence)
   sim.obs.ha = helper_aggreg(sim     = sim, 
                              type    = 'ha', 
                              dateobs = obj[['prms']][['date.obs.ha']], 
@@ -322,7 +328,6 @@ reem_simulate_epi <- function(obj,
     dplyr::filter(date %in% obj[['prms']][['date.obs.ww']]) |>
     dplyr::select(date, t, obs = Wr)
   
-
   return(list(
     sim    = sim, 
     obs.cl = sim.obs.cl,
