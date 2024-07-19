@@ -25,6 +25,6 @@ g = ggplot(d, aes(x=x, y = y, color = alpha )) +
        y = 'Susceptible fraction exposed')+
   scale_color_brewer(palette = 'RdYlGn')
 # g
-pdf('alpha.pdf', width = 8)
+pdf('alpha.pdf', width = 4, height = 3)
 plot(g)
 dev.off()
