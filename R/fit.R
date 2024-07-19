@@ -305,6 +305,16 @@ reem_traj_dist_obs <- function(
   if(has.ha) obs.ha = dplyr::filter(obs.ha, date <= max(ha.i$date))
   if(has.ww) obs.ww = dplyr::filter(obs.ww, date <= max(ww.i$date))
   
+  # Plot for debugging
+  if(0){
+    g.cl = ggplot(cl.i, aes(x=date))+ 
+      geom_point(data = obs.cl, aes(y=obs)) + 
+      geom_line(aes(y=Ym), color = 'steelblue') + 
+      labs(title = 'clinical (Ym)')
+    g.cl
+  }
+  
+  
   # Calculate the ABC distance
   res = err_fct(cl.i, ha.i, ww.i, 
                 obs.cl, obs.ha, obs.ww, 

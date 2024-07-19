@@ -73,7 +73,7 @@ if(0){
   # ---- Fit ----
   
   prm.abc = list(
-    n.abc = 3e3,
+    n.abc = 1e3,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
     p.abc = 0.01, #1e-2,
     n.cores = 6, #min(12, parallel::detectCores() - 1),
@@ -101,6 +101,7 @@ if(0){
   fname = paste0('plot-',timestamp_short(),'.pdf')
   
   plot(gg$traj.cl)
+  plot(gg$traj.ha)
   plot(gg$traj.ww)
   plot(gg$post.prms)
   plot(gg$post.prms.2d)

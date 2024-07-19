@@ -43,7 +43,7 @@ if(0){
             is.fitted = FALSE)
   
   obj$print_prms()
-  simepi  = obj$simulate_epi(deterministic = FALSE)
+  simepi  = obj$simulate_epi(deterministic = TRUE)
   obj$print_prms()
   
   g = plot_epi(simepi) 
