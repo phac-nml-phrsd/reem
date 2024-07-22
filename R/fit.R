@@ -592,9 +592,12 @@ extract_fit_aggreg <- function(obj, type, rename = TRUE) {
 #'
 #' @keywords internal
 #' 
-summarise_post_traj <- function(ps, obsdata, varname) {
+summarise_post_traj <- function(obj, obsdata, varname) {
   # obsdata = 'obs.cl'
   # varname = 'Y'
+  
+  # Retrieve posterior simulations:
+  ps = obj[['fit.obj']][['post.simulations']] 
   
   res = ps %>% 
     dplyr::bind_rows() %>% 
@@ -626,7 +629,6 @@ reem_plot_fit <- function(obj) {
   
   # Prepare dataframes for plotting
   fit.obj = obj$fit.obj 
-  ps      = fit.obj$post.simulations 
   obs.cl  = obj$obs.cl
   obs.ha  = obj$obs.ha
   obs.ww  = obj$obs.ww
@@ -637,11 +639,11 @@ reem_plot_fit <- function(obj) {
   has.ww = nrow(obj$obs.ww)>0
   
   if(has.cl){
-    ps.cl = summarise_post_traj(ps, obsdata = 'obs.cl', varname = 'Y')
+    ps.cl = summarise_post_traj(obj, obsdata = 'obs.cl', varname = 'Y')
   }
   
   if(has.ww){
-    ps.ww = summarise_post_traj(ps, obsdata = 'obs.ww', varname = 'Wr')
+    ps.ww = summarise_post_traj(obj, obsdata = 'obs.ww', varname = 'Wr')
   } 
   
   if(has.ha) {
