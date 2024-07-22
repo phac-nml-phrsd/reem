@@ -163,7 +163,15 @@ err_fct <- function(cl.i, ha.i, ww.i,
   # Hence, the error may not be consistent across all priors.
   
   err =  err.cl + err.ha + err.ww
-  return(err)
+  
+  res = c(
+    total = err, 
+    cl = err.cl, 
+    ha = err.ha, 
+    ww = err.ww
+  )
+  
+  return(res)
 }
 
 
@@ -321,7 +329,10 @@ reem_traj_dist_obs <- function(
                 use.cl, use.ha, use.ww,
                 err.type) 
   return(list(
-    distance = res, 
+    distance    = as.numeric(res['total']),
+    distance.cl = as.numeric(res['cl']),
+    distance.ha = as.numeric(res['ha']),
+    distance.ww = as.numeric(res['ww']),
     sim = a.sim
   ))
 }
@@ -508,6 +519,10 @@ reem_fit_abc <- function(obj,
   snowfall::sfStop()
   
   abc.err = sapply(z, '[[', 'distance')
+  abc.err.cl = sapply(z, '[[', 'distance.cl')
+  abc.err.ha = sapply(z, '[[', 'distance.ha')
+  abc.err.ww = sapply(z, '[[', 'distance.ww')
+
   abc.sim = lapply(z, '[[', 'sim') %>% 
     # Add the simulation number (`index`) 
     # to each iteration:
@@ -515,7 +530,7 @@ reem_fit_abc <- function(obj,
   
   # -- Posteriors
   
-  df.abc = cbind(priors, abc.err) %>% 
+  df.abc = cbind(priors, abc.err, abc.err.cl, abc.err.ha, abc.err.ww) %>% 
     dplyr::mutate(abc.index = 1:nrow(priors)) %>%
     dplyr::arrange(abc.err)
   
@@ -742,20 +757,31 @@ reem_plot_fit <- function(obj) {
   # -- Ordered ABC distances
   
   fit.prm = obj$fit.prm
-  
+
   n.post = round(fit.prm$n.abc * fit.prm$p.abc, 0)
   d = fit.obj$all.distances %>%
     dplyr::mutate(i = dplyr::row_number()) %>%
     dplyr::mutate(type = ifelse(i <= n.post,
                                 'accepted','rejected'))
+  # d.source = dplyr::select(d, dplyr::starts_with('abc.err.'))|>
+  #   dplyr::mutate(x = dplyr::row_number()) |> 
+  #   tidyr::pivot_longer(cols = dplyr::starts_with('abc') )
+  
+  alpha.source = 0.7
+  col.source =
   
   g.dist = d %>%
-    ggplot2::ggplot(ggplot2::aes(x = 1:nrow(d), 
-                                 y = abc.err)) + 
+    ggplot2::ggplot() + 
+    #
+    # -- Total ABC errors
     ggplot2::geom_vline(xintercept = n.post, 
                         linetype = 'dashed')+
-    ggplot2::geom_step(ggplot2::aes(color = type), 
+    ggplot2::geom_step(ggplot2::aes(x = 1:nrow(d),
+                                    y = abc.err,
+                                    color = type), 
                        linewidth = 1 )+
+    #
+    # -- Cosmetics
     ggplot2::scale_y_log10() + 
     ggplot2::scale_x_log10() + 
     ggplot2::scale_color_manual(values = c('indianred2', 'gray90'))+
@@ -766,19 +792,35 @@ reem_plot_fit <- function(obj) {
       y = 'distance'
     )
   
+  g.dist2 = d |> 
+    dplyr::select(starts_with('abc.err.')) |>
+    dplyr::mutate(x = row_number())|>
+    tidyr::pivot_longer(cols = dplyr::starts_with('abc.err.')) |> 
+    dplyr::filter(x < n.post) |> 
+    dplyr::mutate(source = substr(name, 9,10)) |> 
+    ggplot2::ggplot() + 
+    ggplot2::geom_step(ggplot2::aes(y=value, x=x, color = source), 
+              alpha = alpha.source, linewidth = 1) + 
+    ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) + 
+    ggplot2::scale_color_manual(values =  c( 'steelblue', 'seagreen3', 'chocolate' )) + 
+    ggplot2::labs(title = 'ABC distance by data source',
+         subtitle = 'posteriors only',
+         x='ordered ABC iteration', y = 'distance')
+  # g.dist2
+  
   g.list = list(
     traj.cl      = g.cl,
     traj.ha      = g.ha,
     traj.ww      = g.ww,
     post.prms    = g.post,
     post.prms.2d = gpall2d,
-    dist         = g.dist
+    dist         = g.dist,
+    dist.source  = g.dist2
   )
   # Remove any NULL element (typically when an observation data set is missing)
   g.list = g.list[!sapply(g.list, is.null)]
   
-  g.all = patchwork::wrap_plots(g.list) 
-  
+  g.all = patchwork::wrap_plots(g.list, heights = c(1,2,1)) 
   res = c(g.list, list(all = g.all))
   return(res) 
 }
