@@ -587,10 +587,44 @@ extract_fit_aggreg <- function(obj, type, rename = TRUE) {
   return(res)  
 }
 
+#' Helper function to summarize 
+#' NON-AGGREGATED posterior trajectories
+#'
+#' @keywords internal
+#' 
+summarise_post_traj <- function(ps, obsdata, varname) {
+  # obsdata = 'obs.cl'
+  # varname = 'Y'
+  
+  res = ps %>% 
+    dplyr::bind_rows() %>% 
+    tidyr::drop_na(!!varname) %>%
+    # Consider only the dates where the 
+    # actual observations were made for 
+    # a meaningful comparison:
+    dplyr::filter(date %in% obj[[obsdata]][['date']]) |>
+    # Summary stats:
+    dplyr::group_by(date) %>%
+    dplyr::summarise(zz.m = mean(.data[[varname]]),
+                     zz.lo = min(.data[[varname]]),
+                     zz.hi = max(.data[[varname]])) 
+  
+  # Rename summary stats using the variable name
+  names(res)[names(res)=='zz.m']  <- paste0(varname, '.m')
+  names(res)[names(res)=='zz.lo'] <- paste0(varname, '.lo')
+  names(res)[names(res)=='zz.hi'] <- paste0(varname, '.hi')
+
+  return(res)
+}
+
+
+#' Plot fit outputs of a (fitted) reem object
+#' @param obj fitted reem object
+#' 
+#' 
 reem_plot_fit <- function(obj) {
   
   # Prepare dataframes for plotting
-  
   fit.obj = obj$fit.obj 
   ps      = fit.obj$post.simulations 
   obs.cl  = obj$obs.cl
@@ -602,20 +636,17 @@ reem_plot_fit <- function(obj) {
   has.ha = nrow(obj$obs.ha)>0
   has.ww = nrow(obj$obs.ww)>0
   
-  if(has.cl) ps.cl = extract_fit_aggreg(obj, type = 'cl')
-  if(has.ha) ps.ha = extract_fit_aggreg(obj, type = 'ha')
+  if(has.cl){
+    ps.cl = summarise_post_traj(ps, obsdata = 'obs.cl', varname = 'Y')
+  }
   
   if(has.ww){
-    ps.ww = ps %>% 
-      dplyr::bind_rows() %>% 
-      tidyr::drop_na(Wr) %>%
-      dplyr::filter(date %in% obj[['obs.ww']][['date']]) |>
-      dplyr::group_by(date) %>%
-      # `Wr` is the reported wastewater concentration
-      dplyr::summarise(Wr.m = mean(Wr),
-                       Wr.lo = min(Wr),
-                       Wr.hi = max(Wr))
+    ps.ww = summarise_post_traj(ps, obsdata = 'obs.ww', varname = 'Wr')
   } 
+  
+  if(has.ha) {
+    ps.ha = extract_fit_aggreg(obj, type = 'ha')
+  }
   
   ggplot2::theme_set(ggplot2::theme_bw())
   
