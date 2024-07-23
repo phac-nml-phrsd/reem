@@ -1,7 +1,7 @@
 Package: reem
 Type: Package
 Title: Renewal Equation based Epidemic Model 
-Version: 0.6.1
+Version: 0.7.0
 Date: 2024-07-22
 Author: David Champredon
 Maintainer: David Champredon <david.champredon@canada.ca>
