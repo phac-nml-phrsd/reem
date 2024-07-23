@@ -36,7 +36,7 @@ plot_epi <- function(simepi) {
     ggplot2::scale_y_log10() + 
     ggplot2::scale_color_manual(values = col.pop) +
     ggplot2::theme_bw()+
-    ggplot2::theme(panel.grid.minor.y = element_blank() ) + 
+    ggplot2::theme(panel.grid.minor.y = ggplot2::element_blank() ) + 
     ggplot2::labs(title = 'Populations Simulated')
   # g.pop 
   
@@ -69,12 +69,12 @@ plot_epi <- function(simepi) {
     )
   
   g.obs = obs |> 
-    ggplot(aes(x=date, y=obs)) + 
-    geom_step(color = 'grey') + 
-    geom_point() +  
+    ggplot2::ggplot(ggplot2::aes(x=date, y=obs)) + 
+    ggplot2::geom_step(color = 'grey') + 
+    ggplot2::geom_point() +  
     ggplot2::theme_bw()+
-    facet_wrap(~type, ncol = 1, scales = 'free_y') + 
-    labs(title = 'Simulated observations', x='', y='value')
+    ggplot2::facet_wrap(~type, ncol = 1, scales = 'free_y') + 
+    ggplot2::labs(title = 'Simulated observations', x='', y='value')
   
   g = list(
     populations = g.pop, 
