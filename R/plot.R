@@ -36,7 +36,7 @@ plot_epi <- function(simepi) {
     ggplot2::scale_y_log10() + 
     ggplot2::scale_color_manual(values = col.pop) +
     ggplot2::theme_bw()+
-    ggplot2::theme(panel.grid.minor.y = element_blank() ) + 
+    ggplot2::theme(panel.grid.minor.y = ggplot2::element_blank() ) + 
     ggplot2::labs(title = 'Population')
   # g.pop 
   
