@@ -232,18 +232,12 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
     simfwd   = simfwd, 
     prm.fcst = prm.fcst)
   
-  # Dealing with aggregated incidence
+  # Dealing with aggregated hospital admissions
   simfwd.aggr = list()
   summary.fcst.aggr = list()
   
-  has.cl = nrow(obj$obs.cl)>0
   has.ha = nrow(obj$obs.ha)>0
   
-  if(has.cl){ 
-    tmp.cl = summ_aggr_fcst(simfwd, obj, var = 'cl', prm.fcst)
-    simfwd.aggr[['Y.aggr']]       = tmp.cl$simfwd.aggr
-    summary.fcst.aggr[['Y.aggr']] = tmp.cl$summary.fcst.aggr
-  }
   if(has.ha){
     tmp.ha = summ_aggr_fcst(simfwd, obj, var = 'ha', prm.fcst)
     simfwd.aggr[['H.aggr']]       = tmp.ha$simfwd.aggr
@@ -251,10 +245,10 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
   }
   
   return( list(
-    asof   = prm.fcst$asof,
-    simfwd = simfwd, 
-    summary.fcst = summary.fcst,
-    simfwd.aggr = simfwd.aggr,
+    asof              = prm.fcst$asof,
+    simfwd            = simfwd, 
+    summary.fcst      = summary.fcst,
+    simfwd.aggr       = simfwd.aggr,
     summary.fcst.aggr = summary.fcst.aggr
   ))
 }
@@ -390,8 +384,7 @@ reem_plot_forecast <- function(
   post.sim = obj$fit.obj$post.simulations
   
   fitsim.ww = sumpost(post.sim, var = 'Wr')
-  
-  fitsim.cl = extract_fit_aggreg(obj, 'cl', rename = F) 
+  fitsim.cl = sumpost(post.sim, var = 'Y')
   fitsim.ha = extract_fit_aggreg(obj, 'ha', rename = F) 
   
   # Retrieve the forecast summary
@@ -401,9 +394,6 @@ reem_plot_forecast <- function(
   # starting from `asof` and a time interval
   # equal to the one of the observations:
   dt = as.numeric(diff(obs.cl$date))[1]
-  dt.aggr.fcst = seq.Date(from = fcst.prm$asof , 
-                          to = max(sf$date), 
-                          by = dt)
   
   # Reformat to suit ggplot
   sf2 = sf %>% 
@@ -419,23 +409,18 @@ reem_plot_forecast <- function(
   # DIFFERENT FROM THE QUANTILE OF THE SUM (WHAT WE REALLY WANT!)
   # TODO: CHANGE THAT!
   
-  
   sf.ww = filter(sf2, name == 'Wr') %>%
     drop_na(mean) %>%
     filter(date >= fcst.prm$asof)
  
-  # Tue Jun 25 17:07:24 2024 ------------------------------
-  
-  sf.cl = fcst.obj$summary.fcst.aggr$Y.aggr |> 
-    pivot_wider(names_from = qprob, 
-                values_from = q, 
-                names_prefix = 'q_')
+  sf.cl = filter(sf2, name == 'Y') %>%
+    drop_na(mean) %>%
+    filter(date >= fcst.prm$asof)
   
   sf.ha = fcst.obj$summary.fcst.aggr$H.aggr |> 
     pivot_wider(names_from = qprob, 
                 values_from = q, 
                 names_prefix = 'q_')
-  
   
   # - - - Plots - - - 
   
