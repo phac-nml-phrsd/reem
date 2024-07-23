@@ -362,7 +362,7 @@ calc_dist_parallel <- function(i,
   
   if('i0prop' %in% names(priors)){
     obj$prms$i0prop <- pp$i0prop
-    obj$prms = set_I_init(obj$prms)
+    obj$prms = set_I_init(prm = obj$prms)
   }
   
   # overwrite model parameters 
