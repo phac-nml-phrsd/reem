@@ -667,6 +667,8 @@ reem_plot_fit <- function(obj) {
   
   ggplot2::theme_set(ggplot2::theme_bw())
   
+  col.datasource = c( cl='steelblue', ha='springgreen', ww='chocolate' )
+  
   # ---- Trajectories
   g.cl = g.ha = g.ww = NULL
   
@@ -674,7 +676,7 @@ reem_plot_fit <- function(obj) {
     g.cl = plot_traj(obs     = obs.cl, 
                      ps      = ps.cl, 
                      varname = 'Y',
-                     color   = 'chartreuse',
+                     color   = col.datasource['cl'],
                      title   = 'Fit to clinical data', 
                      ylab    = 'cases')
   }
@@ -683,7 +685,7 @@ reem_plot_fit <- function(obj) {
     g.ha = plot_traj(obs     = obs.ha, 
                      ps      = ps.ha, 
                      varname = 'H',
-                     color   = 'orchid',
+                     color   = col.datasource['ha'],
                      title   = 'Fit to hosp.adm.', 
                      ylab    = 'cases')
   }
@@ -692,7 +694,7 @@ reem_plot_fit <- function(obj) {
     g.ww = plot_traj(obs     = obs.ww, 
                      ps      = ps.ww, 
                      varname = 'Wr',
-                     color   = 'chocolate',
+                     color   = col.datasource['ww'],
                      title   = 'Fit to wastewater data', 
                      ylab    = 'concentration')
   }
@@ -759,16 +761,17 @@ reem_plot_fit <- function(obj) {
   fit.prm = obj$fit.prm
 
   n.post = round(fit.prm$n.abc * fit.prm$p.abc, 0)
+  
   d = fit.obj$all.distances %>%
     dplyr::mutate(i = dplyr::row_number()) %>%
     dplyr::mutate(type = ifelse(i <= n.post,
                                 'accepted','rejected'))
-  # d.source = dplyr::select(d, dplyr::starts_with('abc.err.'))|>
-  #   dplyr::mutate(x = dplyr::row_number()) |> 
-  #   tidyr::pivot_longer(cols = dplyr::starts_with('abc') )
+  
+  dist.min = d$abc.err[1] |> round(2)
+  dist.max = d$abc.err[n.post] |> round(2)
   
   alpha.source = 0.7
-  col.source =
+  col.accept = c(accepted = 'indianred2', rejected = 'gray85')
   
   g.dist = d %>%
     ggplot2::ggplot() + 
@@ -780,17 +783,27 @@ reem_plot_fit <- function(obj) {
                                     y = abc.err,
                                     color = type), 
                        linewidth = 1 )+
+    # -- Labels distance values
+    ggplot2::annotate(geom = 'label', x=1, y = 1.3*dist.min, 
+                      label = dist.min, size = 3, 
+                      color = col.accept['accepted']) +
+    ggplot2::annotate(geom = 'label', x= n.post, y = 1.3*dist.max, 
+                      label = dist.max, size = 3, 
+                      color = col.accept['accepted']) +
     #
     # -- Cosmetics
     ggplot2::scale_y_log10() + 
     ggplot2::scale_x_log10() + 
-    ggplot2::scale_color_manual(values = c('indianred2', 'gray90'))+
+    ggplot2::scale_color_manual(values = col.accept)+
     ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) + 
     ggplot2::labs(
       title = 'ABC distances from data',
+      subtitle = paste0('n_abc = ', fit.prm$n.abc, ' ; n_post = ', n.post,
+                        ' ; accept. ratio = ', fit.prm$p.abc),
       x = 'ordered ABC iteration',
       y = 'distance'
     )
+  # g.dist
   
   g.dist2 = d |> 
     dplyr::select(starts_with('abc.err.')) |>
@@ -799,14 +812,19 @@ reem_plot_fit <- function(obj) {
     dplyr::filter(x < n.post) |> 
     dplyr::mutate(source = substr(name, 9,10)) |> 
     ggplot2::ggplot() + 
-    ggplot2::geom_step(ggplot2::aes(y=value, x=x, color = source), 
-              alpha = alpha.source, linewidth = 1) + 
-    ggplot2::theme(panel.grid.minor = ggplot2::element_blank()) + 
-    ggplot2::scale_color_manual(values =  c( 'steelblue', 'seagreen3', 'chocolate' )) + 
+    ggplot2::geom_boxplot(ggplot2::aes(y=value, x=source, 
+                                       fill = source), color = 'grey30')+
+    #           alpha = alpha.source, linewidth = 1) + 
+    ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+                   panel.grid.major.x = ggplot2::element_blank(),
+                   axis.text.x = ggplot2::element_text(face = 'bold', 
+                                                       size = rel(1.5))) + 
+    ggplot2::scale_fill_manual(values = col.datasource) + 
     ggplot2::labs(title = 'ABC distance by data source',
          subtitle = 'posteriors only',
-         x='ordered ABC iteration', y = 'distance')
-  # g.dist2
+         x='data source', y = 'distance')+ 
+    ggplot2::guides(fill='none')
+  g.dist2
   
   g.list = list(
     traj.cl      = g.cl,
