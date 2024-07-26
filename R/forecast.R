@@ -132,7 +132,7 @@ summ_aggr_fcst <- function(simfwd, obj, var, prm.fcst) {
 update_and_simulate <- function(i, pp, obj, verbose, tpb) {
   
   if(verbose)  cat('Simulating forward with posterior sample #',i,'\n')
-  if(!verbose) setTxtProgressBar(tpb, value = i)
+  if(!is.null(tpb)) setTxtProgressBar(tpb, value = i)
   
   # update fitted parameters 
   # with their posterior values
@@ -165,7 +165,7 @@ update_and_simulate <- function(i, pp, obj, verbose, tpb) {
 #' 
 #' @export
 #'
-reem_forecast <- function(obj, prm.fcst, verbose ) {
+reem_forecast <- function(obj, prm.fcst, verbose, progressbar ) {
   
   if(0){   #---  DEBUG
     prm.fcst = list(
@@ -208,9 +208,10 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
     
     message('\nSampling ',ns, ' posterior parameter sets out of ', npp,
             ' available.\n')
-    
-    tpb = txtProgressBar(min = 0, max = max(ii), style = 3, width = 25)
-    
+    tpb = NULL
+    if(progressbar){
+      tpb = txtProgressBar(min = 0, max = max(ii), style = 3, width = 25)
+    }
     simfwd = lapply(X   = ii,
                     FUN = update_and_simulate, 
                     pp  = pp, 

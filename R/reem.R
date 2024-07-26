@@ -138,7 +138,9 @@ setRefClass(
       # ==== Forecasts ====
       # = = = = = = = = = = 
       
-      forecast = function(prm.fcst, verbose = FALSE){
+      forecast = function(prm.fcst, 
+                          verbose = FALSE, 
+                          progressbar = FALSE){
         
         if(!.self$is.fitted) 
           stop('Model cannot forecast because it is not fitted.')
@@ -147,7 +149,8 @@ setRefClass(
         
         res = reem_forecast(obj      = .self, 
                             prm.fcst = prm.fcst,
-                            verbose  = verbose) 
+                            verbose  = verbose, 
+                            progressbar = progressbar) 
         
         .self$fcst.obj <- res
         
