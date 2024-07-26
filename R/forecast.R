@@ -491,17 +491,57 @@ reem_plot_peak <- function( var,
   
   pk = obj$forecast_peak(var = var)
   
-  g.pk = pk %>% ggplot(aes(x=peak.date , y=peak.value)) +
-    geom_density_2d_filled(color = 'grey50', alpha = 0.6)+
-    theme(panel.grid.minor.y = element_blank(), 
-          panel.border = element_blank(),
-          axis.ticks   = element_blank())  +
-    scale_x_date(date_labels = date_labels)+
-    labs(title = paste0('Forecast peak for `', var,'`'),
-         x = 'Peak date', y = 'Peak value') + 
-    guides(fill = 'none')
+  g.pk2d = pk %>% 
+    ggplot2::ggplot(ggplot2::aes(x=peak.date , y=peak.value)) +
+    ggplot2::geom_point(alpha = 0.5, size = 3) + 
+    ggplot2::geom_density_2d_filled(color = 'grey50', alpha = 0.6)+
+    ggplot2::theme(panel.grid.minor.y = ggplot2::element_blank(), 
+                   panel.border = ggplot2::element_blank(),
+                   axis.ticks   = ggplot2::element_blank())  +
+    ggplot2::scale_y_continuous(position = "right", 
+                                labels = scales::comma_format()) +
+    ggplot2::scale_x_date(date_labels = date_labels)+
+    ggplot2::labs(title = paste0('Forecast peak for `', var,'`'),
+                  x = 'Peak date', y = 'Peak value') + 
+    ggplot2::guides(fill = 'none')
+  # g.pk2d
   
-  if(logscale) g.pk = g.pk + scale_y_log10()
+  g.pk.v = pk |> 
+    ggplot2::ggplot(ggplot2::aes(x=peak.value)) + 
+    ggplot2::geom_histogram(bins = 12, fill = 'lightgrey', color='darkgrey') + 
+    ggplot2::theme(panel.grid = ggplot2::element_blank(), 
+                   axis.text.x = ggplot2::element_blank(),
+                   axis.ticks.x = ggplot2::element_blank(),
+                   panel.border = ggplot2::element_blank(),
+                   axis.text.y = ggplot2::element_blank())+
+    ggplot2::coord_flip()+
+    ggplot2::labs(x='',y='')
+  # g.pk.v
+  
+  g.pk.d = pk |> 
+    ggplot2::ggplot(ggplot2::aes(x=peak.date)) + 
+    ggplot2::geom_histogram(bins = 12, fill = 'lightgrey', color='darkgrey')+
+    ggplot2::scale_x_date(date_labels = date_labels) +
+    ggplot2::theme(panel.grid = ggplot2::element_blank(), 
+                   axis.text.y = ggplot2::element_blank(),
+                   axis.ticks.y = ggplot2::element_blank(),
+                   panel.border = ggplot2::element_blank(),
+                   axis.text.x = ggplot2::element_text(size = ggplot2::rel(0.6))  )+
+    ggplot2::labs(x='',y='')
+  # g.pk.d
+    
+  if(logscale) {
+    g.pk2d = g.pk2d + ggplot2::scale_y_log10(position = "right", 
+                                             labels = scales::comma_format())
+    g.pk.v = g.pk.v + ggplot2::scale_x_log10(labels = scales::comma_format())
+  }
+  
+  g.pk = patchwork::wrap_plots(g.pk2d, g.pk.v, g.pk.d, 
+                               heights = c(5,1),
+                               widths  = c(13,2),
+                               ncol = 2)
+  # g.pk
+
   return(g.pk)
 }
 
