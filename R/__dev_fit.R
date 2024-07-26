@@ -10,7 +10,7 @@ if(0){
   
   set.seed(1234)
   date.start = ymd('2022-01-01')
-  asof       = ymd('2022-03-01') 
+  asof       = ymd('2022-02-21') 
   hz = 180
   
   prms0 = list(
@@ -76,7 +76,7 @@ if(0){
     n.abc = 1e3,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
     p.abc = 0.01, #1e-2,
-    n.cores = 6, #min(12, parallel::detectCores() - 1),
+    n.cores = 3, #min(12, parallel::detectCores() - 1),
     use.cl = 1, 
     use.ha = 1, 
     use.ww = 1,

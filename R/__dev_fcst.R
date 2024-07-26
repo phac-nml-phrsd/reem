@@ -14,7 +14,7 @@ if(0){
   devtools::load_all()
   
   
-  asof = ymd('2022-03-01') 
+  asof = ymd('2022-02-21') 
   
   prm.fcst = list(
     asof         = asof,
@@ -30,18 +30,26 @@ if(0){
   fcst = obj$forecast(prm = prm.fcst, verbose = 1)
   
   g.fcst = obj$plot_forecast(date_breaks = '1 month')
-  g      = patchwork::wrap_plots(g.fcst, ncol=1)
+  g      = patchwork::wrap_plots(g.fcst, nrow=1)
   g
+ 
+  pk = obj$forecast_peak(var = 'H.aggr')
+  pk
+  mean(pk$peak.value > 10000) 
+  
+  g.peak.ha = obj$plot_peak(var = 'H.aggr', logscale = 0)
+  g.peak.cl = obj$plot_peak(var = 'Y', logscale = 0)
+  g.peak.cl | g.peak.ha
   
   pdf(paste0('plot-fcst-', reem::timestamp_short(),'.pdf'))
   plot(g)
   dev.off()
   
-  var = 'Y.aggr'  # Y.aggr   Wr
-  date.lower = ymd('2022-03-10')
-  date.upper = ymd('2099-01-01')
-  val.lower = 25000
-  val.upper = 50000
+  var = 'Y'  # H.aggr   Y
+  date.lower = ymd('2022-04-01')
+  date.upper = ymd('2022-09-12')
+  val.lower = 2500
+  val.upper = 25000
   
   a = obj$proba_box(var        = var, 
                     date.lower = date.lower, 
@@ -50,8 +58,7 @@ if(0){
                     val.upper  = val.upper)
   print(a)
   
-  pk = obj$forecast_peak(var = 'Y.aggr')
-  mean(pk$peak.value > 105)
+  
   
   
   fcst.obj = obj$fcst.obj 

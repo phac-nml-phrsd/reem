@@ -575,7 +575,7 @@ reem_forecast_peak <- function(var, fcst) {
 }
 
 
-#' Returns the probability that the forecasted variable
+#' Returns the probability that the forecasted variable trajectory
 #' is within a box defined by lower and upper dates and values.
 #'
 #' @param var String. Name of the variable.
