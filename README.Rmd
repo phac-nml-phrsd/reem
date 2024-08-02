@@ -117,7 +117,7 @@ First, let's create synthetic observation data from the simulation example above
 sim.data = simepi
 
 # Set the date for "today"
-asof = lubridate::ymd('2022-04-01') 
+asof = lubridate::ymd('2022-02-20') 
 
 # Retrieve the simulated observations
 obs.cl = dplyr::filter(sim.data$obs.cl, date <= asof)
@@ -214,7 +214,7 @@ _To do_
 # attach forecast settings
 prm.fcst <- list(
   asof = asof,
-  horizon.fcst = lubridate::ymd('2022-05-01'), # one month horizon 
+  horizon.fcst = lubridate::ymd('2022-03-20'), # one month horizon 
   use.fit.post = TRUE, # use existing posterior samples saved in obj during fit
   n.resample = 10, # posterior sample size = 10
   ci = c(0.95) # return these confidence intervals in sim summaries
