@@ -818,7 +818,7 @@ reem_plot_fit <- function(obj) {
     ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
                    panel.grid.major.x = ggplot2::element_blank(),
                    axis.text.x = ggplot2::element_text(face = 'bold', 
-                                                       size = rel(1.5))) + 
+                                                       size = ggplot2::rel(1.5))) + 
     ggplot2::scale_fill_manual(values = col.datasource) + 
     ggplot2::labs(title = 'ABC distance by data source',
          subtitle = 'posteriors only',
