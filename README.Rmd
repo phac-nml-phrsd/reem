@@ -54,12 +54,18 @@ library(snowfall)
 
 # Define model parameters
 
+date.start = lubridate::ymd('2022-01-01')
+hz = 90
+
 prms = list(
-  horizon  = 90,  # horizon of the simulation
-  last.obs = 88,  # last observation time (must be < horizon)
-  B        = rep(1,90), # time dependent multiplicative factor for transmission
+  horizon  = hz,  # horizon of the simulation
+  last.obs = hz-1,  # last observation time (must be < horizon)
+  B        = rep(1,hz), # time dependent multiplicative factor for transmission
   i0prop  = 1e-3,  # initial proportion of the population infected
-  date.start = lubridate::ymd('2022-01-01'), # start date of the epidemic
+  date.start = date.start, # start date of the epidemic
+  date.obs.cl = date.start + seq(7,hz-2, by = 7),
+  date.obs.ha = date.start + seq(12,hz-2, by = 10),
+  date.obs.ww = date.start + seq(3,hz-2, by=14),
   start.delta = 0, 
   R0      = 2.0, # Basic reproduction number
   N       = 1e4, # population size
@@ -69,6 +75,8 @@ prms = list(
   rho     = 0.1, # mean reporting ratio
   g       = get_gi(), # Generation interval distribution
   fec     = get_fecalshed(), # fecal shedding kinetics
+  h.prop  = 0.05, # total proportion hospitalized for one cohort
+  h.lags  = c(rep(0,3), 1, 2, 2, 1, 0), # Lag infection-hospitalization
   kappa   = 0.18, # pathogen decay in ww
   psi     = get_psi(), # plug flow simulation,
   shed.mult = 0.2 # deposited fecal shedding multiplier  
@@ -100,7 +108,7 @@ plot(patchwork::wrap_plots(g, ncol = 1))
 If we attach observation data (from clinical and/or wastewater surveillance),
 to a `reem` object, then it is possible to fit its model parameters to these data. The example below shows how to do this.
 
-First, let's create synthetic observation data from the simulation example above. We use synthetic data (as opposed to real data) because we to assess the accuracy of the fit. The synthetic data are generated from the vey same model `reem` where we know all the parameters. 
+First, let's create synthetic observation data from the simulation example above. We use synthetic data (as opposed to real data) because we to assess the accuracy of the fit. The synthetic data are generated from the very same model `reem` where we know all the parameters. 
 
 ```{r simulate data}
 # we use the example above and make a copy of its
@@ -114,6 +122,7 @@ asof = lubridate::ymd('2023-03-01')
 # Retrieve the simulated observations
 obs.cl = dplyr::filter(sim.data$obs.cl, date <= asof)
 obs.ww = dplyr::filter(simepi$obs.ww, date <= asof)
+obs.ha = dplyr::filter(simepi$obs.ha, date <= asof)
 
 # shift the dates such that they 
 # do not perfectly align with the simulation
@@ -122,11 +131,13 @@ obs.cl$date <- obs.cl$date + 1
 
 # Attached (simulated) data to new `reem` object:
 prms$t.obs.cl <- NULL
+prms$t.obs.ha <- NULL
 prms$t.obs.ww <- NULL
 obj  = new('reem', 
            name = 'foo2', 
            prms = prms, 
            obs.cl = obs.cl,
+           obs.ha = obs.ha,
            obs.ww = obs.ww,
            is.fitted = FALSE)
 ```
@@ -141,8 +152,9 @@ prm.abc = list(
   p.abc = 0.02,  # Acceptance probability (the lower the better)
   n.cores = 1,   # number of cores used for parallel computing
   use.cl = TRUE, # use clinical observations in the fit?
+  use.ha = TRUE, # use hospital admissions in the fit?
   use.ww = TRUE, # use wastewater observation in the fit?
-  err.type = 'L2'# Type of error calculated during the fit.
+  err.type = 'normlarge'# Type of error calculated during the fit.
 )
 
 # Define the priors of the parameters to be fitted:
@@ -161,6 +173,7 @@ Now that all the parameters for the ABC fit have been defined, we can launch the
 ```{r fit ABC}
 #  Launch the fit 
 thefit = obj$fit_abc(prm.abc, prms.to.fit)  
+#saveRDS(obj, file = "obj_fitted.rds")
 ```  
 
 Once the ABC fit is completed, we can call built-in functions to assess the goodness of fit.
@@ -171,6 +184,7 @@ First, lets visualize the posterior time series trajectories for the the clinica
 gg = obj$plot_fit()
 
 plot(gg$traj.cl)
+plot(gg$traj.ha)
 plot(gg$traj.ww)
 ```
 
@@ -190,4 +204,5 @@ And finally, we can assess the efficiency of the ABC algorithm by plotting the p
 
 ```{r plot fitted distances, fig.width=11}
 plot(gg$dist)
+plot(gg$dist.source)
 ```
