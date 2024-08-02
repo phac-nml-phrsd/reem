@@ -117,7 +117,7 @@ First, let's create synthetic observation data from the simulation example above
 sim.data = simepi
 
 # Set the date for "today"
-asof = lubridate::ymd('2023-03-01') 
+asof = lubridate::ymd('2022-04-01') 
 
 # Retrieve the simulated observations
 obs.cl = dplyr::filter(sim.data$obs.cl, date <= asof)
@@ -172,8 +172,7 @@ Now that all the parameters for the ABC fit have been defined, we can launch the
 
 ```{r fit ABC}
 #  Launch the fit 
-thefit = obj$fit_abc(prm.abc, prms.to.fit)  
-#saveRDS(obj, file = "obj_fitted.rds")
+thefit = obj$fit_abc(prm.abc, prms.to.fit)
 ```  
 
 Once the ABC fit is completed, we can call built-in functions to assess the goodness of fit.
@@ -205,4 +204,23 @@ And finally, we can assess the efficiency of the ABC algorithm by plotting the p
 ```{r plot fitted distances, fig.width=11}
 plot(gg$dist)
 plot(gg$dist.source)
+```
+
+## Forecast example
+
+_To do_
+
+```{r forecast object}
+# attach forecast settings
+prm.fcst <- list(
+  asof = asof,
+  horizon.fcst = lubridate::ymd('2022-05-01'), # one month horizon 
+  use.fit.post = TRUE, # use existing posterior samples saved in obj during fit
+  n.resample = 10, # posterior sample size = 10
+  ci = c(0.95) # return these confidence intervals in sim summaries
+)
+
+fcst = obj$forecast(prm.fcst=prm.fcst, verbose=F, progressbar=F)
+
+obj$plot_forecast()
 ```

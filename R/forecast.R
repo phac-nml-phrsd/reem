@@ -1,5 +1,5 @@
 quantile_df <- function(x, probs) {
-  tibble(
+  tibble::tibble(
     q     = stats::quantile(x, probs, na.rm = TRUE),
     qprob = probs
   )
@@ -129,7 +129,7 @@ summ_aggr_fcst <- function(simfwd, obj, var, prm.fcst) {
 
 
 # Helper function 
-update_and_simulate <- function(i, pp, obj, verbose, tpb) {
+update_and_simulate <- function(i, pp, obj, prm.fcst, verbose, tpb) {
   
   if(verbose)  cat('Simulating forward with posterior sample #',i,'\n')
   if(!is.null(tpb)) setTxtProgressBar(tpb, value = i)
@@ -216,6 +216,7 @@ reem_forecast <- function(obj, prm.fcst, verbose, progressbar ) {
                     FUN = update_and_simulate, 
                     pp  = pp, 
                     obj = obj,
+                    prm.fcst = prm.fcst,
                     verbose = verbose,
                     tpb = tpb)
   }
@@ -269,7 +270,7 @@ add_ribbons_quantiles <- function(g, qlist, k,
                                   col.fcst, alpha.ribbon) {
   nq = length(qlist)
   res = g + 
-    geom_ribbon(aes(ymin = .data[[qlist[k]]], 
+    ggplot2::geom_ribbon(ggplot2::aes(ymin = .data[[qlist[k]]], 
                     ymax = .data[[qlist[nq - k + 1] ]]), 
                 fill = col.fcst, alpha = alpha.ribbon)
   return(res)
@@ -299,25 +300,25 @@ plot_fitfcst <- function(traj.fit, traj.fcst, obs,
                          fcst.prm, 
                          title, ylab, qlist, xaxis) {
   
-  g = ggplot(data = traj.fcst, aes(x=date))+ 
+  g = ggplot2::ggplot(data = traj.fcst, ggplot2::aes(x=date))+ 
     # --- Fit
-    geom_line(data = traj.fit, aes(y=m), 
+    ggplot2::geom_line(data = traj.fit, ggplot2::aes(y=m), 
               color = col.fit, linetype = 'dashed') + 
-    geom_ribbon(data = traj.fit, aes(ymin=lo, ymax=hi), 
+    ggplot2::geom_ribbon(data = traj.fit, ggplot2::aes(ymin=lo, ymax=hi), 
                 fill = col.fit, color = col.fit, 
                 linewidth = 0.1, 
                 alpha = alpha.ribbon / 2) + 
-    geom_point(data = obs, aes(y=obs)) + 
+    ggplot2::geom_point(data = obs, ggplot2::aes(y=obs)) + 
     # --- Forecast
-    geom_line( aes(y = mean), color= col.fcst, 
+    ggplot2::geom_line(ggplot2::aes(y = mean), color= col.fcst, 
                linetype = 'dotted') + 
-    geom_vline(xintercept = fcst.prm$asof, 
+    ggplot2::geom_vline(xintercept = fcst.prm$asof, 
                linetype = 'dashed', 
                color = 'gray50') + 
-    annotate(geom = 'text', y=1, x=fcst.prm$asof, 
+    ggplot2::annotate(geom = 'text', y=1, x=fcst.prm$asof, 
              label = fcst.prm$asof, size = 2) + 
     xaxis + 
-    labs(title =title, 
+    ggplot2::labs(title =title, 
          x = '', y = ylab, 
          caption = paste('fit ribbon: min/max\nfcst ribbon: quantiles'))
   
@@ -398,7 +399,7 @@ reem_plot_forecast <- function(
   
   # Reformat to suit ggplot
   sf2 = sf %>% 
-    pivot_wider(names_from = qprob, values_from = q, 
+    tidyr::pivot_wider(names_from = qprob, values_from = q, 
                 names_prefix = 'q_')
   
   z  = names(sf2)
@@ -410,16 +411,16 @@ reem_plot_forecast <- function(
   # DIFFERENT FROM THE QUANTILE OF THE SUM (WHAT WE REALLY WANT!)
   # TODO: CHANGE THAT!
   
-  sf.ww = filter(sf2, name == 'Wr') %>%
-    drop_na(mean) %>%
-    filter(date >= fcst.prm$asof)
+  sf.ww = dplyr::filter(sf2, name == 'Wr') %>%
+    tidyr::drop_na(mean) %>%
+    dplyr::filter(date >= fcst.prm$asof)
  
-  sf.cl = filter(sf2, name == 'Y') %>%
-    drop_na(mean) %>%
-    filter(date >= fcst.prm$asof)
+  sf.cl = dplyr::filter(sf2, name == 'Y') %>%
+    tidyr::drop_na(mean) %>%
+    dplyr::filter(date >= fcst.prm$asof)
   
   sf.ha = fcst.obj$summary.fcst.aggr$H.aggr |> 
-    pivot_wider(names_from = qprob, 
+    tidyr::pivot_wider(names_from = qprob, 
                 values_from = q, 
                 names_prefix = 'q_')
   
@@ -462,9 +463,9 @@ reem_plot_forecast <- function(
     xaxis = xaxis)
   
   if(logscale){
-    g.cl = g.cl + scale_y_log10()
-    g.ha = g.ha + scale_y_log10()
-    g.ww = g.ww + scale_y_log10()
+    g.cl = g.cl + ggplot2::scale_y_log10()
+    g.ha = g.ha + ggplot2::scale_y_log10()
+    g.ww = g.ww + ggplot2::scale_y_log10()
   }
   
   return(list(
