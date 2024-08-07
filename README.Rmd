@@ -60,7 +60,7 @@ hz = 90
 prms = list(
   horizon  = hz,  # horizon of the simulation
   last.obs = hz-1,  # last observation time (must be < horizon)
-  B        = rep(1,hz), # time dependent multiplicative factor for transmission
+  B        = rep(1,hz + 20), # time dependent multiplicative factor for transmission
   i0prop  = 1e-3,  # initial proportion of the population infected
   date.start = date.start, # start date of the epidemic
   date.obs.cl = date.start + seq(7,hz-2, by = 7),
