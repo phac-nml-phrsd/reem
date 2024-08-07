@@ -86,8 +86,7 @@ reem_simulate <- function(prms, deterministic) {
   R0      = prms[['R0']]
   B       = prms[['B']]
   N       = prms[['N']]
-  alpha   = prms$alpha
-  # alpha   = prms[['alpha']]
+  alpha   = prms[['alpha']]
   I.init  = prms[['I.init']]
   horizon = prms[['horizon']]
   rho     = prms[['rho']]
@@ -103,11 +102,23 @@ reem_simulate <- function(prms, deterministic) {
   
   
   ni = length(I.init)
+  nB = length(B)
   
   if(horizon <= ni){
     warning("reem: horizon (=",horizon,") for simulation is shorter than `I.init` (=",ni,"). Cropping vector `I.init`!")
     I.init = I.init[1:(horizon-1)]  # "-1" for at least one simulation step
     ni = horizon - 1
+  }
+  
+  if(nB < horizon){
+    B2 = B
+    B2 = c(B, rep(B[nB], horizon - nB))
+    B  = B2
+    warning('Length of parameter B is too short (',nB,').',
+         ' It must be at least as long as horizon (',horizon,').\n',
+         'B has been extended to match the required length',
+         ' duplicating its last element to fill in.\n',
+         'You may want to define B with a longer length when building the `reem` object.')
   }
   
   m  = numeric(horizon)
@@ -283,7 +294,7 @@ reem_simulate_epi <- function(obj,
   # obj$print_prms()
    
   # Simulate epidemic to generate data
-  sim = reem_simulate(obj$prms, deterministic)
+  sim = reem_simulate(prms = obj$prms, deterministic)
   
   # append the dates
   sim = dplyr::mutate(sim, date = obj$prms$date.start + t)
