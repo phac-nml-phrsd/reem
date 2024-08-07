@@ -133,6 +133,9 @@ obs.cl$date <- obs.cl$date + 1
 prms$t.obs.cl <- NULL
 prms$t.obs.ha <- NULL
 prms$t.obs.ww <- NULL
+horizon.new <- as.numeric(asof - obj$prms$date.start)+1
+prms$horizon <- horizon.new
+prms$B <- prms$B[1:horizon.new] # crop according to new horizon
 obj  = new('reem', 
            name = 'foo2', 
            prms = prms, 
