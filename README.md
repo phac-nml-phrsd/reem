@@ -188,6 +188,8 @@ obs.cl$date <- obs.cl$date + 1
 prms$t.obs.cl <- NULL
 prms$t.obs.ha <- NULL
 prms$t.obs.ww <- NULL
+horizon.new <- as.numeric(asof - obj$prms$date.start)+1
+prms$horizon <- horizon.new
 obj  = new('reem', 
            name = 'foo2', 
            prms = prms, 
@@ -231,7 +233,7 @@ and we call its *member function* named `fit_abc()`:
 
 ``` r
 #  Launch the fit 
-thefit = obj$fit_abc(prm.abc, prms.to.fit)  
+thefit = obj$fit_abc(prm.abc, prms.to.fit)
 ```
 
     ## 
@@ -252,21 +254,16 @@ thefit = obj$fit_abc(prm.abc, prms.to.fit)
 
     ## Warning in searchCommandline(parallel, cpus = cpus, type = type, socketHosts =
     ## socketHosts, : Unknown option on commandline:
-    ## rmarkdown::render('C:/Users/DCHAMPRE/OneDrive - HC-SC
-    ## PHAC-ASPC/GitHub/reem/README.Rmd', encoding
+    ## rmarkdown::render('C:/Users/IPAPST/git-repos/reem/README.Rmd', encoding
 
     ## snowfall 1.84-6.3 initialized: sequential execution, one CPU.
 
-    ## Warning: package 'purrr' was built under R version 4.2.3
+    ## Warning: package 'purrr' was built under R version 4.3.3
 
     ## sfExportAll() ignored in sequential mode.
 
     ## ABC iteration # 1 / 500 
     ## ABC iteration # 500 / 500
-
-``` r
-#saveRDS(obj, file = "obj_fitted.rds")
-```
 
 Once the ABC fit is completed, we can call built-in functions to assess
 the goodness of fit.
@@ -381,9 +378,10 @@ We can use this fitted object to forecast the epidemic trajectory.
   plot(g)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- --> We can add a
-new hypothetical transmission scenario where transmission shoots up
-shortly after asof date and then forecast
+![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
+
+We can add a new hypothetical transmission scenario where transmission
+shoots up shortly after `asof` date and then forecast:
 
 ``` r
 B.date = date.start + c(-20:(hz+200))
