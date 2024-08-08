@@ -192,15 +192,22 @@ aggcl <- function(df, dt.aggr, vars) {
 
 prm_model_example <- function() {
   
+  date.start = lubridate::ymd('2000-01-01')
+  horizon = 300   # in days
+  B.date = date.start + c(-30:(horizon+30)) 
+  # +/- 30 in case `start.delta` is used
+  # this will avoid warning messages (especially in the fit)
+  B = data.frame(date = B.date, mult = rep(1,length(B.date))) 
+  
    prms = list(
-    horizon = 300,  # horizon of the simulation
-    last.obs = 299,  # last observation time (must be < horizon)
-    B       = rep(1,300), # Behavior change
+    horizon  = horizon,  # horizon of the simulation
+    last.obs = horizon-1,  # last observation time (must be < horizon)
+    B       = B, # Behavior change
     freq.obs.ww = 3, # average frequency of ww observation
-    t.obs.cl = seq(7,280, by = 7),
-    t.obs.ww = seq(3,200, by=3),
+    t.obs.cl = seq(7, horizon - 20, by = 7),
+    t.obs.ww = seq(3,horizon - 50, by=3),
     i0prop  = 1e-3,
-    date.start = lubridate::ymd('2000-01-01'),
+    date.start = date.start, 
     start.delta = 0, 
     R0      = 1.5, # Basic reproduction number
     N       = 9999, # population size
