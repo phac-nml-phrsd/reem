@@ -9,6 +9,7 @@ reem_create <-  function(){
         prms      = list(),
         is.fitted = FALSE,
         obs.cl    = data.frame(),
+        obs.ha    = data.frame(),
         obs.ww    = data.frame()))
 }
 

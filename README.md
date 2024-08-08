@@ -49,27 +49,38 @@ population and the pathogen concentration in the wastewater.
 ``` r
 library(reem)
 library(snowfall)
+library(lubridate)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 ```
 
 ``` r
 # Define model parameters
 
-date.start = lubridate::ymd('2022-01-01')
-hz = 90
+date.start = ymd('2022-01-01')
+hz = 120
+
+# Behavior change, 
+# time dependent multiplicative factor for transmission
+B.date = date.start + c(-20:(hz+20)) # define beyond date.start +/- delta.start to avoid warnings
+date.break = ymd('2022-03-01')
+B = data.frame(date = B.date, mult = rep(1,length(B.date))) |>
+  mutate(mult = if_else(date >= date.break, 0.8, mult))
 
 prms = list(
   horizon  = hz,  # horizon of the simulation
   last.obs = hz-1,  # last observation time (must be < horizon)
-  B        = rep(1,hz), # time dependent multiplicative factor for transmission
+  B        = B, # 
   i0prop  = 1e-3,  # initial proportion of the population infected
   date.start = date.start, # start date of the epidemic
   date.obs.cl = date.start + seq(7,hz-2, by = 7),
   date.obs.ha = date.start + seq(12,hz-2, by = 10),
   date.obs.ww = date.start + seq(3,hz-2, by=14),
   start.delta = 0, 
-  R0      = 2.0, # Basic reproduction number
+  R0      = 1.5, # Basic reproduction number
   N       = 1e4, # population size
-  alpha   = 0, # transmission heterogeneity (alpha=0: homogeneous)
+  alpha   = 0.3, # transmission heterogeneity (alpha=0: homogeneous)
   I.init  = c(1,1,3,5), # initial incidence (overwritten in fit ABC)
   lag     = 7,   # Aggregation window for clinical reports
   rho     = 0.1, # mean reporting ratio
@@ -93,18 +104,18 @@ obj$print_prms()
 ```
 
     ## [1] "--- Parameters for REEM `foo`"
-    ## [1] "horizon  =  90"
-    ## [1] "last.obs  =  89"
-    ## [1] "B  =  1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
+    ## [1] "horizon  =  120"
+    ## [1] "last.obs  =  119"
+    ## [1] "B  =  c(18973, 18974, 18975, 18976, 18977, 18978, 18979, 18980, 18981, 18982, 18983, 18984, 18985, 18986, 18987, 18988, 18989, 18990, 18991, 18992, 18993, 18994, 18995, 18996, 18997, 18998, 18999, 19000, 19001, 19002, 19003, 19004, 19005, 19006, 19007, 19008, 19009, 19010, 19011, 19012, 19013, 19014, 19015, 19016, 19017, 19018, 19019, 19020, 19021, 19022, 19023, 19024, 19025, 19026, 19027, 19028, 19029, 19030, 19031, 19032, 19033, 19034, 19035, 19036, 19037, 19038, 19039, 19040, 19041, 19042, 19043, 19044, \n19045, 19046, 19047, 19048, 19049, 19050, 19051, 19052, 19053, 19054, 19055, 19056, 19057, 19058, 19059, 19060, 19061, 19062, 19063, 19064, 19065, 19066, 19067, 19068, 19069, 19070, 19071, 19072, 19073, 19074, 19075, 19076, 19077, 19078, 19079, 19080, 19081, 19082, 19083, 19084, 19085, 19086, 19087, 19088, 19089, 19090, 19091, 19092, 19093, 19094, 19095, 19096, 19097, 19098, 19099, 19100, 19101, 19102, 19103, 19104, 19105, 19106, 19107, 19108, 19109, 19110, 19111, 19112, 19113, 19114, 19115, 19116, \n19117, 19118, 19119, 19120, 19121, 19122, 19123, 19124, 19125, 19126, 19127, 19128, 19129, 19130, 19131, 19132, 19133) c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, \n0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8)"
     ## [1] "i0prop  =  0.001"
     ## [1] "date.start  =  2022-01-01"
-    ## [1] "date.obs.cl  =  2022-01-08 2022-01-15 2022-01-22 2022-01-29 2022-02-05 2022-02-12 2022-02-19 2022-02-26 2022-03-05 2022-03-12 2022-03-19 2022-03-26"
-    ## [1] "date.obs.ha  =  2022-01-13 2022-01-23 2022-02-02 2022-02-12 2022-02-22 2022-03-04 2022-03-14 2022-03-24"
-    ## [1] "date.obs.ww  =  2022-01-04 2022-01-18 2022-02-01 2022-02-15 2022-03-01 2022-03-15 2022-03-29"
+    ## [1] "date.obs.cl  =  2022-01-08 2022-01-15 2022-01-22 2022-01-29 2022-02-05 2022-02-12 2022-02-19 2022-02-26 2022-03-05 2022-03-12 2022-03-19 2022-03-26 2022-04-02 2022-04-09 2022-04-16 2022-04-23"
+    ## [1] "date.obs.ha  =  2022-01-13 2022-01-23 2022-02-02 2022-02-12 2022-02-22 2022-03-04 2022-03-14 2022-03-24 2022-04-03 2022-04-13 2022-04-23"
+    ## [1] "date.obs.ww  =  2022-01-04 2022-01-18 2022-02-01 2022-02-15 2022-03-01 2022-03-15 2022-03-29 2022-04-12 2022-04-26"
     ## [1] "start.delta  =  0"
-    ## [1] "R0  =  2"
+    ## [1] "R0  =  1.5"
     ## [1] "N  =  10000"
-    ## [1] "alpha  =  0"
+    ## [1] "alpha  =  0.3"
     ## [1] "I.init  =  1 1 3 5"
     ## [1] "lag  =  7"
     ## [1] "rho  =  0.1"
@@ -131,6 +142,18 @@ plot(patchwork::wrap_plots(g, ncol = 1))
 
 ![](README_files/figure-gfm/plot_epi-1.png)<!-- -->
 
+We can also check the behavior change parameterization is working as
+expected:
+
+``` r
+plot(g$populations + geom_vline(xintercept = date.break, linetype = 'dashed'))
+```
+
+    ## Warning in ggplot2::scale_y_log10(): log-10 transformation introduced infinite
+    ## values.
+
+![](README_files/figure-gfm/behavior%20check-1.png)<!-- -->
+
 ## Fit example
 
 If we attach observation data (from clinical and/or wastewater
@@ -149,7 +172,7 @@ from the very same model `reem` where we know all the parameters.
 sim.data = simepi
 
 # Set the date for "today"
-asof = lubridate::ymd('2023-03-01') 
+asof = ymd('2022-03-01') 
 
 # Retrieve the simulated observations
 obs.cl = dplyr::filter(sim.data$obs.cl, date <= asof)
@@ -223,7 +246,7 @@ thefit = obj$fit_abc(prm.abc, prms.to.fit)
     ## Number of posteriors : 10 (accept ratio = 0.02)
     ## Number of cores      : 1 (500 iters per core)
     ## 
-    ## Data horizon : 88 (days) 
+    ## Data horizon : 60 (days) 
     ## 
     ## ---------------------
 
@@ -234,127 +257,11 @@ thefit = obj$fit_abc(prm.abc, prms.to.fit)
 
     ## snowfall 1.84-6.3 initialized: sequential execution, one CPU.
 
-    ## Warning: package 'dplyr' was built under R version 4.2.3
-
-    ## 
-    ## Attaching package: 'dplyr'
-
-    ## The following objects are masked from 'package:stats':
-    ## 
-    ##     filter, lag
-
-    ## The following objects are masked from 'package:base':
-    ## 
-    ##     intersect, setdiff, setequal, union
-
     ## Warning: package 'purrr' was built under R version 4.2.3
 
     ## sfExportAll() ignored in sequential mode.
 
-    ## ABC iteration # 1 / 500
-
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-    ## Warning in rnorm(n = length(Wp), mean = Wp, sd = Wp * 0.2): NAs produced
-
+    ## ABC iteration # 1 / 500 
     ## ABC iteration # 500 / 500
 
 ``` r
@@ -413,9 +320,6 @@ iterations
 plot(gg$dist)
 ```
 
-    ## Warning: Removed 68 rows containing missing values or values outside the scale range
-    ## (`geom_step()`).
-
 ![](README_files/figure-gfm/plot%20fitted%20distances-1.png)<!-- -->
 
 ``` r
@@ -423,3 +327,105 @@ plot(gg$dist.source)
 ```
 
 ![](README_files/figure-gfm/plot%20fitted%20distances-2.png)<!-- -->
+
+## Forecasting
+
+We can use this fitted object to forecast the epidemic trajectory.
+
+``` r
+ prm.fcst = list(
+    asof         = asof,
+    horizon.fcst = ymd('2022-06-01'),
+    use.fit.post = TRUE,
+    n.resample   = 20,
+    vars.to.fcst = c('Y', 'Wr', 'H'),
+    ci           = seq(0.1,0.9, by = 0.1)
+  )
+  
+  
+  fcst = obj$forecast(prm = prm.fcst, verbose = 1)
+```
+
+    ## Warning in reem_forecast(obj = .self, prm.fcst = prm.fcst, verbose = verbose, : 
+    ##       Number of samples required for forecast (20) is larger
+    ##       than the total number of posteriors (10).
+    ##       Because option to resample from posterior is selected, 
+    ##       only 10 samples will be used for the forecast.
+
+    ## 
+    ## Sampling 20 posterior parameter sets out of 10 available.
+
+    ## Simulating forward with posterior sample # 1
+
+    ## Warning in check_B(obj): Last date (2022-05-21) for behavior change parameter `B` is before horizon date (2022-06-01).
+    ## Filling-in missing values with last element B[n].
+
+    ## Simulating forward with posterior sample # 2 
+    ## Simulating forward with posterior sample # 3 
+    ## Simulating forward with posterior sample # 4 
+    ## Simulating forward with posterior sample # 5 
+    ## Simulating forward with posterior sample # 6 
+    ## Simulating forward with posterior sample # 7 
+    ## Simulating forward with posterior sample # 8 
+    ## Simulating forward with posterior sample # 9 
+    ## Simulating forward with posterior sample # 10
+
+    ## 
+    ## Summarizing forecasts for variables Y, Wr, H
+
+    ##  done.
+
+``` r
+  g.fcst = obj$plot_forecast(date_breaks = '1 month')
+  g      = patchwork::wrap_plots(g.fcst, nrow=1)
+  plot(g)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- --> We can add a
+new hypothetical transmission scenario where transmission shoots up
+shortly after asof date and then forecast
+
+``` r
+B.date = date.start + c(-20:(hz+200))
+date.break = ymd('2022-03-09')
+B = data.frame(date = B.date, mult = rep(1,length(B.date))) |>
+  mutate(mult = if_else(date >= date.break, 10, mult))
+
+# update
+obj$prms[['B']] <- B
+
+fcst = obj$forecast(prm = prm.fcst, verbose = 1)
+```
+
+    ## Warning in reem_forecast(obj = .self, prm.fcst = prm.fcst, verbose = verbose, : 
+    ##       Number of samples required for forecast (20) is larger
+    ##       than the total number of posteriors (10).
+    ##       Because option to resample from posterior is selected, 
+    ##       only 10 samples will be used for the forecast.
+
+    ## 
+    ## Sampling 20 posterior parameter sets out of 10 available.
+
+    ## Simulating forward with posterior sample # 1 
+    ## Simulating forward with posterior sample # 2 
+    ## Simulating forward with posterior sample # 3 
+    ## Simulating forward with posterior sample # 4 
+    ## Simulating forward with posterior sample # 5 
+    ## Simulating forward with posterior sample # 6 
+    ## Simulating forward with posterior sample # 7 
+    ## Simulating forward with posterior sample # 8 
+    ## Simulating forward with posterior sample # 9 
+    ## Simulating forward with posterior sample # 10
+
+    ## 
+    ## Summarizing forecasts for variables Y, Wr, H
+
+    ##  done.
+
+``` r
+g.fcst = obj$plot_forecast(date_breaks = '1 month')
+g      = patchwork::wrap_plots(g.fcst, nrow=1)
+plot(g)
+```
+
+![](README_files/figure-gfm/scenario%20forecast-1.png)<!-- -->

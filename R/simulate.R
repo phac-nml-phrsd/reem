@@ -84,10 +84,9 @@ reem_simulate <- function(prms, deterministic) {
   
   # Unpack parameters
   R0      = prms[['R0']]
-  B       = prms[['B']]
+  b       = prms[['b']]
   N       = prms[['N']]
-  alpha   = prms$alpha
-  # alpha   = prms[['alpha']]
+  alpha   = prms[['alpha']]
   I.init  = prms[['I.init']]
   horizon = prms[['horizon']]
   rho     = prms[['rho']]
@@ -103,6 +102,7 @@ reem_simulate <- function(prms, deterministic) {
   
   
   ni = length(I.init)
+  nB = length(b)
   
   if(horizon <= ni){
     warning("reem: horizon (=",horizon,") for simulation is shorter than `I.init` (=",ni,"). Cropping vector `I.init`!")
@@ -133,7 +133,7 @@ reem_simulate <- function(prms, deterministic) {
   
   for(t in (ni+1):horizon){ # t = ni+1
     
-    m[t] = mean_inc(t, R0, B, S, N, alpha, g, I)
+    m[t] = mean_inc(t, R0, b, S, N, alpha, g, I)
     I[t] = calc_I(lambda = m[t], deterministic)
     S[t] = max(0, S[t-1] - I[t])
     
@@ -260,6 +260,88 @@ helper_aggreg <- function(sim, type, dateobs, prms, var.name = 'obs') {
   return(a)
 }
 
+
+check_B <- function(obj) {
+  
+  if(!is.data.frame(obj$prms[['B']])) 
+    stop('Parameter `B` in `prms` must be a data frame.')
+  
+  if(! 'date' %in% names(obj$prms[['B']])) 
+    stop('Dataframe `B` in `prms` must have a `date` column.')
+  if(! 'mult' %in% names(obj$prms[['B']])) 
+    stop('Dataframe `B` in `prms` must have a `mult` column.')
+  
+  nb = nrow(obj$prms[['B']])
+  date.start = lubridate::ymd(obj$prms$date.start)
+  date.horiz = obj$prms$date.start + obj$prms$horizon
+  
+  if(obj$prms[['B']]$date[1] > date.start){
+    warning(
+      'First date (',obj$prms[['B']]$date[1],') for behavior change parameter `B` ', 
+      'is after start date (',date.start,').\n',
+      'Filling-in missing values with first element B[1].')
+    
+    # Filling-in missing dates:
+    d1 = seq.Date(date.start, obj$prms[['B']]$date[1]-1, by = 1)
+    B.fillin = data.frame(
+      date = d1,
+      mult = rep(obj$prms[['B']]$mult[1], length(d1))
+    )
+    obj$prms[['B']] <- rbind(B.fillin, obj$prms[['B']])
+  }
+  
+  if(obj$prms[['B']]$date[nb] < date.horiz){
+    warning(
+      'Last date (',obj$prms[['B']]$date[nb],') for behavior change parameter `B` ', 
+      'is before horizon date (',date.horiz,').\n',
+      'Filling-in missing values with last element B[n].')
+
+    # refresh values in case modified by previous `if()`
+    nb = nrow(obj$prms[['B']])
+    
+    # Filling-in missing dates:
+    d2 = seq.Date(obj$prms[['B']]$date[nb]+1, date.horiz, by = 1)
+    B.fillin2 = data.frame(
+      date = d2,
+      mult = rep(obj$prms[['B']]$mult[nb], length(d2))
+    )
+    obj$prms[['B']] <- rbind(obj$prms[['B']], B.fillin2)
+  }
+  
+  dd = as.numeric(diff(B$date) )
+  if(! all(dd==1)){
+    stop('Behavior change parameter `B` must be defined',
+         ' for each day of the simulation.\n',
+         'The dates that have gaps larger than one day are:\n',
+         paste(B$date[dd!=1], collapse = ' ; '))
+  }  
+  
+  return(obj)
+}
+
+
+B_date_time <- function(obj) {
+  
+  # Retrieve B defined with DATES. 
+  B  = obj$prms[['B']]
+  nb = nrow(B)
+  date.start = obj$prms$date.start
+  date.horiz = obj$prms$date.start + obj$prms$horizon
+  
+  # Calculate the times from simulation start date
+  t = as.integer(B$date - date.start + 1)
+  t
+  # Cropping B between start and horizon dates
+  # if it was defined with dates that span beyond
+  t.last = which(B$date == date.horiz)
+  # `b` is a NUMERICAL VECTOR, defined to match
+  # exactly the simulation time range and steps
+  b = B$mult[t>0 & t <= t.last]
+  obj$prms[['b']] <- b
+  return(obj)
+}
+
+
 #' Simulate a full epidemic with a REEM
 #' including clinical and wastewater "observations".
 #'
@@ -270,20 +352,25 @@ helper_aggreg <- function(sim, type, dateobs, prms, var.name = 'obs') {
 #'
 reem_simulate_epi <- function(obj, 
                               deterministic) {
-  
   # -- Checks 
   check_date_start(obj)
+  obj = check_B(obj)
   
   # Set observation schedules
   for(vt in c('cl', 'ha', 'ww')) {
     obj = set_obs_schedule(vt,obj)
   }
  
+  # translate date-based `B` into
+  # time-based parameter `b`
+  obj = B_date_time(obj)
+  
   # DEBUG
   # obj$print_prms()
+  # message('DEBUG-b: horiz=',obj$prms$horizon,' ; length(b)=',length(obj$prms[['b']]))
    
   # Simulate epidemic to generate data
-  sim = reem_simulate(obj$prms, deterministic)
+  sim = reem_simulate(prms = obj$prms, deterministic)
   
   # append the dates
   sim = dplyr::mutate(sim, date = obj$prms$date.start + t)
