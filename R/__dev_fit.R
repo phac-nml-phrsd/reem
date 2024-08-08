@@ -11,12 +11,17 @@ if(0){
   set.seed(1234)
   date.start = ymd('2022-01-01')
   asof       = ymd('2022-02-21') 
-  hz = 180
-  
+  hz = 120
+ 
+  B.date = date.start + c(0:(hz+1))
+  date.break = ymd('2022-03-01')
+  B = data.frame(date = B.date, mult = rep(1,length(B.date))) |>
+    mutate(mult = if_else(date >= date.break, 3, mult))
+   
   prms0 = list(
     horizon = hz,  # horizon of the simulation
     last.obs = hz-1,  # last observation time (must be < horizon)
-    B       = rep(1,hz), # Behavior change
+    B       = B, # Behavior change
     freq.obs.ww = 3, # average frequency of ww observation
     date.obs.cl = date.start + seq(7,hz-2, by = 7),
     date.obs.ha = date.start + seq(12,hz-2, by = 10),
@@ -24,7 +29,7 @@ if(0){
     i0prop  = 1e-3,
     date.start = date.start,
     start.delta = 0, 
-    R0      = 1.5, # Basic reproduction number
+    R0      = 1.9, # Basic reproduction number
     N       = 1e6, # population size
     alpha   = 0.2, # transmission heterogeneity (alpha=0: homogeneous)
     I.init  = c(1,1,3,5)*20, # initial incidence (overwritten in fit ABC)
@@ -46,8 +51,10 @@ if(0){
   
   obj0$print_prms()
   
-  simepi  = obj0$simulate_epi(deterministic = FALSE)
-  plot_epi(simepi) |> patchwork::wrap_plots(ncol=1)
+  simepi  = obj0$simulate_epi(deterministic = 0)
+  g.epi = plot_epi(simepi) 
+  g.epi |> patchwork::wrap_plots(ncol=1)
+  g.epi$populations + geom_vline(xintercept = date.break, linetype = 'dashed'  )
   
   obs.cl = filter(simepi$obs.cl, date <= asof)
   obs.ha = filter(simepi$obs.ha, date <= asof)
