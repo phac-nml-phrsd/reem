@@ -4,7 +4,7 @@
 \alias{helper_aggreg}
 \title{Helper function to aggregate simulated observations}
 \usage{
-helper_aggreg(sim, type, dateobs, prms)
+helper_aggreg(sim, type, dateobs, prms, var.name = "obs")
 }
 \description{
 Helper function to aggregate simulated observations

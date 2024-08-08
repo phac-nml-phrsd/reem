@@ -2,7 +2,7 @@
 % Please edit documentation in R/forecast.R
 \name{reem_proba_box}
 \alias{reem_proba_box}
-\title{Returns the probability that the forecasted variable
+\title{Returns the probability that the forecasted variable trajectory
 is within a box defined by lower and upper dates and values.}
 \usage{
 reem_proba_box(var, date.lower, date.upper, val.lower, val.upper, fcst)
@@ -24,6 +24,6 @@ reem_proba_box(var, date.lower, date.upper, val.lower, val.upper, fcst)
 Numeric. The corresponding probability.
 }
 \description{
-Returns the probability that the forecasted variable
+Returns the probability that the forecasted variable trajectory
 is within a box defined by lower and upper dates and values.
 }

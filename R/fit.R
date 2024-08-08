@@ -592,7 +592,7 @@ extract_fit_aggreg <- function(obj, type, rename = TRUE) {
     dplyr::summarise(m = mean(obs),
                      lo = min(obs),
                      hi = max(obs),
-                     n = n()) |>
+                     n = dplyr::n()) |>
     dplyr::filter(date <= max(obj[[vtype]]$date))
   
   if(rename & type == 'cl') res = dplyr::rename(res, 
