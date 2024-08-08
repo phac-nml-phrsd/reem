@@ -46,6 +46,10 @@ and the pathogen concentration in the wastewater.
 ```{r libraries, warning=FALSE, message=FALSE}
 library(reem)
 library(snowfall)
+library(lubridate)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 ```
 
 
@@ -54,22 +58,29 @@ library(snowfall)
 
 # Define model parameters
 
-date.start = lubridate::ymd('2022-01-01')
-hz = 90
+date.start = ymd('2022-01-01')
+hz = 120
+
+# Behavior change, 
+# time dependent multiplicative factor for transmission
+B.date = date.start + c(-20:(hz+20)) # define beyond date.start +/- delta.start to avoid warnings
+date.break = ymd('2022-03-01')
+B = data.frame(date = B.date, mult = rep(1,length(B.date))) |>
+  mutate(mult = if_else(date >= date.break, 0.8, mult))
 
 prms = list(
   horizon  = hz,  # horizon of the simulation
   last.obs = hz-1,  # last observation time (must be < horizon)
-  B        = rep(1,hz + 20), # time dependent multiplicative factor for transmission
+  B        = B, # 
   i0prop  = 1e-3,  # initial proportion of the population infected
   date.start = date.start, # start date of the epidemic
   date.obs.cl = date.start + seq(7,hz-2, by = 7),
   date.obs.ha = date.start + seq(12,hz-2, by = 10),
   date.obs.ww = date.start + seq(3,hz-2, by=14),
   start.delta = 0, 
-  R0      = 2.0, # Basic reproduction number
+  R0      = 1.5, # Basic reproduction number
   N       = 1e4, # population size
-  alpha   = 0, # transmission heterogeneity (alpha=0: homogeneous)
+  alpha   = 0.3, # transmission heterogeneity (alpha=0: homogeneous)
   I.init  = c(1,1,3,5), # initial incidence (overwritten in fit ABC)
   lag     = 7,   # Aggregation window for clinical reports
   rho     = 0.1, # mean reporting ratio
@@ -98,10 +109,17 @@ simepi  = obj$simulate_epi(deterministic = FALSE)
 
 We can use the built-in function `plot_epi()` to plot the epidemic
 
-```{r plot_epi, fig.width=12, warning=FALSE}
+```{r plot_epi, fig.width=12, fid.height=24, warning=FALSE}
 g = plot_epi(simepi)
 plot(patchwork::wrap_plots(g, ncol = 1))
 ```
+
+We can also check the behavior change parameterization is working as expected:
+```{r behavior check}
+plot(g$populations + geom_vline(xintercept = date.break, linetype = 'dashed'))
+```
+
+
 
 ## Fit example
 
@@ -117,7 +135,7 @@ First, let's create synthetic observation data from the simulation example above
 sim.data = simepi
 
 # Set the date for "today"
-asof = lubridate::ymd('2023-03-01') 
+asof = ymd('2022-03-01') 
 
 # Retrieve the simulated observations
 obs.cl = dplyr::filter(sim.data$obs.cl, date <= asof)
@@ -206,3 +224,44 @@ And finally, we can assess the efficiency of the ABC algorithm by plotting the p
 plot(gg$dist)
 plot(gg$dist.source)
 ```
+
+## Forecasting
+
+We can use this fitted object to forecast the epidemic trajectory. 
+
+```{r}
+ prm.fcst = list(
+    asof         = asof,
+    horizon.fcst = ymd('2022-06-01'),
+    use.fit.post = TRUE,
+    n.resample   = 20,
+    vars.to.fcst = c('Y', 'Wr', 'H'),
+    ci           = seq(0.1,0.9, by = 0.1)
+  )
+  
+  
+  fcst = obj$forecast(prm = prm.fcst, verbose = 1)
+  
+  g.fcst = obj$plot_forecast(date_breaks = '1 month')
+  g      = patchwork::wrap_plots(g.fcst, nrow=1)
+  plot(g)
+```
+We can add a new hypothetical transmission scenario where transmission shoots up
+shortly after asof date and then forecast
+```{r scenario forecast}
+B.date = date.start + c(-20:(hz+200))
+date.break = ymd('2022-03-09')
+B = data.frame(date = B.date, mult = rep(1,length(B.date))) |>
+  mutate(mult = if_else(date >= date.break, 10, mult))
+
+# update
+obj$prms[['B']] <- B
+
+fcst = obj$forecast(prm = prm.fcst, verbose = 1)
+g.fcst = obj$plot_forecast(date_breaks = '1 month')
+g      = patchwork::wrap_plots(g.fcst, nrow=1)
+plot(g)
+```
+
+
+
