@@ -246,22 +246,21 @@ We can use this fitted object to forecast the epidemic trajectory.
   g      = patchwork::wrap_plots(g.fcst, nrow=1)
   plot(g)
 ```
-We can add a new hypothetical transmission scenario and then forecast
-```{r}
-
-B.date = date.start + c(-20:(hz+200)) # define beyond date.start +/- delta.start to avoid warnings
+We can add a new hypothetical transmission scenario where transmission shoots up
+shortly after asof date and then forecast
+```{r scenario forecast}
+B.date = date.start + c(-20:(hz+200))
 date.break = ymd('2022-03-09')
 B = data.frame(date = B.date, mult = rep(1,length(B.date))) |>
   mutate(mult = if_else(date >= date.break, 10, mult))
 
+# update
 obj$prms[['B']] <- B
 
 fcst = obj$forecast(prm = prm.fcst, verbose = 1)
 g.fcst = obj$plot_forecast(date_breaks = '1 month')
 g      = patchwork::wrap_plots(g.fcst, nrow=1)
 plot(g)
-
-
 ```
 
 
