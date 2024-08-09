@@ -307,13 +307,15 @@ check_B <- function(obj) {
     )
     obj$prms[['B']] <- rbind(obj$prms[['B']], B.fillin2)
   }
-  
-  dd = as.numeric(diff(B$date) )
+ 
+  # B must be defined for every day (time step) 
+  dd = as.numeric(diff(obj$prms[['B']]$date) )
   if(! all(dd==1)){
     stop('Behavior change parameter `B` must be defined',
-         ' for each day of the simulation.\n',
+         ' for each day (time step) of the simulation.\n',
+         'Please redefine `B` accordingly.\n',
          'The dates that have gaps larger than one day are:\n',
-         paste(B$date[dd!=1], collapse = ' ; '))
+         paste(obj$prms[['B']]$date[dd!=1], collapse = ' ; '))
   }  
   
   return(obj)
