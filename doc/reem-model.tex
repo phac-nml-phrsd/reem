@@ -68,7 +68,8 @@ The intrinsic generation interval distribution of the pathogen is noted $g$.
 The infection process is described by the following discrete-time equations:
 
 \begin{eqnarray}
-j(t) & = & \Ro \left(\frac{S(t)}{N}\right)^{\exp(\alpha)} B(t) \sum_{k=1}^{t-1} g(k)\, j(t-k) \\
+\label{eq:reinc}
+j(t) & = & \Ro \left(\frac{S(t)}{N}\right)^{\exp(\alpha)} B(t) \sum_{k=1}^{t-1} g(k)\, j(t-k) \\ 
 I(t) & \sim & \mathrm{Pois}(j(t))   \\
 S(t) & = & \max(0, S(t-1) - I(t))
 \end{eqnarray}
@@ -76,7 +77,24 @@ S(t) & = & \max(0, S(t-1) - I(t))
 The time-dependent variable $j(t)$ represents the \emph{mean} incidence driven by a \emph{deterministic} pathogen transmission process.
 The actual incidence at time $t$, $I(t)$, is simply drawn from a Poisson distribution with mean $j(t)$.
 The parameter $\alpha$ is a real number affecting the tail-end of the epidemic curve and has been asociated with a simple way to model transmission heterogeneity. When $\alpha=0$, contacts are modelled as homogeneous (like in the canonical ODE-based SIR model). 
-The deterministic function $B$ is introduced to model exogen changes in the transmission rate (for example, to represent public health interventions). When $B(t) = 1$ for all times $t$, there is nochange in the intrinsic transmission rate and the epidemic follows its ``natural'' course. 
+The deterministic function $B$ is introduced to model exogen changes in the transmission rate (for example, to represent public health interventions). When $B(t) = 1$ for all times $t$, there is no change in the intrinsic transmission rate and the epidemic follows its ``natural'' course. 
+
+\subsection{Interpretation of the parameter $\alpha$}
+
+The fraction $S(t)/N$ in \autoref{eq:reinc} represents the proportion of the population that is \emph{available} to be infected at time $t$. 
+If contacts among individuals of the population are completely random and homogeneous, then the fraction of the population that is potentially \emph{exposed} to infection is indeed $S(t)/N$. This is because any infectious individual has a probability $S(t)/N$ to contact a susceptible individual. 
+
+However, in reality, contacts are not truely homogeneous because of the intrinsic structures of human populations (eg, households, workplaces, social events, etc.). Hence, the actual average proportion of susceptible individuals exposed to an infectious person may either be larger (if infectious individuals ``seek'' susceptibles) or lower (if infectious individuals tend to cluster together more than with susceptibles). 
+The relationship between the susceptible fraction that is exposed and the one effectively exposed can be modelled with a power law. A negative power does not really make sense in this context, so it is parameterised with an exponential, $\exp(\alpha$), to ensure its positivity.
+Examples of a power-law relationship is illustrated in \autoref{fig:alpha}. 
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=0.5\textwidth]{alpha.pdf}
+\caption{Relationship between the fraction of susceptible individuals that are effectivelly exposed to infection, as a function of the fraction of susceptible individuals that are available in the population.}
+\label{fig:alpha}
+\end{center}
+\end{figure}
 
 \section{Fecal/urinary shedding in wastewater}
 

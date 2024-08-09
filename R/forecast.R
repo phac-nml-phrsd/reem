@@ -1,3 +1,9 @@
+quantile_df <- function(x, probs) {
+  tibble(
+    q     = stats::quantile(x, probs, na.rm = TRUE),
+    qprob = probs
+  )
+}
 
 
 #' @title Calculate quantiles of forecast trajectories
@@ -25,13 +31,6 @@ summarize_fcst <- function(simfwd, prm.fcst, vars = NULL) {
           paste(vars, collapse = ', '), appendLF = FALSE)
   ci    = prm.fcst$ci
   probs = sort(c(0.5 - ci/2, 0.5 + ci/2) )
-  
-  quantile_df <- function(x, probs) {
-    tibble(
-      q     = stats::quantile(x, probs, na.rm = TRUE),
-      qprob = probs
-    )
-  }
   
   res = dplyr::bind_rows(simfwd) %>% 
     dplyr::select(date, !!vars) %>% 
@@ -86,6 +85,71 @@ aggregate_fcst <- function(var.to.aggregate, obj, simfwd) {
 }
 
 
+summ_aggr_fcst <- function(simfwd, obj, var, prm.fcst) {
+  # var = 'cl'
+  
+  vtype = paste0('obs.',var)
+  d = obj[[vtype]][['date']]
+  dt = median(diff(d)) |> as.integer()
+  
+  ci    =   prm.fcst$ci
+  probs = sort(c(0.5 - ci/2, 0.5 + ci/2) )
+  
+  # Create the forward dates schedule (after "asof")
+  d.fwd = max(d) + seq(dt, obj$prms$horizon, by = dt)
+ 
+
+  # We must consider the values after the last obesrvation date
+  # otherwise, will sum from date.start!
+  simfwd.crop = purrr::map(simfwd, ~ dplyr::filter(., date > max(d) ))
+
+  # Aggregation
+  simfwd.aggr = lapply(simfwd.crop, 
+                       helper_aggreg, 
+                       type = var, 
+                       dateobs = d.fwd, 
+                       prms = obj$prms, 
+                       var.name = 'value') 
+  
+  # Summary statistics (quantiles, mean)
+  summary.fcst.aggr = simfwd.aggr |>
+    dplyr::bind_rows() |>
+    dplyr::select(date, value) |> 
+    dplyr::reframe(
+      quantile_df(value, probs), 
+      mean = mean(value),
+      .by = c(date))
+  
+  res = list(
+    simfwd.aggr = simfwd.aggr,
+    summary.fcst.aggr = summary.fcst.aggr
+  )
+  return(res)
+}
+
+
+# Helper function 
+update_and_simulate <- function(i, pp, obj, verbose, tpb) {
+  
+  if(verbose)  cat('Simulating forward with posterior sample #',i,'\n')
+  if(!is.null(tpb)) setTxtProgressBar(tpb, value = i)
+  
+  # update fitted parameters 
+  # with their posterior values
+  obj$prms[names(pp)] <- pp[i,]
+  
+  # Update initial number of infectious individuals `obj$prms$I.init`
+  obj$prms = set_I_init(obj$prms)
+  
+  # Forward simulations are calculated 
+  # for every day in the future (no unobserved date):
+  obj$prms$t.obs.ww <- 1:prm.fcst$horizon.fcst 
+  
+  # Simulate forward
+  s = obj$simulate_epi(deterministic = TRUE) #TODO: let user choose
+  s$sim$index <- i
+  return(s$sim)
+}
 
 
 #' @title Forecast a fitted epidemic 
@@ -101,7 +165,7 @@ aggregate_fcst <- function(var.to.aggregate, obj, simfwd) {
 #' 
 #' @export
 #'
-reem_forecast <- function(obj, prm.fcst, verbose ) {
+reem_forecast <- function(obj, prm.fcst, verbose, progressbar ) {
   
   if(0){   #---  DEBUG
     prm.fcst = list(
@@ -124,31 +188,9 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
   # (i.e., no resampling from posterior distributions)
   if(prm.fcst$use.fit.post){
     
+    # Posterior parameters
     pp = a$post.prms %>% dplyr::select(!tidyr::starts_with('abc'))
-    
-    # Helper function 
-    update_and_simulate <- function(i, pp, obj, verbose, tpb) {
-      
-      if(verbose)  cat('Simulating forward with posterior sample #',i,'\n')
-      if(!verbose) setTxtProgressBar(tpb, value = i)
-      
-      # update fitted parameters 
-      # with their posterior values
-      obj$prms[names(pp)] <- pp[i,]
-      
-      # Update initial number of infectious individuals `obj$prms$I.init`
-      obj$prms = set_I_init(obj$prms)
-      
-      # Forward simulations are calculated 
-      # for every day in the future (no unobserved date):
-      obj$prms$t.obs.ww <- 1:prm.fcst$horizon.fcst 
-      
-      # Simulate forward
-      s = obj$simulate_epi(deterministic = TRUE) #TODO: let user choose
-      s$sim$index <- i
-      return(s$sim)
-    }
-    
+  
     npp = nrow(pp)
     ns  = prm.fcst$n.resample
     
@@ -166,9 +208,10 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
     
     message('\nSampling ',ns, ' posterior parameter sets out of ', npp,
             ' available.\n')
-    
-    tpb = txtProgressBar(min = 0, max = max(ii), style = 3, width = 25)
-    
+    tpb = NULL
+    if(progressbar){
+      tpb = txtProgressBar(min = 0, max = max(ii), style = 3, width = 25)
+    }
     simfwd = lapply(X   = ii,
                     FUN = update_and_simulate, 
                     pp  = pp, 
@@ -190,29 +233,25 @@ reem_forecast <- function(obj, prm.fcst, verbose ) {
     simfwd   = simfwd, 
     prm.fcst = prm.fcst)
   
-  # Dealing with aggregated incidence
+  # Dealing with aggregated hospital admissions
   simfwd.aggr = list()
   summary.fcst.aggr = list()
   
-  # TODO: make a function for these 2 function calls!
-  simfwd.aggr[['Y.aggr']] = aggregate_fcst(
-    var.to.aggregate = 'Y', 
-    obj              = obj, 
-    simfwd           = simfwd)
+  has.ha = nrow(obj$obs.ha)>0
   
-  summary.fcst.aggr[['Y.aggr']] = summarize_fcst(
-    simfwd   = simfwd.aggr, 
-    prm.fcst = prm.fcst,
-    vars     = c('Y.aggr'))  
+  if(has.ha){
+    tmp.ha = summ_aggr_fcst(simfwd, obj, var = 'ha', prm.fcst)
+    simfwd.aggr[['H.aggr']]       = tmp.ha$simfwd.aggr
+    summary.fcst.aggr[['H.aggr']] = tmp.ha$summary.fcst.aggr
+  }
   
   return( list(
-    asof   = prm.fcst$asof,
-    simfwd = simfwd, 
-    summary.fcst = summary.fcst,
-    simfwd.aggr = simfwd.aggr,
+    asof              = prm.fcst$asof,
+    simfwd            = simfwd, 
+    summary.fcst      = summary.fcst,
+    simfwd.aggr       = simfwd.aggr,
     summary.fcst.aggr = summary.fcst.aggr
   ))
-  
 }
 
 
@@ -235,6 +274,7 @@ add_ribbons_quantiles <- function(g, qlist, k,
                 fill = col.fcst, alpha = alpha.ribbon)
   return(res)
 }
+
 
 
 #' Helper function
@@ -339,18 +379,14 @@ reem_plot_forecast <- function(
   alpha.ribbon = 0.20
   
   col.fcst = "steelblue" ; col.fit = "tan3"
-    
+  
   # - - - - Retrieve fitted curves
   
   post.sim = obj$fit.obj$post.simulations
   
   fitsim.ww = sumpost(post.sim, var = 'Wr')
-  fitsim.ha = sumpost(post.sim, var = 'H')
-  fitsim.cl = sumpost(post.sim, var = 'Y') %>% 
-    # Aggregate clinical reports for the fitted part
-    aggcl(dt.aggr = obs.cl$date, 
-          vars = c('m','lo','hi')) %>%
-    dplyr::filter(date <= max(obs.cl$date))
+  fitsim.cl = sumpost(post.sim, var = 'Y')
+  fitsim.ha = extract_fit_aggreg(obj, 'ha', rename = F) 
   
   # Retrieve the forecast summary
   sf = fcst.obj$summary.fcst 
@@ -359,9 +395,6 @@ reem_plot_forecast <- function(
   # starting from `asof` and a time interval
   # equal to the one of the observations:
   dt = as.numeric(diff(obs.cl$date))[1]
-  dt.aggr.fcst = seq.Date(from = fcst.prm$asof , 
-                          to = max(sf$date), 
-                          by = dt)
   
   # Reformat to suit ggplot
   sf2 = sf %>% 
@@ -377,19 +410,18 @@ reem_plot_forecast <- function(
   # DIFFERENT FROM THE QUANTILE OF THE SUM (WHAT WE REALLY WANT!)
   # TODO: CHANGE THAT!
   
-  sf.cl = sf2 %>% 
-    filter(name == 'Y') %>%
-    aggcl(dt.aggr = dt.aggr.fcst, 
-          vars = c('mean', qlist)) %>% 
-    filter(date > fcst.prm$asof)
-  
   sf.ww = filter(sf2, name == 'Wr') %>%
     drop_na(mean) %>%
     filter(date >= fcst.prm$asof)
-  
-  sf.ha = filter(sf2, name == 'H') %>%
+ 
+  sf.cl = filter(sf2, name == 'Y') %>%
     drop_na(mean) %>%
     filter(date >= fcst.prm$asof)
+  
+  sf.ha = fcst.obj$summary.fcst.aggr$H.aggr |> 
+    pivot_wider(names_from = qprob, 
+                values_from = q, 
+                names_prefix = 'q_')
   
   # - - - Plots - - - 
   
@@ -404,7 +436,7 @@ reem_plot_forecast <- function(
     title = 'Reported cases', ylab = 'cases',
     qlist = qlist, 
     xaxis = xaxis)
-  
+ 
   g.ha = plot_fitfcst(
     traj.fit = fitsim.ha, 
     traj.fcst = sf.ha, 
@@ -459,17 +491,57 @@ reem_plot_peak <- function( var,
   
   pk = obj$forecast_peak(var = var)
   
-  g.pk = pk %>% ggplot(aes(x=peak.date , y=peak.value)) +
-    geom_density_2d_filled(color = 'grey50', alpha = 0.6)+
-    theme(panel.grid.minor.y = element_blank(), 
-          panel.border = element_blank(),
-          axis.ticks   = element_blank())  +
-    scale_x_date(date_labels = date_labels)+
-    labs(title = paste0('Forecast peak for `', var,'`'),
-         x = 'Peak date', y = 'Peak value') + 
-    guides(fill = 'none')
+  g.pk2d = pk %>% 
+    ggplot2::ggplot(ggplot2::aes(x=peak.date , y=peak.value)) +
+    ggplot2::geom_point(alpha = 0.5, size = 3) + 
+    ggplot2::geom_density_2d_filled(color = 'grey50', alpha = 0.6)+
+    ggplot2::theme(panel.grid.minor.y = ggplot2::element_blank(), 
+                   panel.border = ggplot2::element_blank(),
+                   axis.ticks   = ggplot2::element_blank())  +
+    ggplot2::scale_y_continuous(position = "right", 
+                                labels = scales::comma_format()) +
+    ggplot2::scale_x_date(date_labels = date_labels)+
+    ggplot2::labs(title = paste0('Forecast peak for `', var,'`'),
+                  x = 'Peak date', y = 'Peak value') + 
+    ggplot2::guides(fill = 'none')
+  # g.pk2d
   
-  if(logscale) g.pk = g.pk + scale_y_log10()
+  g.pk.v = pk |> 
+    ggplot2::ggplot(ggplot2::aes(x=peak.value)) + 
+    ggplot2::geom_histogram(bins = 12, fill = 'lightgrey', color='darkgrey') + 
+    ggplot2::theme(panel.grid = ggplot2::element_blank(), 
+                   axis.text.x = ggplot2::element_blank(),
+                   axis.ticks.x = ggplot2::element_blank(),
+                   panel.border = ggplot2::element_blank(),
+                   axis.text.y = ggplot2::element_blank())+
+    ggplot2::coord_flip()+
+    ggplot2::labs(x='',y='')
+  # g.pk.v
+  
+  g.pk.d = pk |> 
+    ggplot2::ggplot(ggplot2::aes(x=peak.date)) + 
+    ggplot2::geom_histogram(bins = 12, fill = 'lightgrey', color='darkgrey')+
+    ggplot2::scale_x_date(date_labels = date_labels) +
+    ggplot2::theme(panel.grid = ggplot2::element_blank(), 
+                   axis.text.y = ggplot2::element_blank(),
+                   axis.ticks.y = ggplot2::element_blank(),
+                   panel.border = ggplot2::element_blank(),
+                   axis.text.x = ggplot2::element_text(size = ggplot2::rel(0.6))  )+
+    ggplot2::labs(x='',y='')
+  # g.pk.d
+    
+  if(logscale) {
+    g.pk2d = g.pk2d + ggplot2::scale_y_log10(position = "right", 
+                                             labels = scales::comma_format())
+    g.pk.v = g.pk.v + ggplot2::scale_x_log10(labels = scales::comma_format())
+  }
+  
+  g.pk = patchwork::wrap_plots(g.pk2d, g.pk.v, g.pk.d, 
+                               heights = c(5,1),
+                               widths  = c(13,2),
+                               ncol = 2)
+  # g.pk
+
   return(g.pk)
 }
 
@@ -488,28 +560,22 @@ reem_forecast_peak <- function(var, fcst) {
     df = fcst$simfwd.aggr[[var]]
   }
   if(!is.aggregated){
-    df = fcst$simfwd
+    df = fcst$simfwd |> 
+      purrr::map(~dplyr::mutate(., value = .data[[var]]))
   }
   
   res = df %>% 
-    bind_rows(.id = 'post') %>%
-    group_by(post) %>% 
-    summarise(peak.date = date[which.max(.data[[var]])[1]],
-              peak.value = max(.data[[var]],na.rm = TRUE))
+    dplyr::bind_rows(.id = 'post') %>%
+    dplyr::group_by(post) %>% 
+    dplyr::summarise(
+      peak.date  = date[which.max(value)[1]],
+      peak.value = max(value,na.rm = TRUE))
   
   return(res)
-  
-  if(FALSE){ # DEBUG
-    df %>% 
-      bind_rows(.id = 'post') %>% 
-      ggplot(aes(x=date, y=.data[[var]])) + 
-      geom_line(aes(group = post), alpha = 0.4) + 
-      geom_point(data = res, aes(x=peak.date, y=peak.value), size=3)
-  }
 }
 
 
-#' Returns the probability that the forecasted variable
+#' Returns the probability that the forecasted variable trajectory
 #' is within a box defined by lower and upper dates and values.
 #'
 #' @param var String. Name of the variable.
@@ -534,16 +600,20 @@ reem_proba_box <- function(var,
   
   is.aggregated = grepl('\\.aggr$', var)
   
-  fs = fcst$simfwd
-  if(is.aggregated) fs = fcst$simfwd.aggr[[var]]
+  if(!is.aggregated) {
+    fs = fcst$simfwd |> 
+      purrr::map(~dplyr::mutate(., value = .data[[var]]))
+  }
+  if(is.aggregated)  fs = fcst$simfwd.aggr[[var]]
+  
   n = length(fs)
   x = logical(n)
   for(i in 1:n){
     val = fs[[i]] %>% 
-      filter(between(date, date.lower, date.upper)) %>% 
-      select(date, !!var) %>% 
-      drop_na(!!var) 
-    x[i] = any(val.lower <= val[[var]] & val[[var]] <= val.upper)
+      dplyr::filter(between(date, date.lower, date.upper)) %>% 
+      dplyr::select(date, value) %>% 
+      tidyr::drop_na(value) 
+    x[i] = any(val.lower <= val$value & val$value <= val.upper)
   }
   return(mean(x))
 }

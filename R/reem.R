@@ -68,11 +68,13 @@ setRefClass(
     list(
       
       print_prms = function(){
-        cat('\n--- Parameters for REEM `',name,'`\n')
+        print(paste0('--- Parameters for REEM `',name,'`'))
         for(i in seq_along(prms)){
-          cat(names(prms)[i],' = ', prms[[i]],'\n')
+          nam = names(prms)[i]
+          val = prms[[i]]
+          print(paste(nam,' = ', paste(val,collapse = ' ')))
         }
-        cat(' --------------------------\n')
+        print(' --------------------------')
       },
       
       simulate = function(deterministic){
@@ -136,7 +138,9 @@ setRefClass(
       # ==== Forecasts ====
       # = = = = = = = = = = 
       
-      forecast = function(prm.fcst, verbose = FALSE){
+      forecast = function(prm.fcst, 
+                          verbose = FALSE, 
+                          progressbar = FALSE){
         
         if(!.self$is.fitted) 
           stop('Model cannot forecast because it is not fitted.')
@@ -145,7 +149,8 @@ setRefClass(
         
         res = reem_forecast(obj      = .self, 
                             prm.fcst = prm.fcst,
-                            verbose  = verbose) 
+                            verbose  = verbose, 
+                            progressbar = progressbar) 
         
         .self$fcst.obj <- res
         

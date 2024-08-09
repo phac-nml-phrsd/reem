@@ -6,18 +6,24 @@ if(0){
   library(ggplot2)
   library(lubridate)
   library(reem)
-  # devtools::load_all()
+  devtools::load_all()
   
   date.start = ymd('2022-01-01')
-  asof       = ymd('2022-03-01') 
+  horizon = 120
+  
+  B.date = date.start + c(0:(horizon+1))
+  B = data.frame(date = B.date, mult = rep(1,length(B.date))) |>
+    mutate(mult = if_else(date >= ymd('2022-03-01'), 0.3, mult))
   
   prms = list(
-    horizon = 120,  # horizon of the simulation
-    last.obs = 299,  # last observation time (must be < horizon)
-    B       = rep(1,300), # Behavior change
+    horizon  = horizon,  # horizon of the simulation
+    last.obs = horizon,  # last observation time (must be < horizon)
+    B        = B,  # Behavior change
     freq.obs.ww = 3, # average frequency of ww observation
-    t.obs.cl = seq(7,280, by = 7),
-    t.obs.ww = seq(3,200, by=3),
+    # Define the schedule of `observations`
+    date.obs.cl = date.start + seq(7,280, by = 7),
+    date.obs.ha = date.start + seq(12,280, by = 20),
+    date.obs.ww = date.start + seq(3,200, by=15),
     i0prop  = 1e-3,
     date.start = date.start,
     start.delta = 0, 
@@ -42,8 +48,12 @@ if(0){
             is.fitted = FALSE)
   
   obj$print_prms()
+  head(obj$prms$B)
   
-  simepi  = obj$simulate_epi(deterministic = FALSE)
+  simepi = obj$simulate_epi(deterministic = TRUE)
+  
+  obj$print_prms()
+  head(obj$prms$B)
   
   g = plot_epi(simepi) 
   patchwork::wrap_plots(g, ncol = 1)

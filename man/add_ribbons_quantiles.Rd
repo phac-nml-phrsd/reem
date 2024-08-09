@@ -4,18 +4,18 @@
 \alias{add_ribbons_quantiles}
 \title{Helper function to add ribbons for forecasts.}
 \usage{
-add_ribbons_quantiles(g, z, k, col.fcst, alpha.ribbon)
+add_ribbons_quantiles(g, qlist, k, col.fcst, alpha.ribbon)
 }
 \arguments{
 \item{g}{}
-
-\item{z}{}
 
 \item{k}{}
 
 \item{col.fcst}{}
 
 \item{alpha.ribbon}{}
+
+\item{z}{}
 }
 \value{
 A ggplot object

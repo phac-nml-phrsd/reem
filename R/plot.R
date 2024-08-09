@@ -27,7 +27,7 @@ plot_epi <- function(simepi) {
   col.pop = c(`S: susceptible` = 'blue2', 
               `I: incidence` = 'red3', 
               `A: aggregated incidence` = 'gold', 
-              `Y: observed aggr. incidence` = 'gold4',
+              `Y: observed aggr. incidence` = 'green4',
               `H: daily hosp admissions` = 'black')
   
   g.pop = sim.pop %>% 
@@ -37,7 +37,7 @@ plot_epi <- function(simepi) {
     ggplot2::scale_color_manual(values = col.pop) +
     ggplot2::theme_bw()+
     ggplot2::theme(panel.grid.minor.y = ggplot2::element_blank() ) + 
-    ggplot2::labs(title = 'Population')
+    ggplot2::labs(title = 'Populations Simulated')
   # g.pop 
   
   # Wastewater
@@ -47,16 +47,39 @@ plot_epi <- function(simepi) {
   
   sim.ww$variable = NA
   sim.ww$variable[sim.ww$name == 'Wd'] = 'Wd: concentration deposited'
-  sim.ww$variable[sim.ww$name == 'Wp'] = 'Wd: concentration present at sampling site'
-  sim.ww$variable[sim.ww$name == 'Wr'] = 'Wr: concentration reported at sampling site'
+  sim.ww$variable[sim.ww$name == 'Wp'] = 'Wp: conc. present at sampling site'
+  sim.ww$variable[sim.ww$name == 'Wr'] = 'Wr: conc. reportable (lab errors)'
   
   g.ww = sim.ww %>% 
     ggplot2::ggplot(ggplot2::aes(x=date, y = value, color = variable)) + 
-    ggplot2::geom_line(linewidth = 1) + 
+    ggplot2::geom_line(data = dplyr::filter(sim.ww, name!='Wr'),
+                       linewidth = 1) + 
+    ggplot2::geom_point(data = dplyr::filter(sim.ww, name=='Wr')) + 
     ggplot2::theme_bw()+
+    ggplot2::scale_color_manual(values = c('tan4', 'tan', 'tan2')) +
     ggplot2::labs(title = 'Pathogen concentration in wastewater')
+  # g.ww
   
-  g = list(populations = g.pop, wastewater = g.ww)
+  # Observations 
+  
+  obs = rbind(
+    dplyr::mutate(simepi$obs.cl, type = 'clinical reports'),
+    dplyr::mutate(simepi$obs.ha, type = 'hosp. admissions'),
+    dplyr::mutate(simepi$obs.ww, type = 'wastewater')
+    )
+  
+  g.obs = obs |> 
+    ggplot2::ggplot(ggplot2::aes(x=date, y=obs)) + 
+    ggplot2::geom_step(color = 'grey') + 
+    ggplot2::geom_point() +  
+    ggplot2::theme_bw()+
+    ggplot2::facet_wrap(~type, ncol = 1, scales = 'free_y') + 
+    ggplot2::labs(title = 'Simulated observations', x='', y='value')
+  
+  g = list(
+    populations = g.pop, 
+    wastewater = g.ww,
+    observations = g.obs)
   return(g)
 }
 

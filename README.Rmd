@@ -46,6 +46,10 @@ and the pathogen concentration in the wastewater.
 ```{r libraries, warning=FALSE, message=FALSE}
 library(reem)
 library(snowfall)
+library(lubridate)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 ```
 
 
@@ -54,21 +58,36 @@ library(snowfall)
 
 # Define model parameters
 
+date.start = ymd('2022-01-01')
+hz = 120
+
+# Behavior change, 
+# time dependent multiplicative factor for transmission
+B.date = date.start + c(-20:(hz+20)) # define beyond date.start +/- delta.start to avoid warnings
+date.break = ymd('2022-03-01')
+B = data.frame(date = B.date, mult = rep(1,length(B.date))) |>
+  mutate(mult = if_else(date >= date.break, 0.8, mult))
+
 prms = list(
-  horizon  = 90,  # horizon of the simulation
-  last.obs = 88,  # last observation time (must be < horizon)
-  B        = rep(1,90), # time dependent multiplicative factor for transmission
+  horizon  = hz,  # horizon of the simulation
+  last.obs = hz-1,  # last observation time (must be < horizon)
+  B        = B, # 
   i0prop  = 1e-3,  # initial proportion of the population infected
-  date.start = lubridate::ymd('2022-01-01'), # start date of the epidemic
+  date.start = date.start, # start date of the epidemic
+  date.obs.cl = date.start + seq(7,hz-2, by = 7),
+  date.obs.ha = date.start + seq(12,hz-2, by = 10),
+  date.obs.ww = date.start + seq(3,hz-2, by=14),
   start.delta = 0, 
-  R0      = 2.0, # Basic reproduction number
+  R0      = 1.5, # Basic reproduction number
   N       = 1e4, # population size
-  alpha   = 0, # transmission heterogeneity (alpha=0: homogeneous)
+  alpha   = 0.3, # transmission heterogeneity (alpha=0: homogeneous)
   I.init  = c(1,1,3,5), # initial incidence (overwritten in fit ABC)
   lag     = 7,   # Aggregation window for clinical reports
   rho     = 0.1, # mean reporting ratio
   g       = get_gi(), # Generation interval distribution
   fec     = get_fecalshed(), # fecal shedding kinetics
+  h.prop  = 0.05, # total proportion hospitalized for one cohort
+  h.lags  = c(rep(0,3), 1, 2, 2, 1, 0), # Lag infection-hospitalization
   kappa   = 0.18, # pathogen decay in ww
   psi     = get_psi(), # plug flow simulation,
   shed.mult = 0.2 # deposited fecal shedding multiplier  
@@ -90,17 +109,24 @@ simepi  = obj$simulate_epi(deterministic = FALSE)
 
 We can use the built-in function `plot_epi()` to plot the epidemic
 
-```{r plot_epi, fig.width=12, warning=FALSE}
+```{r plot_epi, fig.width=12, fid.height=24, warning=FALSE}
 g = plot_epi(simepi)
 plot(patchwork::wrap_plots(g, ncol = 1))
 ```
+
+We can also check the behavior change parameterization is working as expected:
+```{r behavior check}
+plot(g$populations + geom_vline(xintercept = date.break, linetype = 'dashed'))
+```
+
+
 
 ## Fit example
 
 If we attach observation data (from clinical and/or wastewater surveillance),
 to a `reem` object, then it is possible to fit its model parameters to these data. The example below shows how to do this.
 
-First, let's create synthetic observation data from the simulation example above. We use synthetic data (as opposed to real data) because we to assess the accuracy of the fit. The synthetic data are generated from the vey same model `reem` where we know all the parameters. 
+First, let's create synthetic observation data from the simulation example above. We use synthetic data (as opposed to real data) because we to assess the accuracy of the fit. The synthetic data are generated from the very same model `reem` where we know all the parameters. 
 
 ```{r simulate data}
 # we use the example above and make a copy of its
@@ -109,11 +135,12 @@ First, let's create synthetic observation data from the simulation example above
 sim.data = simepi
 
 # Set the date for "today"
-asof = lubridate::ymd('2023-03-01') 
+asof = ymd('2022-03-01') 
 
 # Retrieve the simulated observations
 obs.cl = dplyr::filter(sim.data$obs.cl, date <= asof)
 obs.ww = dplyr::filter(simepi$obs.ww, date <= asof)
+obs.ha = dplyr::filter(simepi$obs.ha, date <= asof)
 
 # shift the dates such that they 
 # do not perfectly align with the simulation
@@ -122,11 +149,13 @@ obs.cl$date <- obs.cl$date + 1
 
 # Attached (simulated) data to new `reem` object:
 prms$t.obs.cl <- NULL
+prms$t.obs.ha <- NULL
 prms$t.obs.ww <- NULL
 obj  = new('reem', 
            name = 'foo2', 
            prms = prms, 
            obs.cl = obs.cl,
+           obs.ha = obs.ha,
            obs.ww = obs.ww,
            is.fitted = FALSE)
 ```
@@ -141,8 +170,9 @@ prm.abc = list(
   p.abc = 0.02,  # Acceptance probability (the lower the better)
   n.cores = 1,   # number of cores used for parallel computing
   use.cl = TRUE, # use clinical observations in the fit?
+  use.ha = TRUE, # use hospital admissions in the fit?
   use.ww = TRUE, # use wastewater observation in the fit?
-  err.type = 'L2'# Type of error calculated during the fit.
+  err.type = 'normlarge'# Type of error calculated during the fit.
 )
 
 # Define the priors of the parameters to be fitted:
@@ -161,6 +191,7 @@ Now that all the parameters for the ABC fit have been defined, we can launch the
 ```{r fit ABC}
 #  Launch the fit 
 thefit = obj$fit_abc(prm.abc, prms.to.fit)  
+#saveRDS(obj, file = "obj_fitted.rds")
 ```  
 
 Once the ABC fit is completed, we can call built-in functions to assess the goodness of fit.
@@ -171,6 +202,7 @@ First, lets visualize the posterior time series trajectories for the the clinica
 gg = obj$plot_fit()
 
 plot(gg$traj.cl)
+plot(gg$traj.ha)
 plot(gg$traj.ww)
 ```
 
@@ -190,4 +222,46 @@ And finally, we can assess the efficiency of the ABC algorithm by plotting the p
 
 ```{r plot fitted distances, fig.width=11}
 plot(gg$dist)
+plot(gg$dist.source)
 ```
+
+## Forecasting
+
+We can use this fitted object to forecast the epidemic trajectory. 
+
+```{r}
+ prm.fcst = list(
+    asof         = asof,
+    horizon.fcst = ymd('2022-06-01'),
+    use.fit.post = TRUE,
+    n.resample   = 20,
+    vars.to.fcst = c('Y', 'Wr', 'H'),
+    ci           = seq(0.1,0.9, by = 0.1)
+  )
+  
+  
+  fcst = obj$forecast(prm = prm.fcst, verbose = 1)
+  
+  g.fcst = obj$plot_forecast(date_breaks = '1 month')
+  g      = patchwork::wrap_plots(g.fcst, nrow=1)
+  plot(g)
+```
+We can add a new hypothetical transmission scenario where transmission shoots up
+shortly after asof date and then forecast
+```{r scenario forecast}
+B.date = date.start + c(-20:(hz+200))
+date.break = ymd('2022-03-09')
+B = data.frame(date = B.date, mult = rep(1,length(B.date))) |>
+  mutate(mult = if_else(date >= date.break, 10, mult))
+
+# update
+obj$prms[['B']] <- B
+
+fcst = obj$forecast(prm = prm.fcst, verbose = 1)
+g.fcst = obj$plot_forecast(date_breaks = '1 month')
+g      = patchwork::wrap_plots(g.fcst, nrow=1)
+plot(g)
+```
+
+
+
