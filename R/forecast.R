@@ -1,5 +1,5 @@
 quantile_df <- function(x, probs) {
-  tibble(
+  tibble::tibble(
     q     = stats::quantile(x, probs, na.rm = TRUE),
     qprob = probs
   )
