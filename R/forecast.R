@@ -1,5 +1,5 @@
 quantile_df <- function(x, probs) {
-  tibble(
+  tibble::tibble(
     q     = stats::quantile(x, probs, na.rm = TRUE),
     qprob = probs
   )
@@ -143,7 +143,7 @@ update_and_simulate <- function(i, pp, obj, verbose, tpb) {
   
   # Forward simulations are calculated 
   # for every day in the future (no unobserved date):
-  obj$prms$t.obs.ww <- 1:prm.fcst$horizon.fcst 
+  obj$prms$t.obs.ww <- 1:obj$fcst.prm$horizon.fcst 
   
   # Simulate forward
   s = obj$simulate_epi(deterministic = TRUE) #TODO: let user choose

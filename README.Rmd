@@ -191,7 +191,6 @@ Now that all the parameters for the ABC fit have been defined, we can launch the
 ```{r fit ABC}
 #  Launch the fit 
 thefit = obj$fit_abc(prm.abc, prms.to.fit)  
-#saveRDS(obj, file = "obj_fitted.rds")
 ```  
 
 Once the ABC fit is completed, we can call built-in functions to assess the goodness of fit.
@@ -240,11 +239,13 @@ We can use this fitted object to forecast the epidemic trajectory.
   )
   
   
-  fcst = obj$forecast(prm = prm.fcst, verbose = 1)
+  fcst = obj$forecast(prm.fcst = prm.fcst, verbose = 1)
   
   g.fcst = obj$plot_forecast(date_breaks = '1 month')
   g      = patchwork::wrap_plots(g.fcst, nrow=1)
   plot(g)
+
+#saveRDS(obj, file = "obj_fitted.rds")
 ```
 We can add a new hypothetical transmission scenario where transmission shoots up
 shortly after asof date and then forecast

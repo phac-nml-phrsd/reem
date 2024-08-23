@@ -250,14 +250,9 @@ thefit = obj$fit_abc(prm.abc, prms.to.fit)
     ## 
     ## ---------------------
 
-    ## Warning in searchCommandline(parallel, cpus = cpus, type = type, socketHosts =
-    ## socketHosts, : Unknown option on commandline:
-    ## rmarkdown::render('C:/Users/DCHAMPRE/OneDrive - HC-SC
-    ## PHAC-ASPC/GitHub/reem/README.Rmd', encoding
-
     ## snowfall 1.84-6.3 initialized: sequential execution, one CPU.
 
-    ## Warning: package 'purrr' was built under R version 4.2.3
+    ## Warning: package 'purrr' was built under R version 4.3.3
 
     ## sfExportAll() ignored in sequential mode.
 
