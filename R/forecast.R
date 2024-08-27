@@ -368,6 +368,10 @@ reem_plot_forecast <- function(
   obs.ha = obj$obs.ha
   obs.ww = obj$obs.ww
   
+  n.cl = nrow(obs.cl)
+  n.ha = nrow(obs.ha)
+  n.ww = nrow(obs.ww)
+  
   fcst.obj = obj$fcst.obj
   fcst.prm = obj$fcst.prm
   
@@ -384,9 +388,9 @@ reem_plot_forecast <- function(
   
   post.sim = obj$fit.obj$post.simulations
   
-  fitsim.ww = sumpost(post.sim, var = 'Wr')
-  fitsim.cl = sumpost(post.sim, var = 'Y')
-  fitsim.ha = extract_fit_aggreg(obj, 'ha', rename = F) 
+  if(n.cl > 0) fitsim.cl = sumpost(post.sim, var = 'Y')
+  if(n.ha > 0) fitsim.ha = extract_fit_aggreg(obj, 'ha', rename = F) 
+  if(n.ww > 0) fitsim.ww = sumpost(post.sim, var = 'Wr')
   
   # Retrieve the forecast summary
   sf = fcst.obj$summary.fcst 
@@ -404,28 +408,29 @@ reem_plot_forecast <- function(
   z  = names(sf2)
   qlist  = z[grepl('^q_',z)]
   
-  
   # ** WARNING **
   # HERE WE CALCULATE THE SUM OF THE QUANTILE WHICH IS 
   # DIFFERENT FROM THE QUANTILE OF THE SUM (WHAT WE REALLY WANT!)
   # TODO: CHANGE THAT!
   
-  sf.ww = filter(sf2, name == 'Wr') %>%
+  if(n.ww > 0) sf.ww = filter(sf2, name == 'Wr') %>%
     drop_na(mean) %>%
     filter(date >= fcst.prm$asof)
  
-  sf.cl = filter(sf2, name == 'Y') %>%
+  if(n.cl > 0) sf.cl = filter(sf2, name == 'Y') %>%
     drop_na(mean) %>%
     filter(date >= fcst.prm$asof)
   
-  sf.ha = fcst.obj$summary.fcst.aggr$H.aggr |> 
+  if(n.ha > 0) sf.ha = fcst.obj$summary.fcst.aggr$H.aggr |> 
     pivot_wider(names_from = qprob, 
                 values_from = q, 
                 names_prefix = 'q_')
   
   # - - - Plots - - - 
   
-  g.cl = plot_fitfcst(
+  g.cl = g.ha = g.ww = ggplot()
+  
+  if(n.cl > 0) g.cl = plot_fitfcst(
     traj.fit = fitsim.cl, 
     traj.fcst = sf.cl, 
     obs = obs.cl, 
@@ -437,7 +442,7 @@ reem_plot_forecast <- function(
     qlist = qlist, 
     xaxis = xaxis)
  
-  g.ha = plot_fitfcst(
+  if(n.ha > 0) g.ha = plot_fitfcst(
     traj.fit = fitsim.ha, 
     traj.fcst = sf.ha, 
     obs = obs.ha, 
@@ -449,7 +454,7 @@ reem_plot_forecast <- function(
     qlist = qlist,
     xaxis = xaxis)
   
-  g.ww = plot_fitfcst(
+  if(n.ww > 0) g.ww = plot_fitfcst(
     traj.fit = fitsim.ww, 
     traj.fcst = sf.ww, 
     obs = obs.ww, 
