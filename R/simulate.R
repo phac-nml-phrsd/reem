@@ -290,7 +290,7 @@ check_B <- function(obj) {
     obj$prms[['B']] <- rbind(B.fillin, obj$prms[['B']])
   }
   
-  if(obj$prms[['B']]$date[nb] < date.horiz){
+  if(obj$prms[['B']]$date[nrow(obj$prms[['B']])] < date.horiz){
     warning(
       'Last date (',obj$prms[['B']]$date[nb],') for behavior change parameter `B` ', 
       'is before horizon date (',date.horiz,').\n',
