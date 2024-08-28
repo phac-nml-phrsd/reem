@@ -4,7 +4,7 @@
 \alias{reem_forecast}
 \title{Forecast a fitted epidemic}
 \usage{
-reem_forecast(obj, prm.fcst, verbose)
+reem_forecast(obj, prm.fcst, verbose, progressbar)
 }
 \arguments{
 \item{obj}{REEM object.}

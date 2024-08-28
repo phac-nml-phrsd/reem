@@ -207,8 +207,15 @@ prm_model_example <- function() {
     t.obs.cl = seq(7, horizon - 20, by = 7),
     t.obs.ww = seq(3,horizon - 50, by=3),
     i0prop  = 1e-3,
-    date.start = date.start, 
-    start.delta = 0, 
+    date.start = date.start,  
+    # NOTE: 
+    # `start.delta` (below) is used only during fitting 
+    # (it is ignored for simple simulation).
+    # `start.delta` is created to conveniently fit the 
+    # start date of an epidemic.
+    # If the user wants to change the date for a simulation,
+    # this must be done by updating `obj$prms$date.start` directly.
+    start.delta = 0,
     R0      = 1.5, # Basic reproduction number
     N       = 9999, # population size
     alpha   = 0.2, # transmission heterogeneity (alpha=0: homogeneous)

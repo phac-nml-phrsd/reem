@@ -77,6 +77,13 @@ prms = list(
   date.obs.cl = date.start + seq(7,hz-2, by = 7),
   date.obs.ha = date.start + seq(12,hz-2, by = 10),
   date.obs.ww = date.start + seq(3,hz-2, by=14),
+  # NOTE: 
+    # `start.delta` (below) is used only during fitting 
+    # (it is ignored for simple simulation).
+    # `start.delta` is created to conveniently fit the 
+    # start date of an epidemic.
+    # If the user wants to change the date for a simulation,
+    # this must be done by updating `obj$prms$date.start` directly.
   start.delta = 0, 
   R0      = 1.5, # Basic reproduction number
   N       = 1e4, # population size
@@ -252,16 +259,12 @@ thefit = obj$fit_abc(prm.abc, prms.to.fit)
 
     ## snowfall 1.84-6.3 initialized: sequential execution, one CPU.
 
-    ## Warning: package 'purrr' was built under R version 4.3.3
+    ## Warning: package 'purrr' was built under R version 4.2.3
 
     ## sfExportAll() ignored in sequential mode.
 
     ## ABC iteration # 1 / 500 
     ## ABC iteration # 500 / 500
-
-``` r
-#saveRDS(obj, file = "obj_fitted.rds")
-```
 
 Once the ABC fit is completed, we can call built-in functions to assess
 the goodness of fit.
@@ -338,7 +341,7 @@ We can use this fitted object to forecast the epidemic trajectory.
   )
   
   
-  fcst = obj$forecast(prm = prm.fcst, verbose = 1)
+  fcst = obj$forecast(prm.fcst = prm.fcst, verbose = 1)
 ```
 
     ## Warning in reem_forecast(obj = .self, prm.fcst = prm.fcst, verbose = verbose, : 
@@ -376,9 +379,14 @@ We can use this fitted object to forecast the epidemic trajectory.
   plot(g)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- --> We can add a
-new hypothetical transmission scenario where transmission shoots up
-shortly after asof date and then forecast
+![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
+
+``` r
+#saveRDS(obj, file = "obj_fitted.rds")
+```
+
+We can add a new hypothetical transmission scenario where transmission
+shoots up shortly after asof date and then forecast
 
 ``` r
 B.date = date.start + c(-20:(hz+200))

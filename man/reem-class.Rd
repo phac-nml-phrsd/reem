@@ -21,9 +21,11 @@ this does not affect any calculation.}
 \itemize{
   \item{\code{horizon}: }{horizon time of the simulation.}
   \item{\code{last.obs}: }{last observation time (must be < \code{horizon}).}
-  \item{\code{B}: }{numerical vector representing the time 
-  dependent multiplicative factor for transmission.}
+  \item{\code{B}: }{dataframe representing the time 
+  dependent multiplicative factor for transmission. 
+  Must have `date` and `mult` variables.}
   \item{\code{date.start}: }{start date of the epidemic.}
+  \item{\code{start.delta}: }{NOTE:  it is used only during fitting (it is ignored for simple simulation).`start.delta` is created to conveniently fit the start date of an epidemic.If the user wants to change the date for a simulation, this must be done by updating `obj$prms$date.start` directly.}
   \item{\code{R0}: }{basic reproduction number.}
   \item{\code{N}: }{population size.}
   \item{\code{alpha}: }{transmission heterogeneity (alpha=-Inf: homogeneous).}

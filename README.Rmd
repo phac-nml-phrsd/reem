@@ -77,6 +77,13 @@ prms = list(
   date.obs.cl = date.start + seq(7,hz-2, by = 7),
   date.obs.ha = date.start + seq(12,hz-2, by = 10),
   date.obs.ww = date.start + seq(3,hz-2, by=14),
+  # NOTE: 
+    # `start.delta` (below) is used only during fitting 
+    # (it is ignored for simple simulation).
+    # `start.delta` is created to conveniently fit the 
+    # start date of an epidemic.
+    # If the user wants to change the date for a simulation,
+    # this must be done by updating `obj$prms$date.start` directly.
   start.delta = 0, 
   R0      = 1.5, # Basic reproduction number
   N       = 1e4, # population size

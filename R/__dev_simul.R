@@ -54,7 +54,6 @@ if(0){
   
   obj$print_prms()
   head(obj$prms$B)
-  
   g = plot_epi(simepi) 
   patchwork::wrap_plots(g, ncol = 1)
   
