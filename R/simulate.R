@@ -290,14 +290,15 @@ check_B <- function(obj) {
     obj$prms[['B']] <- rbind(B.fillin, obj$prms[['B']])
   }
   
-  if(obj$prms[['B']]$date[nrow(obj$prms[['B']])] < date.horiz){
+  # refresh values in case modified by previous `if()`
+  nb = nrow(obj$prms[['B']])
+  
+  if(obj$prms[['B']]$date[nb] < date.horiz){
     warning(
       'Last date (',obj$prms[['B']]$date[nb],') for behavior change parameter `B` ', 
       'is before horizon date (',date.horiz,').\n',
       'Filling-in missing values with last element B[n].')
 
-    # refresh values in case modified by previous `if()`
-    nb = nrow(obj$prms[['B']])
     
     # Filling-in missing dates:
     d2 = seq.Date(obj$prms[['B']]$date[nb]+1, date.horiz, by = 1)
