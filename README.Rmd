@@ -31,7 +31,7 @@ See for example: D. Fargue, Reducibilite des systemes hereditaires, Int. J. Nonl
 
 The renewal equation of the pathogen transmission process is as follows:
 
-$$i(t) = \left(\frac{S(t)}{N}\right)^{\exp(\alpha)}\, \mathcal{R}_0 \, B(t) \sum_{k=1}^\ell g(k)i(t-k)$$
+$$i(t) = \left(\frac{S(t-1)}{N}\right)^{\exp(\alpha)}\, \mathcal{R}_0 \, B(t) \sum_{k=1}^\ell g(k)i(t-k)$$
 
 $$S(t) = \max(0, S(t-1) - i(t))$$
 
