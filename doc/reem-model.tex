@@ -69,7 +69,7 @@ The infection process is described by the following discrete-time equations:
 
 \begin{eqnarray}
 \label{eq:reinc}
-j(t) & = & \Ro \left(\frac{S(t)}{N}\right)^{\exp(\alpha)} B(t) \sum_{k=1}^{t-1} g(k)\, j(t-k) \\ 
+j(t) & = & \Ro \left(\frac{S(t-1)}{N}\right)^{\exp(\alpha)} B(t) \sum_{k=1}^{t-1} g(k)\, j(t-k) \\ 
 I(t) & \sim & \mathrm{Pois}(j(t))   \\
 S(t) & = & \max(0, S(t-1) - I(t))
 \end{eqnarray}
