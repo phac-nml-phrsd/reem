@@ -88,27 +88,51 @@ aggregate_fcst <- function(var.to.aggregate, obj, simfwd) {
 summ_aggr_fcst <- function(simfwd, obj, var, prm.fcst) {
   # var = 'cl'
   
+  # The aggregation time interval 
+  # is defined based on time interval 
+  # of the observations (median interval):
   vtype = paste0('obs.',var)
-  d = obj[[vtype]][['date']]
-  dt = median(diff(d)) |> as.integer()
+  d     = obj[[vtype]][['date']]
+  
+  if(!is.null(d)){
+    if(length(d) > 1)
+      dt = median(diff(d)) |> as.integer()
+    
+    # If there are no observations available,
+    # we can still aggregate, but on using an 
+    # arbitrary interval (e.g., weekly):   
+    if(length(d) <= 1){
+      dt = 7
+      message('WARNING: Only on single observation for ', vtype,
+              ' => assumming aggregation period to be *weekly*.')
+    }
+  }
+  
+  if(is.null(d)){
+    dt = 7
+    message('WARNING: No observations for ', vtype,
+            ' => assumming aggregation period to be *weekly*.')
+  }
   
   ci    =   prm.fcst$ci
   probs = sort(c(0.5 - ci/2, 0.5 + ci/2) )
   
   # Create the forward dates schedule (after "asof")
   d.fwd = max(d) + seq(dt, obj$prms$horizon, by = dt)
- 
 
-  # We must consider the values after the last obesrvation date
+  # DEBUG
+  message("DEBUG: aggregation schedule: ", paste(d.fwd, collapse = ' ; ') )
+  
+  # We must consider the values after the last observation date
   # otherwise, will sum from date.start!
   simfwd.crop = purrr::map(simfwd, ~ dplyr::filter(., date > max(d) ))
 
   # Aggregation
   simfwd.aggr = lapply(simfwd.crop, 
                        helper_aggreg, 
-                       type = var, 
-                       dateobs = d.fwd, 
-                       prms = obj$prms, 
+                       type     = var, 
+                       dateobs  = d.fwd, 
+                       prms     = obj$prms, 
                        var.name = 'value') 
   
   # Summary statistics (quantiles, mean)
@@ -121,7 +145,7 @@ summ_aggr_fcst <- function(simfwd, obj, var, prm.fcst) {
       .by = c(date))
   
   res = list(
-    simfwd.aggr = simfwd.aggr,
+    simfwd.aggr       = simfwd.aggr,
     summary.fcst.aggr = summary.fcst.aggr
   )
   return(res)
