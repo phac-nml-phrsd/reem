@@ -86,7 +86,7 @@ aggregate_fcst <- function(var.to.aggregate, obj, simfwd) {
 
 
 summ_aggr_fcst <- function(simfwd, obj, var, prm.fcst) {
-  # var = 'cl'
+  # var = 'ha'
   
   # The aggregation time interval 
   # is defined based on time interval 
@@ -95,15 +95,18 @@ summ_aggr_fcst <- function(simfwd, obj, var, prm.fcst) {
   d     = obj[[vtype]][['date']]
   
   if(!is.null(d)){
-    if(length(d) > 1)
+    
+    ld = length(unique(d))
+    
+    if(ld > 1)
       dt = median(diff(d)) |> as.integer()
     
     # If there are no observations available,
     # we can still aggregate, but on using an 
     # arbitrary interval (e.g., weekly):   
-    if(length(d) <= 1){
+    if(ld <= 1){
       dt = 7
-      message('WARNING: Only on single observation for ', vtype,
+      message('WARNING: Only one single observation for ', vtype,
               ' => assumming aggregation period to be *weekly*.')
     }
   }
@@ -121,7 +124,7 @@ summ_aggr_fcst <- function(simfwd, obj, var, prm.fcst) {
   d.fwd = max(d) + seq(dt, obj$prms$horizon, by = dt)
 
   # DEBUG
-  message("DEBUG: aggregation schedule: ", paste(d.fwd, collapse = ' ; ') )
+  #message("DEBUG: aggregation schedule: ", paste(d.fwd, collapse = ' ; ') )
   
   # We must consider the values after the last observation date
   # otherwise, will sum from date.start!
