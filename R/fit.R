@@ -425,6 +425,30 @@ generate_priors <- function(prms.to.fit, n.priors) {
       shape = m^2 / v
       tmp[[i]] = rgamma(n = n.priors, shape = shape, scale = scale)
     }
+    
+    # In this case, the prior samples are NOT generated.
+    # Instead, they are picked from an existing data set
+    # saved as an RDS file.
+    if(distrib == 'provided'){
+      filename = x[[2]]
+      varname  = x[[3]]
+      y = readRDS(file = filename)
+      
+      if(!varname %in% names(y)){
+        stop('Variable name `',varname,'` not found in `',
+             filename,
+             '`. ABORTING!')
+      }
+      
+      if(nrow(y) < n.priors){
+        stop('Not enough samples available in `',
+             filename,'`. Found ',nrow(y),' but ',n.priors,
+             ' priors requested. ABORTING!')
+      }
+      
+      idx = sample(1:nrow(y), size = n.priors, replace = FALSE)
+      tmp[[i]] = y[[varname]][idx]
+    }
   }
   priors = data.frame(tmp)
   names(priors) = names(prms.to.fit)
