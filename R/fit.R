@@ -402,7 +402,7 @@ generate_priors <- function(prms.to.fit, n.priors) {
     x = prms.to.fit[[i]]
     distrib = x[[1]]
     
-    if(1) message('generating priors for ', names(prms.to.fit)[i]) # DEBUG
+    if(0) message('generating priors for ', names(prms.to.fit)[i]) # DEBUG
     
     if(distrib == 'unif') 
       tmp[[i]] = runif(n = n.priors, min = x[[2]], max = x[[3]])
