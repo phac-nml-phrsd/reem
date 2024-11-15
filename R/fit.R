@@ -405,24 +405,28 @@ generate_priors <- function(prms.to.fit, n.priors) {
     if(0) message('generating priors for ', names(prms.to.fit)[i]) # DEBUG
     
     if(distrib == 'unif') 
-      tmp[[i]] = runif(n = n.priors, min = x[[2]], max = x[[3]])
+      tmp[[i]] = runif(n = n.priors, 
+                       min = as.numeric(x[[2]]), max = as.numeric(x[[3]]))
     
     if(grepl('^norm', distrib)){
-      y = rnorm(n = n.priors, mean = x[[2]], sd = x[[3]])
+      y = rnorm(n = n.priors, 
+                mean = as.numeric(x[[2]]), sd = as.numeric(x[[3]]))
       if(distrib == 'normp') y[y<0] <- -y[y<0] # force positive samples
       tmp[[i]] = y
     }
     
     if(distrib == 'exp')
-      tmp[[i]] = rexp(n = n.priors, rate = 1 / x[[2]])
+      tmp[[i]] = rexp(n = n.priors, rate = 1 / as.numeric(x[[2]]))
     
     if(distrib == 'unif_int')
-      tmp[[i]] = sample(x = x[[2]]:x[[3]], size = n.priors, replace = TRUE)
+      tmp[[i]] = sample(x = as.numeric(x[[2]]):as.numeric(x[[3]]), 
+                        size = n.priors, replace = TRUE)
     
     if(distrib == 'gamma'){
       # Note: Gamma is assumed parametrized with 
       # mean and variance, not shape and scale.
-      m = x[[2]] ; v = x[[3]]
+      m = as.numeric(x[[2]]) 
+      v = as.numeric(x[[3]])
       scale = v / m
       shape = m^2 / v
       tmp[[i]] = rgamma(n = n.priors, shape = shape, scale = scale)
