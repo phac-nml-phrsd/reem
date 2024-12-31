@@ -30,9 +30,9 @@ SEIR Epidemic Model and the Renewal Equation, SIAM J. Appl. Math., 78
 
 The renewal equation of the pathogen transmission process is as follows:
 
-$$i(t) = \left(\frac{S(t)}{N}\right)^{\exp(\alpha)}\, \mathcal{R}_0 \, B(t) \sum_{k=1}^\ell g(k)i(t-k)$$
+$$i(t) = \left(\frac{S(t)}{N}\right)^{\exp(\alpha)} \mathcal{R}_0 B(t) \sum g(k)i(t-k)$$
 
-$$S(t) = \max(0, S(t-1) - i(t))$$
+$$S(t) = \max(0,  S(t-1) - i(t))$$
 
 where $i(t)$ is the incidence at time $t$, $\mathcal{R}_0$ is the basic
 reproduction number, $S_t$ are the number of susceptible individuals at
