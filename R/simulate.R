@@ -16,9 +16,9 @@ check_date_start <- function(obj) {
 }
 
 check_length_timeseries <- function(x, horizon) {
-  n = rlang::as_label(eval(parse(text=dplyr::enquo(x)))[2])
+  argname <- deparse(substitute(x)) 
   if(length(x) != horizon) 
-    message('The size of vector ',n, ' (',
+    message('The size of vector ',argname, ' (',
          length(x),
          ') is different from `horizon` (=',
          horizon,')')  
