@@ -23,13 +23,17 @@ details.
 The epidemic model is a traditional SIR model but implemented as a
 renewal equation instead of the more populate ordinary differential
 equations (ODE). It has been shown that the renewal equation
-implementation is equivalent to the ODE one. See for example: D. Fargue,
-Reducibilite des systemes hereditaires, Int. J. Nonlinear Mech., 9
-(1974), pp. 331–338, D. Breda et al On the formulation of epidemic
+implementation is equivalent to the ODE one. 
+See for example: 
+
+ - D. Fargue : Reducibilite des systemes hereditaires, Int. J. Nonlinear Mech., 9
+(1974), pp. 331–338
+ - D. Breda et al : On the formulation of epidemic
 models (an appraisal of Kermack and McKendrick), J. Biol. Dyn.,6 (2012),
-pp. 103–117, and Champredon et al. Equivalence of the Erlang-Distributed
+pp. 103–117
+ - Champredon et al : Equivalence of the Erlang-Distributed
 SEIR Epidemic Model and the Renewal Equation, SIAM J. Appl. Math., 78
-(2018).
+(2018)
 
 The renewal equation of the pathogen transmission process is as follows:
 
