@@ -331,7 +331,12 @@ plot_fitfcst <- function(traj.fit, traj.fcst, obs,
                          alpha.ribbon, col.fit, col.fcst, 
                          fcst.prm, 
                          title, ylab, qlist, xaxis) {
+  # Last observation
+  date.obs.last = max(obs$date)
+  obs.last = obs$obs[obs$date == date.obs.last]
+  obs.last.plot = ymd(date.obs.last)
   
+  # Plot
   g = ggplot(data = traj.fcst, aes(x=date))+ 
     # --- Fit
     geom_line(data = traj.fit, aes(y=m), 
@@ -340,16 +345,24 @@ plot_fitfcst <- function(traj.fit, traj.fcst, obs,
                 fill = col.fit, color = col.fit, 
                 linewidth = 0.1, 
                 alpha = alpha.ribbon / 2) + 
+    # --- Observations
     geom_point(data = obs, aes(y=obs)) + 
     # --- Forecast
     geom_line( aes(y = mean), color= col.fcst, 
                linetype = 'dotted') + 
     geom_vline(xintercept = fcst.prm$asof, 
                linetype = 'dashed', 
-               color = 'gray50') + 
-    annotate(geom = 'text', y=1, x=fcst.prm$asof, 
-             label = fcst.prm$asof, size = 2) + 
+               color = col.fcst) + 
+    annotate(geom = 'text', y=1, x = fcst.prm$asof + 1, 
+             label = fcst.prm$asof, size = 2, hjust = 0,
+             color = col.fcst) + 
+    annotate(geom = 'segment', 
+             x = date.obs.last, xend = date.obs.last,
+             y = 0, yend = obs.last, linetype = 'dotted', color = 'grey75')+
+    annotate(geom = 'text', x = date.obs.last, y = 1,
+               label = obs.last.plot, hjust = 1, size = 2)+
     xaxis + 
+    theme(panel.grid.minor = element_line(color = 'grey97'))+
     labs(title =title, 
          x = '', y = ylab, 
          caption = paste('fit ribbon: min/max\nfcst ribbon: quantiles'))
@@ -358,6 +371,7 @@ plot_fitfcst <- function(traj.fit, traj.fcst, obs,
   for(k in 1:(length(qlist)/2)) {
     g = add_ribbons_quantiles(g, qlist, k, col.fcst, alpha.ribbon/2)
   }
+  # g
   return(g)
 }
 
