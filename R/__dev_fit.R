@@ -10,13 +10,13 @@ if(0){
   
   set.seed(1234)
   date.start = ymd('2022-01-01')
-  asof       = ymd('2022-02-21') 
-  hz = 120
+  asof       = ymd('2022-03-10') #ymd('2022-02-21') 
+  hz = 220
  
   B.date = date.start + c(0:(hz+1))
-  date.break = ymd('2022-03-01')
+  date.break = asof + 30 
   B = data.frame(date = B.date, mult = rep(1,length(B.date))) |>
-    mutate(mult = if_else(date >= date.break, 3, mult))
+    mutate(mult = if_else(date >= date.break, 2, mult))
    
   prms0 = list(
     horizon = hz,  # horizon of the simulation

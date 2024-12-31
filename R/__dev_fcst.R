@@ -14,7 +14,8 @@ if(0){
   devtools::load_all()
   
   
-  asof = ymd('2022-02-21') 
+  obj = readRDS('debug-fit.rds')
+  asof = ymd('2022-03-21') 
   
   prm.fcst = list(
     asof         = asof,
@@ -26,7 +27,6 @@ if(0){
   )
   
   
-  obj = readRDS('debug-fit.rds')
   fcst = obj$forecast(prm = prm.fcst, verbose = 1)
   
   g.fcst = obj$plot_forecast(date_breaks = '1 month')
@@ -38,7 +38,7 @@ if(0){
   mean(pk$peak.value > 10000) 
   
   g.peak.ha = obj$plot_peak(var = 'H.aggr', logscale = 0)
-  g.peak.cl = obj$plot_peak(var = 'Y', logscale = 0)
+  g.peak.cl = obj$plot_peak(var = 'Y.aggr', logscale = 0)
   g.peak.cl | g.peak.ha
   
   pdf(paste0('plot-fcst-', reem::timestamp_short(),'.pdf'))
