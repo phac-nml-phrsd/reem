@@ -5,7 +5,10 @@ based **E**pidemic **M**odel
 This package simulates and fits infectious disease epidemic to clinical
 and wastewater data.
 
-To install: `devtools::install_github("phac-nml-phrsd/reem")`
+To install: 
+``` r
+devtools::install_github("phac-nml-phrsd/reem")
+```
 
 **Note:** This package implements the model as a **Reference Class**.
 This is a way to access the Object Oriented Programming functionalities
