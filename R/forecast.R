@@ -334,7 +334,7 @@ plot_fitfcst <- function(traj.fit, traj.fcst, obs,
   # Last observation
   date.obs.last = max(obs$date)
   obs.last = obs$obs[obs$date == date.obs.last]
-  obs.last.plot = ymd(date.obs.last)
+  obs.last.plot = lubridate::ymd(date.obs.last)
   
   # Plot
   g = ggplot(data = traj.fcst, aes(x=date))+ 
@@ -649,12 +649,13 @@ reem_forecast_peak <- function(var, fcst, obs) {
   
   # Compare future peaks with past observations
   # and overwrite future if past peak is larger
-  res = pkafter |> mutate(
-    peak.value2 = if_else(peak.value < pk.obs.value, pk.obs.value, peak.value),
-    peak.date2  = if_else(peak.value < pk.obs.value, pk.obs.date, peak.date)
-  ) |> 
-    select(post, peak.date2, peak.value2) |>
-    rename(peak.date = peak.date2, peak.value = peak.value2)
+  res = pkafter |> dplyr::mutate(
+    peak.value2 = dplyr::if_else(peak.value < pk.obs.value, 
+                                 pk.obs.value, peak.value),
+    peak.date2  = dplyr::if_else(peak.value < pk.obs.value, 
+                                 pk.obs.date, peak.date)) |> 
+    dplyr::select(post, peak.date2, peak.value2) |>
+    dplyr::rename(peak.date = peak.date2, peak.value = peak.value2)
   
   return(res)
 }
