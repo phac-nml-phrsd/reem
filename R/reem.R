@@ -224,7 +224,20 @@ setRefClass(
       },
       
       forecast_peak = function(var){
-        res = reem_forecast_peak(var = var, fcst = .self$fcst.obj)
+        
+        # retrieve relevant observations
+        obs = NULL
+        if(var %in% c('Y.aggr')) obs = .self$obs.cl
+        if(var %in% c('H.aggr')) obs = .self$obs.ha
+        if(var %in% c('Wr'))     obs = .self$obs.ww
+        
+        if(is.null(obs)) 
+          message('forecast_peak: No observations found for forecast variable ',
+                  var)
+        
+        res = reem_forecast_peak(var = var, 
+                                 fcst = .self$fcst.obj,
+                                 obs = obs)
         return(res)
       },
       

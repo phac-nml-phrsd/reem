@@ -543,6 +543,19 @@ reem_plot_peak <- function( var,
   
   pk = obj$forecast_peak(var = var)
   
+  # Check if all dates or values are the same
+  # (typically when the peak has been reached in the past)
+  dv = diff(pk$peak.value)
+  dd = diff(pk$peak.date)
+  if(all(dv==0)) {
+    perturb = 0.002 * rnorm(n = nrow(pk))
+    pk$peak.value = pk$peak.value * (1 + perturb)
+  }
+  if(all(dd==0)) {
+    perturb =  rnorm(n = nrow(pk)) 
+    pk$peak.date = pk$peak.date  + perturb/3
+  }
+    
   g.pk2d = pk %>% 
     ggplot2::ggplot(ggplot2::aes(x=peak.date , y=peak.value)) +
     ggplot2::geom_point(alpha = 0.5, size = 3) + 
@@ -593,7 +606,6 @@ reem_plot_peak <- function( var,
                                widths  = c(13,2),
                                ncol = 2)
   # g.pk
-
   return(g.pk)
 }
 
@@ -601,10 +613,11 @@ reem_plot_peak <- function( var,
 #' 
 #' @param var String. Name of the model variable. 
 #' @param fcst Forecast object `fcst.obj` of the `reem` class object.  
+#' @param obs Dataframe. Observations associated with `var`.  
 #'
 #' @return A dataframe of the forecasted peaks.
 #'
-reem_forecast_peak <- function(var, fcst) {
+reem_forecast_peak <- function(var, fcst, obs) {
   
   is.aggregated = grepl('aggr$', var)
   
@@ -616,12 +629,32 @@ reem_forecast_peak <- function(var, fcst) {
       purrr::map(~dplyr::mutate(., value = .data[[var]]))
   }
   
-  res = df %>% 
+  # Evaluate the FUTURE peaks
+  # (trajectories AFTER the as of date)
+  pkafter = df %>% 
     dplyr::bind_rows(.id = 'post') %>%
     dplyr::group_by(post) %>% 
     dplyr::summarise(
       peak.date  = date[which.max(value)[1]],
       peak.value = max(value,na.rm = TRUE))
+  
+  # Maximum values (potential peak) from observations
+  if(!is.null(obs)){
+    pk.obs.value = max(obs$obs)
+    pk.obs.date = obs$date[obs$obs == pk.obs.value]
+  }
+  if(is.null(obs)){
+    pk.obs.value = -1
+  }
+  
+  # Compare future peaks with past observations
+  # and overwrite future if past peak is larger
+  res = pkafter |> mutate(
+    peak.value2 = if_else(peak.value < pk.obs.value, pk.obs.value, peak.value),
+    peak.date2  = if_else(peak.value < pk.obs.value, pk.obs.date, peak.date)
+  ) |> 
+    select(post, peak.date2, peak.value2) |>
+    rename(peak.date = peak.date2, peak.value = peak.value2)
   
   return(res)
 }
