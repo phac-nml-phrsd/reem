@@ -13,6 +13,9 @@ reem_fit_abc(obj, prm.abc, prms.to.fit, verbose = FALSE)
 
 \item{prms.to.fit}{}
 }
+\value{
+List storing trajectories, ABC distances and posterior samples.
+}
 \description{
 Fit model to observed data using the ABC algorithm.
 }

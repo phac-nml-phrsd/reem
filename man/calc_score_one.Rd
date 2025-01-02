@@ -31,6 +31,9 @@ calc_score_one(
 
 \item{aggr.window}{}
 }
+\value{
+Numerical. Score of the forecast.
+}
 \description{
 Calculate the forecasting score at 
 a given date of new observations

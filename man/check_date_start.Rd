@@ -9,6 +9,9 @@ check_date_start(obj)
 \arguments{
 \item{obj}{}
 }
+\value{
+Error message if appropriate.
+}
 \description{
 Check (and potentially set) the simulation start date
 }

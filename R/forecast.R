@@ -534,7 +534,7 @@ reem_plot_forecast <- function(
 #' @param date_labels String. Date labels (as understood by \code{ggplot}).
 #' @param logscale Logical. Use logarithmic scale for y axis. Default is \code{FALSE}.
 #'
-#' @return
+#' @return A ggplot object plotting the time and value of the forecasted peaks.
 #'
 reem_plot_peak <- function( var,
                             obj         ,

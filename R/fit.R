@@ -468,11 +468,9 @@ generate_priors <- function(prms.to.fit, n.priors) {
 #' @param prm.abc 
 #' @param prms.to.fit 
 #'
-#' @return
+#' @return List storing trajectories, ABC distances and posterior samples.
 #' @export
 #'
-#' @examples
-#' 
 reem_fit_abc <- function(obj,
                          prm.abc,
                          prms.to.fit,
@@ -602,7 +600,8 @@ plot_traj <- function(obs, ps, varname, color, title, ylab) {
 #' @param type String. Typcal values: `cl`, `ha`. (wastewater is NOT aggregated)
 #' @param rename Logical. Rename aggregated variables.
 #'
-#' @return
+#' @return Dataframe.
+#' 
 #' @keywords internal
 #'
 extract_fit_aggreg <- function(obj, type, rename = TRUE) {

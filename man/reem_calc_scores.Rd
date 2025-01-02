@@ -24,6 +24,9 @@ reem_calc_scores(
 
 \item{density.adjust}{}
 }
+\value{
+Numerical vector.
+}
 \description{
 Forecasting scores given new observations
 }

@@ -11,6 +11,9 @@ reem_simulate(prms, deterministic)
 
 \item{deterministic}{}
 }
+\value{
+Dataframe of time series.
+}
 \description{
 Simulate an epidemic with a REEM.
 }

@@ -15,6 +15,9 @@ reem_plot_peak(var, obj, date_labels, logscale)
 
 \item{logscale}{Logical. Use logarithmic scale for y axis. Default is \code{FALSE}.}
 }
+\value{
+A ggplot object plotting the time and value of the forecasted peaks.
+}
 \description{
 Plot timing and level of peak forecast
 }

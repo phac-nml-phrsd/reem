@@ -9,7 +9,7 @@
 #' @return String representing the time now. 
 #' @export
 #' @importFrom magrittr %>%
-#' @examples
+#' 
 timestamp_short <- function() {
   stamp = lubridate::now() %>%
     stringr::str_replace_all('\\s','a') %>%
@@ -26,7 +26,7 @@ timestamp_short <- function() {
 #'
 #' @param prm List. Model parameters.
 #'
-#' @return
+#' @return List of parameters updated with the `I.init`.
 #'
 set_I_init <- function(prm) {
   i0val = round(prm$N * 10^prm$i0prop)

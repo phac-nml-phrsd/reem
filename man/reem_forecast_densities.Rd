@@ -27,6 +27,9 @@ reem_forecast_densities(
 
 \item{aggr.window}{}
 }
+\value{
+List of dataframes. Each element is associated with an observation.
+}
 \description{
 Densities of the forecasted values
 given new observations.

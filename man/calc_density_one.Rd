@@ -14,6 +14,9 @@ calc_density_one(fcst.vals, density.n, density.adjust)
 
 \item{density.adjust}{}
 }
+\value{
+Dataframe of densities.
+}
 \description{
 Calculate the density of forecasted values 
 at a single date

@@ -15,6 +15,9 @@ plot_forecast_scores(obj, obs.new, var, aggr.window = NULL)
 
 \item{aggr.window}{}
 }
+\value{
+A ggplot.
+}
 \description{
 Title
 }

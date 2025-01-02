@@ -13,6 +13,9 @@ extract_fit_aggreg(obj, type, rename = TRUE)
 
 \item{rename}{Logical. Rename aggregated variables.}
 }
+\value{
+Dataframe.
+}
 \description{
 Extract posterior variable and aggregate
 }

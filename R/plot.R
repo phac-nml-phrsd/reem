@@ -8,8 +8,6 @@
 #' 
 #' @export
 #'
-#' @examples
-#' 
 plot_epi <- function(simepi) {
   
   # Populations
@@ -91,8 +89,6 @@ plot_epi <- function(simepi) {
 #'
 #' @return A ggplot object. 
 #' @export
-#'
-#' @examples
 #' 
 plot_obs <- function(obj) {
   tmp = list() 

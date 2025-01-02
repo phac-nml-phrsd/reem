@@ -4,7 +4,7 @@
 #'
 #' @param obj 
 #'
-#' @return
+#' @return Error message if appropriate.
 #' 
 check_date_start <- function(obj) {
   has.date.start = !is.null(obj$prms$date.start)
@@ -74,12 +74,9 @@ set_obs_schedule <- function(type, obj) {
 #' @param deterministic 
 #' @param prms 
 #'
-#' @return
+#' @return Dataframe of time series.
 #' @export
 #'
-#' @examples
-#' 
-#' 
 reem_simulate <- function(prms, deterministic) {
   
   # Unpack parameters

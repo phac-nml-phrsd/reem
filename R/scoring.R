@@ -37,7 +37,7 @@ extract_fcst_value <- function(i, fcst, d, var) {
 #' @param density.n 
 #' @param density.adjust 
 #'
-#' @return
+#' @return Dataframe of densities.
 #'
 calc_density_one <- function(fcst.vals,
                              density.n, 
@@ -125,7 +125,8 @@ extract_helper <- function(i, fcst, aggr.window, obs.new, var) {
 #' @param density.adjust 
 #' @param aggr.window 
 #'
-#' @return
+#' @return Numerical. Score of the forecast.
+#' 
 calc_score_one <- function(i, var, 
                            obs.new, 
                            fcst,
@@ -177,7 +178,7 @@ calc_score_one <- function(i, var,
 #' @param density.n 
 #' @param density.adjust 
 #'
-#' @return
+#' @return Numerical vector. 
 #'
 reem_calc_scores <- function(var, 
                              obs.new, 
@@ -250,7 +251,7 @@ reem_inside_CI <- function(var, obs.new, ci.width, aggr.window, fcst) {
 #' @param density.adjust 
 #' @param aggr.window 
 #'
-#' @return
+#' @return List of dataframes. Each element is associated with an observation.
 #'
 reem_forecast_densities <- function(var, 
                                     obs.new, 
@@ -291,10 +292,9 @@ reem_forecast_densities <- function(var,
 #' @param var 
 #' @param aggr.window 
 #'
-#' @return
+#' @return A ggplot.
 #' @export
 #'
-#' @examples
 plot_forecast_scores <- function( obj,  
                                   obs.new,
                                   var, 

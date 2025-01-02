@@ -11,6 +11,9 @@ set_I_init(prm)
 \arguments{
 \item{prm}{List. Model parameters.}
 }
+\value{
+List of parameters updated with the `I.init`.
+}
 \description{
 Translate the initial PROPORTION 
 of infected individuals into a
