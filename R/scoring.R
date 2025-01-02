@@ -43,9 +43,10 @@ calc_density_one <- function(fcst.vals,
                              density.n, 
                              density.adjust) {
   # Density for all these forecasted values
-  a = density(x      = fcst.vals, 
-              n      = density.n, 
-              adjust = density.adjust)
+  a = stats::density(
+    x      = fcst.vals, 
+    n      = density.n, 
+    adjust = density.adjust)
   
   # Filter only positive values
   # (the density function expand the 
@@ -136,7 +137,7 @@ calc_score_one <- function(i, var,
                            pb) {
   # print(i)
   
-  setTxtProgressBar(pb, value = i)
+  utils::setTxtProgressBar(pb, value = i)
   
   tmp.fv = extract_helper(i = i, 
                           fcst = fcst, 
@@ -187,7 +188,7 @@ reem_calc_scores <- function(var,
                              density.adjust = 0.4,
                              aggr.window = NULL) {
   n = nrow(obs.new)
-  pb = txtProgressBar(min = 0, max = n, style = 3, width = 30)
+  pb = utils::txtProgressBar(min = 0, max = n, style = 3, width = 30)
   scores = sapply(X       = 1:n, 
                   FUN     = calc_score_one,
                   var     = var, 
@@ -234,7 +235,7 @@ reem_inside_CI <- function(var, obs.new, ci.width, aggr.window, fcst) {
                             var = var)
     fcst.vals = tmp.fv[!is.na(tmp.fv)]
     
-    q = quantile(fcst.vals, probs = 0.5 + c(-1,1) * ci.width/2)
+    q = stats::quantile(fcst.vals, probs = 0.5 + c(-1,1) * ci.width/2)
     inside[i] = (q[1] <= obs.new$obs[i]) & (obs.new$obs[i] <= q[2]) 
   }
   return(inside)
@@ -277,7 +278,7 @@ reem_forecast_densities <- function(var,
                             density.adjust = density.adjust)
     
     res[[i]] = tmp  %>% 
-      mutate(date = obs.new$date[i], 
+      dplyr::mutate(date = obs.new$date[i], 
              obs  = obs.new$obs[i])
   }
   return(res)
@@ -312,12 +313,12 @@ plot_forecast_scores <- function( obj,
   fd  = obj$forecast_densities(var         = var, 
                                obs.new     = obs.new, 
                                aggr.window = aggr.window)
-  dfd = bind_rows(fd)
+  dfd = dplyr::bind_rows(fd)
   
   # normalize for pretty figure
   dfdn = dfd %>% 
-    group_by(date) %>% 
-    mutate(yn = y / max(y))
+    dplyr::group_by(date) %>% 
+    dplyr::mutate(yn = y / max(y))
   
   # === Plot the new observations
   # === and the associated scores:
@@ -333,24 +334,23 @@ plot_forecast_scores <- function( obj,
   if(var == 'Wr') g.tmp = g$ww
   
   g.new = g.tmp  +
-    geom_text(data = obs.new, 
-              color = 'indianred2', size=3,
-              mapping = aes(x=date, y=-3,
-                            label = round(score,2)))+
+    ggplot2::geom_text(data = obs.new, 
+                       color = 'indianred2', size=3,
+                       mapping = ggplot2::aes(x=date, y=-3,
+                                              label = round(score,2)))+
     # Densities at new observation dates
-    geom_polygon(data = dfdn, 
-                 aes(x = date + md*yn, y = x,
-                     group = date),
-                 fill  = 'mediumpurple3',
-                 color = 'mediumpurple1',
-                 alpha     = 0.2,
-                 linewidth = 0.2) + 
-    geom_point(data = obs.new, color='indianred2',
-               shape = 7,size = 3,stroke = 0.8, 
-               mapping = aes(x=date, y=obs)) + 
-    labs(title = paste('Forecast scoring:', var))
+    ggplot2::geom_polygon(data = dfdn, 
+                          ggplot2::aes(x = date + md*yn, y = x,
+                                       group = date),
+                          fill  = 'mediumpurple3',
+                          color = 'mediumpurple1',
+                          alpha     = 0.2,
+                          linewidth = 0.2) + 
+    ggplot2::geom_point(data = obs.new, color='indianred2',
+                        shape = 7,size = 3,stroke = 0.8, 
+                        mapping = ggplot2::aes(x=date, y=obs)) + 
+    ggplot2::labs(title = paste('Forecast scoring:', var))
   g.new
-  
 }
 
 

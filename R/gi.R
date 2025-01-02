@@ -9,7 +9,7 @@
 #' @return A numerical vector representing the probability density (sums to 1)
 #' 
 gi_gamma <- function(m, v, tmax) {
-  y = dgamma(0:tmax, shape=m^2/v, scale=v/m)
+  y = stats::dgamma(0:tmax, shape=m^2/v, scale=v/m)
   res = y / sum(y)
   return(res)
 }

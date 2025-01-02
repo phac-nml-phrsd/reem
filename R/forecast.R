@@ -58,12 +58,12 @@ aggregate_fcst <- function(var.to.aggregate, obj, simfwd) {
   
   # retrieve the aggregation interval 
   # from the observation data set
-  dt = as.numeric(median(diff(obj$obs.cl$date)))
+  dt = as.numeric(stats::median(diff(obj$obs.cl$date)))
   
   res = list()
   for(i in 1:length(simfwd)){
     # Extract the daily forecasts for the variable
-    sf = select(simfwd[[i]], date, !!var.to.aggregate)
+    sf = dplyr::select(simfwd[[i]], date, !!var.to.aggregate)
     
     # define the aggregation schedule
     dateaggr = seq.Date(from = max(obj$obs.cl$date) , 
@@ -74,8 +74,8 @@ aggregate_fcst <- function(var.to.aggregate, obj, simfwd) {
     res[[i]] = sf %>% 
       aggcl(dt.aggr = dateaggr, 
             vars = var.to.aggregate) %>% 
-      filter(date > obj$fcst.prm$asof) %>%
-      mutate(index = row_number())
+      dplyr::filter(date > obj$fcst.prm$asof) %>%
+      dplyr::mutate(index = dplyr::row_number())
     
     # Set proper name
     idx = names(res[[i]])==var.to.aggregate
@@ -196,8 +196,8 @@ reem_forecast <- function(obj, prm.fcst, verbose, progressbar ) {
   
   if(0){   #---  DEBUG
     prm.fcst = list(
-      asof = ymd('2022-03-01'),
-      horizon.fcst = ymd('2022-07-01'),
+      asof = lubridate::ymd('2022-03-01'),
+      horizon.fcst = lubridate::ymd('2022-07-01'),
       use.fit.post = TRUE,
       vars.to.fcst = c('Y', 'Wr', 'H'),
       n.resample = 20,
@@ -237,7 +237,7 @@ reem_forecast <- function(obj, prm.fcst, verbose, progressbar ) {
             ' available.\n')
     tpb = NULL
     if(progressbar){
-      tpb = txtProgressBar(min = 0, max = max(ii), style = 3, width = 25)
+      tpb = utils::txtProgressBar(min = 0, max = max(ii), style = 3, width = 25)
     }
     simfwd = lapply(X   = ii,
                     FUN = update_and_simulate, 

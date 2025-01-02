@@ -405,18 +405,18 @@ generate_priors <- function(prms.to.fit, n.priors) {
     if(0) message('generating priors for ', names(prms.to.fit)[i]) # DEBUG
     
     if(distrib == 'unif') 
-      tmp[[i]] = runif(n = n.priors, 
+      tmp[[i]] = stats::runif(n = n.priors, 
                        min = as.numeric(x[[2]]), max = as.numeric(x[[3]]))
     
     if(grepl('^norm', distrib)){
-      y = rnorm(n = n.priors, 
+      y = stats::rnorm(n = n.priors, 
                 mean = as.numeric(x[[2]]), sd = as.numeric(x[[3]]))
       if(distrib == 'normp') y[y<0] <- -y[y<0] # force positive samples
       tmp[[i]] = y
     }
     
     if(distrib == 'exp')
-      tmp[[i]] = rexp(n = n.priors, rate = 1 / as.numeric(x[[2]]))
+      tmp[[i]] = stats::rexp(n = n.priors, rate = 1 / as.numeric(x[[2]]))
     
     if(distrib == 'unif_int')
       tmp[[i]] = sample(x = as.numeric(x[[2]]):as.numeric(x[[3]]), 
@@ -429,7 +429,7 @@ generate_priors <- function(prms.to.fit, n.priors) {
       v = as.numeric(x[[3]])
       scale = v / m
       shape = m^2 / v
-      tmp[[i]] = rgamma(n = n.priors, shape = shape, scale = scale)
+      tmp[[i]] = stats::rgamma(n = n.priors, shape = shape, scale = scale)
     }
     
     # In this case, the prior samples are NOT generated.
@@ -621,7 +621,7 @@ extract_fit_aggreg <- function(obj, type, rename = TRUE) {
     dplyr::summarise(m = mean(obs),
                      lo = min(obs),
                      hi = max(obs),
-                     n = n()) |>
+                     n = dplyr::n()) |>
     dplyr::filter(date <= max(obj[[vtype]]$date))
   
   if(rename & type == 'cl') res = dplyr::rename(res, 
@@ -668,6 +668,7 @@ summarise_post_traj <- function(obj, obsdata, varname) {
 #' Plot fit outputs of a (fitted) reem object
 #' @param obj fitted reem object
 #' 
+#' @return List of ggplots.
 #' 
 reem_plot_fit <- function(obj) {
   
@@ -734,7 +735,7 @@ reem_plot_fit <- function(obj) {
   dp = rbind(
     dplyr::mutate(fit.obj$all.distances, type = 'prior'),
     dplyr::mutate(fit.obj$post.prms, type = 'posterior')) %>%
-    dplyr::select(-starts_with('abc')) %>% 
+    dplyr::select(-dplyr::starts_with('abc')) %>% 
     tidyr::pivot_longer(cols = -type)
   
   col.pp =  c(posterior = 'indianred3', 
@@ -836,7 +837,7 @@ reem_plot_fit <- function(obj) {
   
   g.dist2 = d |> 
     dplyr::select(starts_with('abc.err.')) |>
-    dplyr::mutate(x = row_number())|>
+    dplyr::mutate(x = dplyr::row_number())|>
     tidyr::pivot_longer(cols = dplyr::starts_with('abc.err.')) |> 
     dplyr::filter(x < n.post) |> 
     dplyr::mutate(source = substr(name, 9,10)) |> 

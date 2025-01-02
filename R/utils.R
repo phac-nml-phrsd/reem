@@ -71,13 +71,13 @@ mean_inc <- function(t, R0, B, S, N, alpha, g, I) {
 
 calc_I <- function(lambda, deterministic){
   res = lambda
-  if(!deterministic) res = rpois(n=1, lambda = lambda)
+  if(!deterministic) res = stats::rpois(n=1, lambda = lambda)
   return(res)
 }
 
 calc_Y <- function(lambdaY,n, deterministic){
   res = lambdaY
-  if(!deterministic) res = rpois(n=n, lambda = lambdaY)
+  if(!deterministic) res = stats::rpois(n=n, lambda = lambdaY)
   return(res)
 }
 
@@ -174,11 +174,11 @@ aggcl <- function(df, dt.aggr, vars) {
                        var.name = v, 
                        aggreg.name = v) 
     d = a$date
-    tmp[[v]] =  select(a, -date)
+    tmp[[v]] =  dplyr::select(a, -date)
   }
   res = tmp %>% 
-    bind_cols( ) %>% 
-    mutate(date = d) 
+    dplyr::bind_cols( ) %>% 
+    dplyr::mutate(date = d) 
   return(res)
 }
 

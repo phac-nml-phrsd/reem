@@ -9,6 +9,9 @@ reem_plot_fit(obj)
 \arguments{
 \item{obj}{fitted reem object}
 }
+\value{
+List of ggplots.
+}
 \description{
 Plot fit outputs of a (fitted) reem object
 }

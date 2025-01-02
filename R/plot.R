@@ -92,10 +92,10 @@ plot_epi <- function(simepi) {
 #' 
 plot_obs <- function(obj) {
   tmp = list() 
-  tmp[['cl']] = obj$obs.cl |> mutate(type = 'case')
-  tmp[['ha']] = obj$obs.ha |> mutate(type = 'hosp. adm.')
-  tmp[['ww']] = obj$obs.ww |> mutate(type = 'ww')
-  df = bind_rows(tmp)  
+  tmp[['cl']] = obj$obs.cl |> dplyr::mutate(type = 'case')
+  tmp[['ha']] = obj$obs.ha |> dplyr::mutate(type = 'hosp. adm.')
+  tmp[['ww']] = obj$obs.ww |> dplyr::mutate(type = 'ww')
+  df = dplyr::bind_rows(tmp)  
   
   g = df |> ggplot(aes(x=date, y=obs)) + 
     geom_step(color = 'grey60') + 
