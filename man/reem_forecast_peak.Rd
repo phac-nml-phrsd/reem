@@ -4,12 +4,14 @@
 \alias{reem_forecast_peak}
 \title{Extract the forecasted peak values and timing.}
 \usage{
-reem_forecast_peak(var, fcst)
+reem_forecast_peak(var, fcst, obs)
 }
 \arguments{
 \item{var}{String. Name of the model variable.}
 
 \item{fcst}{Forecast object `fcst.obj` of the `reem` class object.}
+
+\item{obs}{Dataframe. Observations associated with `var`.}
 }
 \value{
 A dataframe of the forecasted peaks.

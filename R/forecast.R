@@ -649,13 +649,18 @@ reem_forecast_peak <- function(var, fcst, obs) {
   
   # Compare future peaks with past observations
   # and overwrite future if past peak is larger
-  res = pkafter |> dplyr::mutate(
-    peak.value2 = dplyr::if_else(peak.value < pk.obs.value, 
-                                 pk.obs.value, peak.value),
-    peak.date2  = dplyr::if_else(peak.value < pk.obs.value, 
-                                 pk.obs.date, peak.date)) |> 
-    dplyr::select(post, peak.date2, peak.value2) |>
-    dplyr::rename(peak.date = peak.date2, peak.value = peak.value2)
+  if(!is.null(obs)){
+    res = pkafter |> dplyr::mutate(
+      peak.value2 = dplyr::if_else(peak.value < pk.obs.value, 
+                                   pk.obs.value, peak.value),
+      peak.date2  = dplyr::if_else(peak.value < pk.obs.value, 
+                                   pk.obs.date, peak.date)) |> 
+      dplyr::select(post, peak.date2, peak.value2) |>
+      dplyr::rename(peak.date = peak.date2, peak.value = peak.value2)
+  }
+  if(is.null(obs)){
+    res = pkafter
+  }
   
   return(res)
 }
