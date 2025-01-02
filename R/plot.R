@@ -40,8 +40,8 @@ plot_epi <- function(simepi) {
   
   # Wastewater
   sim.ww = simepi$sim |> 
-    dplyr::select(date, starts_with('W')) |>
-    tidyr::pivot_longer(cols = starts_with('W'))
+    dplyr::select(date, dplyr::starts_with('W')) |>
+    tidyr::pivot_longer(cols = dplyr::starts_with('W'))
   
   sim.ww$variable = NA
   sim.ww$variable[sim.ww$name == 'Wd'] = 'Wd: concentration deposited'

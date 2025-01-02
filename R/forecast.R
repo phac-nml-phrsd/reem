@@ -298,13 +298,15 @@ reem_forecast <- function(obj, prm.fcst, verbose, progressbar ) {
 #'
 #' @return A ggplot object
 #' @keywords internal
+#'
 add_ribbons_quantiles <- function(g, qlist, k,
                                   col.fcst, alpha.ribbon) {
   nq = length(qlist)
   res = g + 
-    geom_ribbon(aes(ymin = .data[[qlist[k]]], 
-                    ymax = .data[[qlist[nq - k + 1] ]]), 
-                fill = col.fcst, alpha = alpha.ribbon)
+    ggplot2::geom_ribbon(
+      ggplot2::aes(ymin = .data[[qlist[k]]], 
+                   ymax = .data[[qlist[nq - k + 1] ]]), 
+      fill = col.fcst, alpha = alpha.ribbon)
   return(res)
 }
 
@@ -326,6 +328,8 @@ add_ribbons_quantiles <- function(g, qlist, k,
 #' @return a ggplot object
 #' 
 #' @keywords internal
+#' 
+#' @import ggplot2
 #'
 plot_fitfcst <- function(traj.fit, traj.fcst, obs, 
                          alpha.ribbon, col.fit, col.fcst, 
@@ -449,7 +453,7 @@ reem_plot_forecast <- function(
   
   # Reformat to suit ggplot
   sf2 = sf %>% 
-    pivot_wider(names_from = qprob, values_from = q, 
+    tidyr::pivot_wider(names_from = qprob, values_from = q, 
                 names_prefix = 'q_')
   
   z  = names(sf2)
@@ -460,22 +464,22 @@ reem_plot_forecast <- function(
   # DIFFERENT FROM THE QUANTILE OF THE SUM (WHAT WE REALLY WANT!)
   # TODO: CHANGE THAT!
   
-  if(n.ww > 0) sf.ww = filter(sf2, name == 'Wr') %>%
-    drop_na(mean) %>%
-    filter(date >= fcst.prm$asof)
- 
-  if(n.cl > 0) sf.cl = filter(sf2, name == 'Y') %>%
-    drop_na(mean) %>%
-    filter(date >= fcst.prm$asof)
+  if(n.ww > 0) sf.ww = dplyr::filter(sf2, name == 'Wr') %>%
+    tidyr::drop_na(mean) %>%
+    dplyr::filter(date >= fcst.prm$asof)
+  
+  if(n.cl > 0) sf.cl = dplyr::filter(sf2, name == 'Y') %>%
+    tidyr::drop_na(mean) %>%
+    dplyr::filter(date >= fcst.prm$asof)
   
   if(n.ha > 0) sf.ha = fcst.obj$summary.fcst.aggr$H.aggr |> 
-    pivot_wider(names_from = qprob, 
-                values_from = q, 
-                names_prefix = 'q_')
+    tidyr::pivot_wider(names_from = qprob, 
+                       values_from = q, 
+                       names_prefix = 'q_')
   
   # - - - Plots - - - 
   
-  g.cl = g.ha = g.ww = ggplot()
+  g.cl = g.ha = g.ww = ggplot2::ggplot()
   
   if(n.cl > 0) g.cl = plot_fitfcst(
     traj.fit = fitsim.cl, 
@@ -765,7 +769,7 @@ reem_get_fcst_density <- function(
       density.adjust = density.adjust)
     
     res[[i]] = tmp  %>% 
-      mutate(date = date.future[i])
+      dplyr::mutate(date = date.future[i])
   }
   return(res)
 }

@@ -9,9 +9,9 @@ extract_fcst_value <- function(i, fcst, d, var) {
   if(!is.aggr) a = fcst$simfwd[[i]]
   
   tmp = a %>%
-    select(date, !!var) %>% 
-    ungroup() %>%
-    filter(date == d) 
+    dplyr::select(date, !!var) %>% 
+    dplyr::ungroup() %>%
+    dplyr::filter(date == d) 
   
   if(nrow(tmp)==0){
     stop('Date ',d,' not found in the simulated forecasts.\n',
@@ -23,7 +23,7 @@ extract_fcst_value <- function(i, fcst, d, var) {
   }
   
   tmp = tmp %>% 
-    select(!!var) %>% 
+    dplyr::select(!!var) %>% 
     as.numeric()
   return(tmp)
 }
