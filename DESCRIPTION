@@ -1,8 +1,8 @@
 Package: reem
 Type: Package
 Title: Renewal Equation based Epidemic Model 
-Version: 0.10.5
-Date: 2025-01-02
+Version: 0.10.6
+Date: 2025-01-24
 Author: David Champredon
 Maintainer: David Champredon <david.champredon@canada.ca>
 Description: Epidemic simulation and fit. Use discrete time renewal equation implementation for infection transmission. 

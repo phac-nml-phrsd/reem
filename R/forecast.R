@@ -643,9 +643,10 @@ reem_forecast_peak <- function(var, fcst, obs) {
       peak.value = max(value,na.rm = TRUE))
   
   # Maximum values (potential peak) from observations
+  # If peak reached on multiple dates, return the earliest.
   if(!is.null(obs)){
-    pk.obs.value = max(obs$obs)
-    pk.obs.date = obs$date[obs$obs == pk.obs.value]
+    pk.obs.value = max(obs$obs)[1]
+    pk.obs.date  = obs$date[obs$obs == pk.obs.value][1]
   }
   if(is.null(obs)){
     pk.obs.value = -1
