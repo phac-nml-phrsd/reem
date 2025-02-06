@@ -367,7 +367,13 @@ calc_dist_parallel <- function(i,
   
   # overwrite model parameters 
   # with priors values:
-  obj$prms[names(pp)] <- pp
+  namepp = names(pp)
+  obj$prms[namepp] <- pp
+  
+  # If Bt values are fitted
+  if(any(grepl('^B\\d{8}', namepp))){
+    obj = update_Bt(obj, pp)
+  }
   
   x = reem_traj_dist_obs(
     obj           = obj,
@@ -406,11 +412,11 @@ generate_priors <- function(prms.to.fit, n.priors) {
     
     if(distrib == 'unif') 
       tmp[[i]] = stats::runif(n = n.priors, 
-                       min = as.numeric(x[[2]]), max = as.numeric(x[[3]]))
+                              min = as.numeric(x[[2]]), max = as.numeric(x[[3]]))
     
     if(grepl('^norm', distrib)){
       y = stats::rnorm(n = n.priors, 
-                mean = as.numeric(x[[2]]), sd = as.numeric(x[[3]]))
+                       mean = as.numeric(x[[2]]), sd = as.numeric(x[[3]]))
       if(distrib == 'normp') y[y<0] <- -y[y<0] # force positive samples
       tmp[[i]] = y
     }
@@ -550,7 +556,7 @@ reem_fit_abc <- function(obj,
   abc.err.cl = sapply(z, '[[', 'distance.cl')
   abc.err.ha = sapply(z, '[[', 'distance.ha')
   abc.err.ww = sapply(z, '[[', 'distance.ww')
-
+  
   abc.sim = lapply(z, '[[', 'sim') %>% 
     # Add the simulation number (`index`) 
     # to each iteration:
@@ -605,7 +611,7 @@ plot_traj <- function(obs, ps, varname, color, title, ylab) {
 #' @keywords internal
 #'
 extract_fit_aggreg <- function(obj, type, rename = TRUE) {
- 
+  
   # type = 'cl'
   
   # Extract posterior simulations 
@@ -660,7 +666,7 @@ summarise_post_traj <- function(obj, obsdata, varname) {
   names(res)[names(res)=='zz.m']  <- paste0(varname, '.m')
   names(res)[names(res)=='zz.lo'] <- paste0(varname, '.lo')
   names(res)[names(res)=='zz.hi'] <- paste0(varname, '.hi')
-
+  
   return(res)
 }
 
@@ -789,7 +795,7 @@ reem_plot_fit <- function(obj) {
   # -- Ordered ABC distances
   
   fit.prm = obj$fit.prm
-
+  
   n.post = round(fit.prm$n.abc * fit.prm$p.abc, 0)
   
   d = fit.obj$all.distances %>%
@@ -851,8 +857,8 @@ reem_plot_fit <- function(obj) {
                                                        size = ggplot2::rel(1.5))) + 
     ggplot2::scale_fill_manual(values = col.datasource) + 
     ggplot2::labs(title = 'ABC distance by data source',
-         subtitle = 'posteriors only',
-         x='data source', y = 'distance')+ 
+                  subtitle = 'posteriors only',
+                  x='data source', y = 'distance')+ 
     ggplot2::guides(fill='none')
   g.dist2
   

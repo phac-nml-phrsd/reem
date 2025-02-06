@@ -83,7 +83,7 @@ if(0){
     n.abc = 1e3,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
     p.abc = 0.01, #1e-2,
-    n.cores = 3, #min(12, parallel::detectCores() - 1),
+    n.cores = 1, #min(12, parallel::detectCores() - 1),
     use.cl = 1, 
     use.ha = 1, 
     use.ww = 1,
@@ -95,7 +95,9 @@ if(0){
     alpha       = list('normp', 2, 1),
     start.delta = list('unif_int', -7, 7)  ,
     i0prop      = list('unif', -5.8, -2),
-    h.prop      = list('unif', 0.001, 0.2)
+    h.prop      = list('unif', 0.001, 0.2),
+    B20220201   = list('normp', 1.0, 0.3),
+    B20220215   = list('normp', 1.0, 0.6)
   )
   
   foo = obj$fit_abc(prm.abc, prms.to.fit)  
