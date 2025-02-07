@@ -165,6 +165,9 @@ update_and_simulate <- function(i, pp, obj, verbose, tpb) {
   # with their posterior values
   obj$prms[names(pp)] <- pp[i,]
   
+  # if Bt was fitted (if not, `obj` is returned unchanged)
+  obj = update_Bt(obj, pp[i,])
+  
   # Update initial number of infectious individuals `obj$prms$I.init`
   obj$prms = set_I_init(obj$prms)
   

@@ -280,9 +280,10 @@ check_B <- function(obj) {
     
     # Filling-in missing dates:
     d1 = seq.Date(date.start, obj$prms[['B']]$date[1]-1, by = 1)
+    m1 = obj$prms[['B']]$mult[1]
     B.fillin = data.frame(
       date = d1,
-      mult = rep(obj$prms[['B']]$mult[1], length(d1))
+      mult = rep(m1, length(d1))
     )
     obj$prms[['B']] <- rbind(B.fillin, obj$prms[['B']])
   }
@@ -299,9 +300,10 @@ check_B <- function(obj) {
     
     # Filling-in missing dates:
     d2 = seq.Date(obj$prms[['B']]$date[nb]+1, date.horiz, by = 1)
+    m2 = obj$prms[['B']]$mult[nb]
     B.fillin2 = data.frame(
       date = d2,
-      mult = rep(obj$prms[['B']]$mult[nb], length(d2))
+      mult = rep(m2, length(d2))
     )
     obj$prms[['B']] <- rbind(obj$prms[['B']], B.fillin2)
   }

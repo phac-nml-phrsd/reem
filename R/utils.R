@@ -234,3 +234,32 @@ prm_model_example <- function() {
    return(prms)
 }
 
+
+
+#' Update the values for B(t) based on 
+#' prior or posterior samples.
+#' This is used when the value of B(t > t*)
+#' was fitted (for a given date t*) by 
+#' specifying `Byyyymmdd` in the parameters
+#' to fit (`prms.to.fit`) where t*=yyyymmdd.
+#' @param obj reem object
+#' @param pp List of the fitted parameters
+#' @return the same reem object `obj` but with Bt update accordingly.
+#' 
+update_Bt <- function(obj, pp) {
+  namepp = names(pp)
+  Bidx = grep('^B\\d{8}', namepp)
+  
+  if(length(Bidx) > 0){
+    for(j in seq_along(Bidx)){
+      # Retrieve the date from which B(t) will be changed
+      d = namepp[Bidx[j]] |> 
+        stringr::str_extract('\\d{8}$') |> 
+        lubridate::ymd()
+      # Update Bt with new prior value
+      thedates = obj[['prms']][['B']]$date >= d
+      obj[['prms']][['B']]$mult[thedates] <- as.numeric(pp[Bidx[j]])    
+    }
+  }
+  return(obj)
+}
