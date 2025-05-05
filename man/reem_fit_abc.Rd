@@ -4,14 +4,23 @@
 \alias{reem_fit_abc}
 \title{Fit model to observed data using the ABC algorithm.}
 \usage{
-reem_fit_abc(obj, prm.abc, prms.to.fit, verbose = FALSE)
+reem_fit_abc(
+  obj,
+  prm.abc,
+  prms.to.fit,
+  return.all.simulations,
+  verbose = FALSE
+)
 }
 \arguments{
-\item{obj}{}
+\item{obj}{reem object}
 
-\item{prm.abc}{}
+\item{prm.abc}{List defining the ABC parameters}
 
-\item{prms.to.fit}{}
+\item{prms.to.fit}{List defining the model parameters to fit.}
+
+\item{return.all.simulations}{Logical. Return all simulations in output object (default = TRUE). 
+Consider set this input parameter to FALSE if memory usage is a concern.}
 }
 \value{
 List storing trajectories, ABC distances and posterior samples.
