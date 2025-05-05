@@ -85,7 +85,9 @@ test_that("fit_abc works", {
     start.delta = list("unif_int", -7, 7)
   )
 
-  thefit <- obj$fit_abc(prm.abc, prms.to.fit)
+  thefit <- obj$fit_abc(prm.abc, 
+                        prms.to.fit, 
+                        return.all.simulations = TRUE)
 
   # -- Check posterior values to known parameter values
 
