@@ -470,9 +470,11 @@ generate_priors <- function(prms.to.fit, n.priors) {
 
 #' Fit model to observed data using the ABC algorithm.
 #'
-#' @param obj 
-#' @param prm.abc 
-#' @param prms.to.fit 
+#' @param obj reem object
+#' @param prm.abc List defining the ABC parameters
+#' @param prms.to.fit List defining the model parameters to fit.
+#' @param return.all.simulations Logical. Return all simulations in output object (default = TRUE). 
+#' Consider set this input parameter to FALSE if memory usage is a concern.
 #'
 #' @return List storing trajectories, ABC distances and posterior samples.
 #' @export
@@ -480,6 +482,7 @@ generate_priors <- function(prms.to.fit, n.priors) {
 reem_fit_abc <- function(obj,
                          prm.abc,
                          prms.to.fit,
+                         return.all.simulations = TRUE,
                          verbose = FALSE) {
   
   # Unpack ABC parameters:
@@ -573,10 +576,13 @@ reem_fit_abc <- function(obj,
   
   res = list(
     all.distances    = df.abc,
-    all.simulations  = abc.sim,
     post.prms        = df.post,
     post.simulations = abc.sim[df.post$abc.index]
   ) 
+  
+  if(return.all.simulations){
+    res = append(res, values = list(all.simulations  = abc.sim))
+  }
   
   return(res)
 }
