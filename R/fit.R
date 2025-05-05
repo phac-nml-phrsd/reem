@@ -482,7 +482,7 @@ generate_priors <- function(prms.to.fit, n.priors) {
 reem_fit_abc <- function(obj,
                          prm.abc,
                          prms.to.fit,
-                         return.all.simulations = TRUE,
+                         return.all.simulations,
                          verbose = FALSE) {
   
   # Unpack ABC parameters:

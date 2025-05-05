@@ -118,11 +118,13 @@ setRefClass(
       
       fit_abc = function(prm.abc,
                          prms.to.fit,
+                         return.all.simulations = TRUE,
                          verbose = FALSE){
         res = reem_fit_abc(
           obj         = .self,
           prm.abc     = prm.abc,
           prms.to.fit = prms.to.fit,
+          return.all.simulations = return.all.simulations,
           verbose     = verbose)
         
         .self$is.fitted = TRUE
