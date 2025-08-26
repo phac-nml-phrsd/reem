@@ -253,7 +253,7 @@ reem_traj_dist_obs <- function(
   obj.x$obs.ww <- obs.ww
   obj.x$prms$date.start <- date.start.new
   obj.x$prms$horizon <- horizon.new
-  
+ 
   if(deterministic){
     s     = obj.x$simulate_epi(deterministic = TRUE)
     a.cl  = s$obs.cl
@@ -269,7 +269,7 @@ reem_traj_dist_obs <- function(
   if(!deterministic){
     # Simulate `n.sim` times with a given set of prior parameters.
     # The ABC distance from the observations will be computed 
-    # using the _mean_ value across the `n.sim` simualtions:
+    # using the _mean_ value across the `n.sim` simulations:
     tmp.cl = tmp.ha = tmp.ww = tmp.sim = list()
     
     for(k in 1:n.sim){
@@ -283,6 +283,15 @@ reem_traj_dist_obs <- function(
     a.ha  = dplyr::bind_rows(tmp.ha)
     a.ww  = dplyr::bind_rows(tmp.ww)
     a.sim = dplyr::bind_rows(tmp.sim)
+  }
+  
+  # Rescale hospital admissions if the
+  # unit of their observations is "per capita"
+  if(!is.null(prms$h.unit)){
+    if(prms$h.unit == 'percapita'){
+      a.ha$obs = a.ha$obs / prms$N
+      a.sim$Hpercapita = a.sim$H / prms$N
+    }
   }
   
   # only the "observed" variables are averaged (e.g., not `a.sim`)
@@ -349,9 +358,11 @@ calc_dist_parallel <- function(i,
                                deterministic,
                                n.sim = 10, 
                                verbose = FALSE ) {
+  n = nrow(priors)
+  progress = round(i/n,3)*100
   
-  if(i == 1)      cat('ABC iteration # 1 /',nrow(priors),'\n') 
-  if(i%%500 == 0) cat('ABC iteration #',i,'/',nrow(priors),'\n') 
+  if(i == 1)      cat('ABC fit started with',n,'iterations\n') 
+  if( progress%%10 == 0) cat('ABC fit progress: ',progress,'% \n') 
   
   if(0){ # DEBUG 
     cat('\n--- DEBUG ABC iter: ',i,'\n')
@@ -618,16 +629,21 @@ plot_traj <- function(obs, ps, varname, color, title, ylab) {
 #'
 extract_fit_aggreg <- function(obj, type, rename = TRUE) {
   
-  # type = 'cl'
+  # type = 'ha'
   
   # Extract posterior simulations 
   ps = obj$fit.obj$post.simulations
+  
+  # Is the unit of the variable "percapita"?
+  percapita = FALSE
+  if(obj$prms$h.unit == 'percapita') percapita = TRUE
   
   vtype = paste0('obs.',type)
   res = lapply(ps, helper_aggreg, 
                type = type, 
                dateobs = obj[[vtype]][['date']], 
-               prms= obj$prms) |> 
+               prms= obj$prms,
+               percapita = percapita) |> 
     dplyr::bind_rows() |> 
     dplyr::group_by(date) |>
     dplyr::summarise(m = mean(obs),
