@@ -636,7 +636,10 @@ extract_fit_aggreg <- function(obj, type, rename = TRUE) {
   
   # Is the unit of the variable "percapita"?
   percapita = FALSE
-  if(obj$prms$h.unit == 'percapita') percapita = TRUE
+  if(!is.null(obj$prms$h.unit)){
+    if(obj$prms$h.unit == 'percapita') 
+      percapita = TRUE
+  }
   
   vtype = paste0('obs.',type)
   res = lapply(ps, helper_aggreg, 
