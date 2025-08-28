@@ -22,7 +22,7 @@ if(0){
     horizon.fcst = ymd('2022-06-01'),
     use.fit.post = TRUE,
     n.resample   = 20,
-    vars.to.fcst = c('Y', 'Wr', 'H'),
+    vars.to.fcst = c('Y', 'Wr', 'H', 'Hpercapita'),
     ci           = seq(0.1,0.9, by = 0.1)
   )
   
@@ -37,9 +37,10 @@ if(0){
   pk
   mean(pk$peak.value > 10000) 
   
-  g.peak.ha = obj$plot_peak(var = 'H.aggr', logscale = 0)
-  g.peak.cl = obj$plot_peak(var = 'Y.aggr', logscale = 0)
-  g.peak.cl | g.peak.ha
+  g.peak.ha   = obj$plot_peak(var = 'H.aggr', logscale = 0)
+  g.peak.hapc = obj$plot_peak(var = 'Hpercapita.aggr', logscale = 0)
+  g.peak.cl   = obj$plot_peak(var = 'Y.aggr', logscale = 0)
+  wrap_plots(g.peak.cl, g.peak.ha, g.peak.hapc)
   
   pdf(paste0('plot-fcst-', reem::timestamp_short(),'.pdf'))
   plot(g)

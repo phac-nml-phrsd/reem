@@ -222,6 +222,7 @@ reem_simulate <- function(prms, deterministic) {
     A = A,
     Y = Y,
     H = H,
+    Hpercapita = H / N,
     Wd = Wd, 
     Wp = Wp, 
     Wr = Wr)
