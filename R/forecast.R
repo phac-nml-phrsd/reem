@@ -85,7 +85,8 @@ aggregate_fcst <- function(var.to.aggregate, obj, simfwd) {
 }
 
 
-summ_aggr_fcst <- function(simfwd, obj, var, prm.fcst) {
+summ_aggr_fcst <- function(simfwd, obj, var, prm.fcst,
+                           percapita = FALSE) {
   # var = 'ha'
   
   # The aggregation time interval 
@@ -133,10 +134,11 @@ summ_aggr_fcst <- function(simfwd, obj, var, prm.fcst) {
   # Aggregation
   simfwd.aggr = lapply(simfwd.crop, 
                        helper_aggreg, 
-                       type     = var, 
-                       dateobs  = d.fwd, 
-                       prms     = obj$prms, 
-                       var.name = 'value') 
+                       type      = var, 
+                       dateobs   = d.fwd, 
+                       prms      = obj$prms, 
+                       var.name  = 'value',
+                       percapita = percapita) 
   
   # Summary statistics (quantiles, mean)
   summary.fcst.aggr = simfwd.aggr |>
@@ -279,6 +281,11 @@ reem_forecast <- function(obj, prm.fcst, verbose, progressbar ) {
     tmp.ha = summ_aggr_fcst(simfwd, obj, var = 'ha', prm.fcst)
     simfwd.aggr[['H.aggr']]       = tmp.ha$simfwd.aggr
     summary.fcst.aggr[['H.aggr']] = tmp.ha$summary.fcst.aggr
+    
+    tmp.hapc = summ_aggr_fcst(simfwd, obj, var = 'ha', prm.fcst, 
+                              percapita = TRUE)
+    simfwd.aggr[['Hpercapita.aggr']]       = tmp.hapc$simfwd.aggr
+    summary.fcst.aggr[['Hpercapita.aggr']] = tmp.hapc$summary.fcst.aggr
   }
    
   return( list(
@@ -343,6 +350,8 @@ plot_fitfcst <- function(traj.fit, traj.fcst, obs,
   obs.last = obs$obs[obs$date == date.obs.last]
   obs.last.plot = lubridate::ymd(date.obs.last)
   
+  y.annot = min(1, min(obs$obs, traj.fcst$mean) )
+  
   # Plot
   g = ggplot(data = traj.fcst, aes(x=date))+ 
     # --- Fit
@@ -355,19 +364,27 @@ plot_fitfcst <- function(traj.fit, traj.fcst, obs,
     # --- Observations
     geom_point(data = obs, aes(y=obs)) + 
     # --- Forecast
-    geom_line( aes(y = mean), color= col.fcst, 
+    geom_line( aes(y = mean), 
+               color= col.fcst, 
                linetype = 'dotted') + 
     geom_vline(xintercept = fcst.prm$asof, 
                linetype = 'dashed', 
                color = col.fcst) + 
-    annotate(geom = 'text', y=1, x = fcst.prm$asof + 1, 
+    annotate(geom = 'text', 
+             y = y.annot, 
+             x = fcst.prm$asof + 1, 
              label = fcst.prm$asof, size = 2, hjust = 0,
              color = col.fcst) + 
     annotate(geom = 'segment', 
-             x = date.obs.last, xend = date.obs.last,
-             y = 0, yend = obs.last, linetype = 'dotted', color = 'grey75')+
-    annotate(geom = 'text', x = date.obs.last, y = 1,
-               label = obs.last.plot, hjust = 1, size = 2)+
+             x    = date.obs.last, 
+             xend = date.obs.last,
+             y    = 0, 
+             yend = obs.last, 
+             linetype = 'dotted', color = 'grey75')+
+    annotate(geom = 'text', 
+             x = date.obs.last, 
+             y = y.annot,
+             label = obs.last.plot, hjust = 1, size = 2)+
     xaxis + 
     theme(panel.grid.minor = element_line(color = 'grey97'))+
     labs(title =title, 
@@ -475,11 +492,15 @@ reem_plot_forecast <- function(
     tidyr::drop_na(mean) %>%
     dplyr::filter(date >= fcst.prm$asof)
   
-  if(n.ha > 0) sf.ha = fcst.obj$summary.fcst.aggr$H.aggr |> 
-    tidyr::pivot_wider(names_from = qprob, 
-                       values_from = q, 
-                       names_prefix = 'q_')
-  
+  if(n.ha > 0) {
+    percapita = obj$prms$h.unit == 'percapita'
+    varhosp = ifelse(percapita, 'Hpercapita.aggr', 'H.aggr')
+    
+    sf.ha = fcst.obj$summary.fcst.aggr[[varhosp]] |> 
+      tidyr::pivot_wider(names_from   = qprob, 
+                         values_from  = q, 
+                         names_prefix = 'q_')
+  }
   # - - - Plots - - - 
   
   g.cl = g.ha = g.ww = ggplot2::ggplot()
@@ -504,7 +525,7 @@ reem_plot_forecast <- function(
     col.fit = col.fit, 
     col.fcst = col.fcst, 
     fcst.prm = fcst.prm, 
-    title = 'Hospital admissions', ylab = 'daily adm',
+    title = 'Hospital admissions', ylab = 'admission',
     qlist = qlist,
     xaxis = xaxis)
   

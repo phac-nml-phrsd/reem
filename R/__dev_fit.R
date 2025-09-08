@@ -39,6 +39,7 @@ if(0){
     fec     = get_fecalshed(), # fecal shedding kinetics
     h.prop  = 0.05, # total proportion hospitalized for one cohort
     h.lags  = c(rep(0,3), 1, 2, 2, 1, 0), # Lag infection-hospitalization
+    h.unit  = 'percapita',   # units of hospital admissions. 'count' or 'percapita'
     kappa   = 0.18, # decay in ww
     psi     = get_psi(),   # plug flow simulation,
     shed.mult = 1e-3
@@ -60,6 +61,11 @@ if(0){
   obs.ha = filter(simepi$obs.ha, date <= asof)
   obs.ww = filter(simepi$obs.ww, date <= asof)
   
+  if(prms0$h.unit == 'percapita'){
+    # Per-capita hospital admissions
+    obs.ha$obs = obs.ha$obs / prms0$N
+    print(head(obs.ha))
+  }
   
   # Attached simulated data to new `reem` object:
   prms = prms0

@@ -222,6 +222,7 @@ reem_simulate <- function(prms, deterministic) {
     A = A,
     Y = Y,
     H = H,
+    Hpercapita = H / N,
     Wd = Wd, 
     Wp = Wp, 
     Wr = Wr)
@@ -232,10 +233,15 @@ reem_simulate <- function(prms, deterministic) {
 #' Helper function to aggregate simulated observations
 #' @keywords internal
 #' 
-helper_aggreg <- function(sim, type, dateobs, prms, var.name = 'obs') {
+helper_aggreg <- function(sim, type, dateobs, prms, 
+                          var.name = 'obs',
+                          percapita = FALSE) {
   
   if(type == 'cl') v = 'I'
-  if(type == 'ha') v = 'H'
+  if(type == 'ha') {
+    if(percapita)  v = 'Hpercapita'
+    if(!percapita) v = 'H'
+  }
   
   # Remove simulation data beyond the last observation date
   df = sim[sim$date <= max(dateobs),]
@@ -247,7 +253,12 @@ helper_aggreg <- function(sim, type, dateobs, prms, var.name = 'obs') {
     dplyr::transmute(
       date, 
       t    = as.integer(date - prms$date.start),
-      obs  = as.integer(aggregation))
+      aggregation
+    )
+  
+  if(!percapita) a$obs = as.integer(a$aggregation)
+  if(percapita)  a$obs = as.numeric(a$aggregation)
+  a$aggregation <- NULL
   
   if(var.name != 'obs'){
     idx = which(names(a) == 'obs')
