@@ -59,7 +59,7 @@ test_that("simulate_epi works", {
   sim <- simepi$sim
   expect_true(class(sim) == "data.frame")
   check.names.sim <- all(names(sim) %in% c(
-    "t", "m", "I", "S", "A", "Y", "H",
+    "t", "m", "I", "S", "A", "Y", "H", "Hpercapita",
     "Wd", "Wp", "Wr", "date"
   ))
   expect_true(check.names.sim)

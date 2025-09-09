@@ -493,7 +493,13 @@ reem_plot_forecast <- function(
     dplyr::filter(date >= fcst.prm$asof)
   
   if(n.ha > 0) {
-    percapita = obj$prms$h.unit == 'percapita'
+    
+    percapita = FALSE
+    
+    if(!is.null(obj$prms$h.unit)){
+      percapita = (obj$prms$h.unit == 'percapita')
+    }
+    
     varhosp = ifelse(percapita, 'Hpercapita.aggr', 'H.aggr')
     
     sf.ha = fcst.obj$summary.fcst.aggr[[varhosp]] |> 
