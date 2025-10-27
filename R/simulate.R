@@ -417,10 +417,14 @@ reem_simulate_epi <- function(obj,
   # Aggregate hospital admissions because the 
   # variable `H` in `sim` is _not_aggregated 
   # (it is a simple proportion of the daily incidence)
+  if(is.null(obj$prms$h.unit)) 
+    stop("Element `prms$h.unit` is missing in reem object. ABORTING.")
+  percapita = ifelse(obj$prms$h.unit == 'percapita', TRUE, FALSE)
   sim.obs.ha = helper_aggreg(sim     = sim, 
                              type    = 'ha', 
                              dateobs = obj[['prms']][['date.obs.ha']], 
-                             prms    = obj$prms)
+                             prms    = obj$prms,
+                             percapita = percapita)
   
   # Extract wastewater observations
   # (wastewater concentration is NOT aggregated in time)
