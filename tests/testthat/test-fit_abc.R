@@ -23,6 +23,9 @@ test_that("fit_abc works", {
     I.init = c(1, 1, 3, 5), # initial incidence (overwritten in fit ABC)
     lag = 7, # Aggregation lag for clinical reports
     rho = 0.1, # mean reporting ratio
+    h.unit = 'percapita',
+    h.prop = 0.08,
+    h.lags = c(0,0,0,1,3,2,2,2,2,1,1,0), 
     g = get_gi(), # Generation interval distribution
     fec = get_fecalshed(), # fecal shedding kinetics
     kappa = 0.18, # decay in ww
@@ -75,13 +78,14 @@ test_that("fit_abc works", {
     use.cl = 1,
     use.ha = 1,
     use.ww = 1,
-    err.type = "L2"
+    err.type = "normLarge"   # "L2", "normLarge"
   )
 
   prms.to.fit <- list(
     R0          = list("gamma", 2, 0.251),
     alpha       = list("norm", 1, 1),
     i0prop      = list("unif", -5, -2),
+    h.prop      = list("unif", 0.001, 0.20),
     start.delta = list("unif_int", -7, 7)
   )
 

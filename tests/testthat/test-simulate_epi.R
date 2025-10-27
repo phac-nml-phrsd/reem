@@ -25,6 +25,9 @@ test_that("simulate_epi works", {
     lag = 7, # Aggregation lag for clinical reports
     rho = 0.1, # mean reporting ratio
     g = get_gi(), # Generation interval distribution
+    h.unit = 'percapita',
+    h.prop = 0.09,
+    h.lags = c(0,0,0,1,3,2,2,2,2,1,1,0),
     fec = get_fecalshed(), # fecal shedding kinetics
     kappa = 0.18, # decay in ww
     psi = get_psi(), # plug flow simulation,
