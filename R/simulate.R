@@ -69,6 +69,7 @@ set_obs_schedule <- function(type, obj) {
 
 
 
+
 #' Simulate an epidemic with a REEM.
 #'
 #' @param deterministic 
@@ -78,6 +79,22 @@ set_obs_schedule <- function(type, obj) {
 #' @export
 #'
 reem_simulate <- function(prms, deterministic) {
+  
+  df = simul_C(prms = prms)
+  
+  return(df)  
+}
+
+
+
+#' Simulate an epidemic with a REEM.
+#'
+#' @param deterministic 
+#' @param prms 
+#'
+#' @return Dataframe of time series.
+#'
+OLD_reem_simulate <- function(prms, deterministic) {
   
   # Unpack parameters
   R0      = prms[['R0']]

@@ -4,9 +4,9 @@
 
 
 
-#' @useDynLib reem, .registration = TRUE
-#' @importFrom Rcpp evalCpp
-NULL
+# #' @useDynLib reem, .registration = TRUE
+# #' @importFrom Rcpp evalCpp
+# NULL
 
 
 #' Timestamp as a short string.

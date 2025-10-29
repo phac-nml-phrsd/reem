@@ -10,20 +10,32 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// foisdeux
-NumericVector foisdeux(NumericVector x);
-RcppExport SEXP _reem_foisdeux(SEXP xSEXP) {
+// myFunction
+double myFunction(double x);
+RcppExport SEXP _reem_myFunction(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(foisdeux(x));
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(myFunction(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// simul_C
+DataFrame simul_C(List prms);
+RcppExport SEXP _reem_simul_C(SEXP prmsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< List >::type prms(prmsSEXP);
+    rcpp_result_gen = Rcpp::wrap(simul_C(prms));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_reem_foisdeux", (DL_FUNC) &_reem_foisdeux, 1},
+    {"_reem_myFunction", (DL_FUNC) &_reem_myFunction, 1},
+    {"_reem_simul_C", (DL_FUNC) &_reem_simul_C, 1},
     {NULL, NULL, 0}
 };
 

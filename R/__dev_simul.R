@@ -35,6 +35,7 @@ if(0){
     rho     = 0.1, # mean reporting ratio
     g       = get_gi(), # Generation interval distribution
     fec     = get_fecalshed(), # fecal shedding kinetics
+    h.unit = 'percapita',
     h.prop  = 0.05, # total proportion hospitalized for one cohort
     h.lags  = c(rep(0,3), 1, 2, 2, 1, 0), # Lag infection-hospitalization
     kappa   = 0.18, # decay in ww
