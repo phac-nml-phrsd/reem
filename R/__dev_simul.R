@@ -6,7 +6,7 @@ if(0){
   library(ggplot2)
   library(lubridate)
   library(reem)
-  devtools::load_all()
+  # devtools::load_all()
   
   date.start = ymd('2022-01-01')
   horizon = 120
@@ -16,6 +16,7 @@ if(0){
     mutate(mult = if_else(date >= ymd('2022-03-01'), 0.3, mult))
   
   prms = list(
+    lang = 'C',
     horizon  = horizon,  # horizon of the simulation
     last.obs = horizon,  # last observation time (must be < horizon)
     B        = B,  # Behavior change
@@ -35,7 +36,7 @@ if(0){
     rho     = 0.1, # mean reporting ratio
     g       = get_gi(), # Generation interval distribution
     fec     = get_fecalshed(), # fecal shedding kinetics
-    h.unit = 'percapita',
+    h.unit = 'count',
     h.prop  = 0.05, # total proportion hospitalized for one cohort
     h.lags  = c(rep(0,3), 1, 2, 2, 1, 0), # Lag infection-hospitalization
     kappa   = 0.18, # decay in ww

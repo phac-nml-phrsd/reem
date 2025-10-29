@@ -69,7 +69,7 @@ DataFrame simul_C(List prms) {
   
   int ni = I_init.size();
   
-  Rcout << "DEBUG 1" << std::endl;
+  // Rcout << "DEBUG 1" << std::endl;
   
   
   NumericVector cum_I_init(ni);

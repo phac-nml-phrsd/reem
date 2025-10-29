@@ -19,6 +19,7 @@ if(0){
     mutate(mult = if_else(date >= date.break, 2, mult))
    
   prms0 = list(
+    lang = 'C',
     horizon = hz,  # horizon of the simulation
     last.obs = hz-1,  # last observation time (must be < horizon)
     B       = B, # Behavior change
@@ -105,8 +106,9 @@ if(0){
     B20220201   = list('normp', 1.0, 0.3),
     B20220215   = list('normp', 1.0, 0.6)
   )
-  
-  foo = obj$fit_abc(prm.abc, prms.to.fit)  
+  system.time({
+    foo = obj$fit_abc(prm.abc, prms.to.fit)  
+  })
   
   saveRDS(obj, file = 'debug-fit.rds')
   

@@ -79,8 +79,11 @@ set_obs_schedule <- function(type, obj) {
 #' @export
 #'
 reem_simulate <- function(prms, deterministic) {
+  if(prms$lang == 'C')
+    df = simul_C(prms = prms)
   
-  df = simul_C(prms = prms)
+  if(prms$lang == 'R')
+    df = simul_R(prms = prms, deterministic)
   
   return(df)  
 }
@@ -94,7 +97,7 @@ reem_simulate <- function(prms, deterministic) {
 #'
 #' @return Dataframe of time series.
 #'
-OLD_reem_simulate <- function(prms, deterministic) {
+simul_R <- function(prms, deterministic) {
   
   # Unpack parameters
   R0      = prms[['R0']]
