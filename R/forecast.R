@@ -670,7 +670,10 @@ reem_forecast_peak <- function(var, fcst, obs) {
     dplyr::group_by(post) %>% 
     dplyr::summarise(
       peak.date  = date[which.max(value)[1]],
-      peak.value = max(value,na.rm = TRUE))
+      peak.value = max(value,na.rm = TRUE)) %>%
+    # If the peak is zero, then the whole
+    # epidemic wave was always zero (no wave):
+    dplyr::filter(peak.value > 0)
   
   # Maximum values (potential peak) from observations
   # If peak reached on multiple dates, return the earliest.
