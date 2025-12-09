@@ -263,6 +263,7 @@ reem_traj_dist_obs <- function(
     if(0){ # DEBUG 
       print('in fit')
       print(head(a.sim))
+      print(tail(a.sim))
     }
   }
   
@@ -283,15 +284,6 @@ reem_traj_dist_obs <- function(
     a.ha  = dplyr::bind_rows(tmp.ha)
     a.ww  = dplyr::bind_rows(tmp.ww)
     a.sim = dplyr::bind_rows(tmp.sim)
-  }
-  
-  # Rescale hospital admissions if the
-  # unit of their observations is "per capita"
-  if(!is.null(prms$h.unit)){
-    if(prms$h.unit == 'percapita'){
-      a.ha$obs = a.ha$obs / prms$N
-      a.sim$Hpercapita = a.sim$H / prms$N
-    }
   }
   
   # only the "observed" variables are averaged (e.g., not `a.sim`)
