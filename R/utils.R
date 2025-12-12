@@ -256,7 +256,8 @@ update_Bt <- function(obj, pp) {
       # Retrieve the date from which B(t) will be changed
       d = namepp[Bidx[j]] |> 
         stringr::str_extract('\\d{8}$') |> 
-        lubridate::ymd()
+        as.Date(format = '%Y%m%d')
+      
       # Update Bt with new prior value
       thedates = obj[['prms']][['B']]$date >= d
       obj[['prms']][['B']]$mult[thedates] <- as.numeric(pp[Bidx[j]])    

@@ -86,7 +86,7 @@ if(0){
   # ---- Fit ----
   
   prm.abc = list(
-    n.abc = 1e3,
+    n.abc = 400,
     n.sim = 0,     #`0` for deterministic, else`8` should be enough
     p.abc = 0.01, #1e-2,
     n.cores = 1, #min(12, parallel::detectCores() - 1),
@@ -105,8 +105,9 @@ if(0){
     B20220201   = list('normp', 1.0, 0.3),
     B20220215   = list('normp', 1.0, 0.6)
   )
-  
-  foo = obj$fit_abc(prm.abc, prms.to.fit)  
+  system.time({
+    foo = obj$fit_abc(prm.abc, prms.to.fit)  
+  })
   
   saveRDS(obj, file = 'debug-fit.rds')
   
