@@ -81,7 +81,13 @@ check_dates_ww <- function(obs.ww, ww.i) {
   }
 }
 
-
+helper_xtract_for_err <- function(obs,x.i,v) {
+  idx.keep = !is.na(obs$obs)
+  dkeep = obs$date[idx.keep]
+  z.obs = obs$obs[idx.keep]
+  z.v   = x.i[[v]][idx.keep]
+  return(list(obs = z.obs, v = z.v))
+}
 
 #' Error function for a fit algorithm
 #'
@@ -109,9 +115,22 @@ err_fct <- function(cl.i, ha.i, ww.i,
   
   # --- Adjust to fitting observation dates
   
-  if(use.cl) df.cl = dplyr::left_join(cl.i, obs.cl, by='date') |> tidyr::drop_na(obs)
-  if(use.ha) df.ha = dplyr::left_join(ha.i, obs.ha, by='date') |> tidyr::drop_na(obs)
-  if(use.ww) df.ww = dplyr::left_join(ww.i, obs.ww, by='date') |> tidyr::drop_na(obs)
+  # Note: avoids `dplyr` for speed performance
+  if(use.cl){
+    a = helper_xtract_for_err(obs = obs.cl, x.i = cl.i, v = 'Ym')
+    cl_obs = a$obs
+    cl_sim = a$v
+  }
+  if(use.ha){
+    a = helper_xtract_for_err(obs = obs.ha, x.i = ha.i, v = 'Hm')
+    ha_obs = a$obs
+    ha_sim = a$v
+  }
+  if(use.ww){
+    a = helper_xtract_for_err(obs = obs.ww, x.i = ww.i, v = 'Wm')
+    ww_obs = a$obs
+    ww_sim = a$v
+  }
   
   if(0){ # DEBUG 
     message('\nDEBUG err_fct:')
@@ -125,15 +144,15 @@ err_fct <- function(cl.i, ha.i, ww.i,
   err.ww = 0
   
   if(err.type == 'L2'){
-    if(use.cl) err.cl = sss(df.cl$obs, df.cl$Ym) 
-    if(use.ha) err.ha = sss(df.ha$obs, df.ha$Hm) 
-    if(use.ww) err.ww = sss(df.ww$obs, df.ww$Wm)
+    if(use.cl) err.cl = sss(cl_obs, cl_sim) 
+    if(use.ha) err.ha = sss(ha_obs, ha_sim) 
+    if(use.ww) err.ww = sss(ww_obs, ww_sim)
   }
   if(err.type == 'rel'){
     #TODO: handle div by 0
-    if(use.cl) err.cl = ssrs(df.cl$Ym, df.cl$obs) 
-    if(use.ha) err.ha = ssrs(df.ha$Hm, df.ha$obs) 
-    if(use.ww) err.ww = ssrs(df.ww$Wm, df.ww$obs) 
+    if(use.cl) err.cl = ssrs(cl_obs, cl_sim) 
+    if(use.ha) err.ha = ssrs(ha_obs, ha_sim) 
+    if(use.ww) err.ww = ssrs(ww_obs, ww_sim) 
   }
   # The vectors are normalized by their respective
   # largest value to have all data sources 
@@ -142,18 +161,18 @@ err_fct <- function(cl.i, ha.i, ww.i,
     largest.rank = 3
     
     if(use.cl) {
-      z.cl = normlarge(df.cl$obs, largest.rank ) 
-      err.cl = sss(df.cl$obs/z.cl , df.cl$Ym/z.cl)
+      z.cl = normlarge(cl_obs, largest.rank ) 
+      err.cl = sss(cl_obs/z.cl , cl_sim/z.cl)
     }
     
     if(use.ha) {
-      z.ha = normlarge(df.ha$obs, largest.rank ) 
-      err.ha = sss(df.ha$obs/z.ha , df.ha$Hm/z.ha)
+      z.ha = normlarge(ha_obs, largest.rank ) 
+      err.ha = sss(ha_obs/z.ha , ha_sim/z.ha)
     }
     
     if(use.ww) {
-      z.ww = normlarge(df.ww$obs, largest.rank) 
-      err.ww = sss(df.ww$obs/z.ww , df.ww$Wm/z.ww)
+      z.ww = normlarge(ww_obs, largest.rank) 
+      err.ww = sss(ww_obs/z.ww , ww_sim/z.ww)
     }
   }
   
@@ -222,9 +241,15 @@ reem_traj_dist_obs <- function(
   obs.cl = obs.ha = obs.ww = data.frame()
   
   # Crop observations that occurred before the (new) start date
-  if(has.cl) obs.cl = obj$obs.cl |> dplyr::filter(date > date.start.new)
-  if(has.ha) obs.ha = obj$obs.ha |> dplyr::filter(date > date.start.new)
-  if(has.ww) obs.ww = obj$obs.ww |> dplyr::filter(date > date.start.new)
+  if(has.cl) {
+    obs.cl = obj$obs.cl[obj$obs.cl$date > date.start.new,]
+  }
+  if(has.ha) {
+    obs.ha = obj$obs.ha[obj$obs.ha$date > date.start.new,]
+  }
+  if(has.ww) {
+    obs.ww = obj$obs.ww[obj$obs.ww$date > date.start.new,]
+  }
   
   if(!has.cl & !has.ha & !has.ww) {
     stop('The REEM object does not have any observation attached.\n',
@@ -291,28 +316,31 @@ reem_traj_dist_obs <- function(
   cl.i = a.cl %>% 
     dplyr::group_by(date) %>% 
     dplyr::summarize(Ym = mean(obs)) %>%
-    dplyr::ungroup() %>%
-    dplyr::filter(date <= datemax.cl)
+    dplyr::ungroup() 
   
   ha.i = a.ha %>% 
     dplyr::group_by(date) %>% 
     dplyr::summarize(Hm = mean(obs)) %>%
-    dplyr::ungroup() %>%
-    dplyr::filter(date <= datemax.ha)
+    dplyr::ungroup() 
   
   ww.i = a.ww %>% 
     dplyr::group_by(date) %>% 
     dplyr::summarize(Wm = mean(obs)) %>%
-    dplyr::ungroup() %>%
-    dplyr::filter(date <= datemax.ww)
+    dplyr::ungroup() 
+ 
+  cl.i = cl.i[cl.i$date <= datemax.cl, ]
+  ha.i = ha.i[ha.i$date <= datemax.ha, ]
+  ww.i = ww.i[ww.i$date <= datemax.ww, ]
   
+   
   # The shift from `date.start` may have 
   # changed the horizon DATE before the 
   # last observations. 
   # Cropping again the tail end
-  if(has.cl) obs.cl = dplyr::filter(obs.cl, date <= max(cl.i$date))
-  if(has.ha) obs.ha = dplyr::filter(obs.ha, date <= max(ha.i$date))
-  if(has.ww) obs.ww = dplyr::filter(obs.ww, date <= max(ww.i$date))
+  if(has.cl) obs.cl = obs.cl[obs.cl$date <= max(cl.i$date),]
+  if(has.ha) obs.ha = obs.ha[obs.ha$date <= max(ha.i$date),]
+  if(has.ww) obs.ww = obs.ww[obs.ww$date <= max(ww.i$date),]
+  
   
   # Plot for debugging
   if(0){

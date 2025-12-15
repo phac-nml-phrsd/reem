@@ -280,7 +280,7 @@ check_B <- function(obj) {
     stop('Dataframe `B` in `prms` must have a `mult` column.')
   
   nb = nrow(obj$prms[['B']])
-  date.start = lubridate::ymd(obj$prms$date.start)
+  date.start = as.Date(obj$prms$date.start, format = '%Y-%m-%d')
   date.horiz = obj$prms$date.start + obj$prms$horizon
   
   if(obj$prms[['B']]$date[1] > date.start){
@@ -365,6 +365,10 @@ B_date_time <- function(obj) {
 #'
 reem_simulate_epi <- function(obj, 
                               deterministic) {
+  
+  # IMPORTANT Note: 
+  # avoid using `tidyverse` to improve computation speed.
+  
   # -- Checks 
   check_date_start(obj)
   obj = check_B(obj)
@@ -386,7 +390,7 @@ reem_simulate_epi <- function(obj,
   sim = reem_simulate(prms = obj$prms, deterministic)
   
   # append the dates
-  sim = dplyr::mutate(sim, date = obj$prms$date.start + t)
+  sim$date = obj$prms$date.start + sim$t
   
   if(0){ # DEBUG 
     print('\nin sim')
@@ -410,10 +414,15 @@ reem_simulate_epi <- function(obj,
   # we just need to retrieve `Y` at the 
   # observation dates defined in `prms`:
   dateobs.cl = obj[['prms']][['date.obs.cl']]
-  sim.obs.cl = sim |> 
-    dplyr::filter(date %in% dateobs.cl) |> 
-    dplyr::transmute(date, t, obs = round(Y))
   
+  idx = sim$date %in% dateobs.cl
+  
+  sim.obs.cl = data.frame(
+    date = sim$date[idx],
+    t    = sim$t[idx],
+    obs  = round(sim$Y[idx])
+  )
+
   # Aggregate hospital admissions because the 
   # variable `H` in `sim` is _not_aggregated 
   # (it is a simple proportion of the daily incidence)
@@ -428,9 +437,13 @@ reem_simulate_epi <- function(obj,
   
   # Extract wastewater observations
   # (wastewater concentration is NOT aggregated in time)
-  sim.obs.ww = sim |> 
-    dplyr::filter(date %in% obj[['prms']][['date.obs.ww']]) |>
-    dplyr::select(date, t, obs = Wr)
+  
+  idxw = sim$date %in% obj[['prms']][['date.obs.ww']]
+  sim.obs.ww = data.frame(
+    date = sim$date[idxw],
+    t    = sim$t[idxw],
+    obs  = sim$Wr[idxw]
+  )
   
   return(list(
     sim    = sim, 
